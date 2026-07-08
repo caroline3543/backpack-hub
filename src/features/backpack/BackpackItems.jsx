@@ -7,6 +7,7 @@ import { useState, useMemo, useRef } from "react";
 import { useI18n } from "../../i18n/I18nContext.jsx";
 import { CATEGORIES, formatAmount, formatMinutes } from "./backpackConstants.js";
 import { ITEM_ICONS } from "./itemIcons.js";
+import PinIcon from "../../components/PinIcon.jsx";
 import haptics from "../../utils/haptics.js";
 import {
   calcDailyAverage, calcWeeklyAverage, estimateCompletion,
@@ -108,16 +109,16 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
   const [expanded, setExpanded] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [heartTip, setHeartTip] = useState(null); // null | "pinned" | "unpinned"
-  const heartTipTimer = useRef(null);
+  const [pinTip, setPinTip] = useState(null); // null | "pinned" | "unpinned"
+  const pinTipTimer = useRef(null);
 
-  const handleHeartToggle = () => {
+  const handlePinToggle = () => {
     const nextPinned = !isPinned;
     onTogglePin(item.id);
     haptics.selection();
-    setHeartTip(nextPinned ? "pinned" : "unpinned");
-    if (heartTipTimer.current) clearTimeout(heartTipTimer.current);
-    heartTipTimer.current = setTimeout(() => setHeartTip(null), 1700);
+    setPinTip(nextPinned ? "pinned" : "unpinned");
+    if (pinTipTimer.current) clearTimeout(pinTipTimer.current);
+    pinTipTimer.current = setTimeout(() => setPinTip(null), 1700);
   };
 
   const hasTarget  = Number(item.targetAmount) > 0;
@@ -140,37 +141,15 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
   const remaining = Math.max(0, target - balance);
 
   return (
-    <div style={{ borderBottom:"1px solid rgba(72,94,80,0.07)" }}>
+    <div style={{ borderBottom:"1px solid rgba(72,94,80,0.07)",
+      background: isPinned ? "rgba(201,150,47,0.06)" : "transparent",
+      borderRadius: isPinned ? 12 : 0,
+      transition:"background 0.25s ease" }}>
       {/* ── Main row ── */}
-      <div style={{ padding:"14px 0" }}>
-        {/* Name + pace badge */}
+      <div style={{ padding:"14px 8px" }}>
+        {/* Icon + name (left) · pace badge + pin (top-right) */}
         <div style={{ display:"flex", alignItems:"center",
-          justifyContent:"space-between", marginBottom:6, position:"relative" }}>
-          <div style={{ position:"relative", flexShrink:0, marginRight:8 }}>
-            <button
-              onClick={handleHeartToggle}
-              aria-label={t(isPinned ? "itemsSection.unstar" : "itemsSection.star")}
-              style={{ background:"none", border:"none", cursor:"pointer",
-                padding:0, fontSize:16, lineHeight:1,
-                color: isPinned ? "#c0576b" : "#d6ddd6",
-                display:"inline-block",
-                animation: heartTip ? "heartPop 0.4s ease" : "none" }}>
-              {isPinned ? "♥" : "♡"}
-            </button>
-            {heartTip && (
-              <div style={{
-                position:"absolute", top:"120%", left:"50%",
-                transform:"translateX(-50%)",
-                background:"#24312c", color:"#f6f1e8",
-                fontSize:10, fontWeight:600, whiteSpace:"nowrap",
-                padding:"4px 9px", borderRadius:8, zIndex:5,
-                animation:"heartTipIn 0.25s ease both",
-                boxShadow:"0 4px 12px rgba(0,0,0,0.18)",
-              }}>
-                {t(heartTip === "pinned" ? "itemsSection.pinnedTip" : "itemsSection.unpinnedTip")}
-              </div>
-            )}
-          </div>
+          justifyContent:"space-between", marginBottom:6 }}>
           <span style={{ fontSize:14, fontWeight:600, color:"#24312c",
             flex:1, marginRight:8, lineHeight:1.3,
             display:"flex", alignItems:"center", gap:8 }}>
@@ -195,11 +174,33 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
               )}
             </span>
           </span>
-          <span style={{ fontSize:10, fontWeight:700, borderRadius:99,
-            padding:"2px 8px", flexShrink:0, whiteSpace:"nowrap",
-            background:paceColors.background, color:paceColors.color }}>
-            {paceLabel}
-          </span>
+
+          <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0, position:"relative" }}>
+            <span style={{ fontSize:10, fontWeight:700, borderRadius:99,
+              padding:"2px 8px", whiteSpace:"nowrap",
+              background:paceColors.background, color:paceColors.color }}>
+              {paceLabel}
+            </span>
+            <button
+              onClick={handlePinToggle}
+              aria-label={t(isPinned ? "itemsSection.unpin" : "itemsSection.pin")}
+              style={{ background:"none", border:"none", cursor:"pointer", padding:0,
+                display:"flex", alignItems:"center" }}>
+              <PinIcon pinned={isPinned} animate={!!pinTip} />
+            </button>
+            {pinTip && (
+              <div style={{
+                position:"absolute", top:"120%", insetInlineEnd:0,
+                background:"#24312c", color:"#f6f1e8",
+                fontSize:10, fontWeight:600, whiteSpace:"nowrap",
+                padding:"4px 9px", borderRadius:8, zIndex:5,
+                animation:"pinTipIn 0.25s ease both",
+                boxShadow:"0 4px 12px rgba(0,0,0,0.18)",
+              }}>
+                {t(pinTip === "pinned" ? "itemsSection.pinnedTip" : "itemsSection.unpinnedTip")}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Balance / target */}
@@ -658,13 +659,13 @@ export default function BackpackItems({
   return (
     <div>
       <style>{`
-        @keyframes heartPop {
+        @keyframes pinPop {
           0%   { transform: scale(1); }
           40%  { transform: scale(1.45); }
           70%  { transform: scale(0.9); }
           100% { transform: scale(1); }
         }
-        @keyframes heartTipIn {
+        @keyframes pinTipIn {
           from { opacity: 0; transform: translateX(-50%) translateY(-4px); }
           to   { opacity: 1; transform: translateX(-50%) translateY(0); }
         }

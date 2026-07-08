@@ -5,6 +5,7 @@ import { useState, useRef, useCallback } from "react";
 import { useI18n }            from "../../i18n/I18nContext.jsx";
 import { useBackpackData }    from "./useBackpackData.js";
 import BackpackSummary        from "./BackpackSummary.jsx";
+import PinnedResources        from "./PinnedResources.jsx";
 import BackpackItems          from "./BackpackItems.jsx";
 import BackpackGoals          from "./BackpackGoals.jsx";
 import BackpackHistory        from "./BackpackHistory.jsx";
@@ -12,6 +13,9 @@ import BackpackSheet          from "./BackpackSheet.jsx";
 import { calcGrowthInsights, formatCompact } from "./backpackForecast.js";
 import haptics from "../../utils/haptics.js";
 import { Toast as CelebToast, useCelebration } from "../../components/Celebration.jsx";
+import PinReplacePrompt from "../../components/PinReplacePrompt.jsx";
+
+const MAX_PINNED = 3;
 
 // ─── Section chip nav ─────────────────────────────────────────────────────────
 function SectionNav({ active, onChange }) {
@@ -130,7 +134,26 @@ export default function BackpackScreen({ userId }) {
 
   const [activeSection, setActiveSection] = useState("Items");
   const [sheet,         setSheet]         = useState(null);
+  const [pinPending,    setPinPending]    = useState(null); // item pending pin, if at cap
   const { toast, toastType, showToast, celebrate, warn } = useCelebration();
+
+  const handleTogglePin = useCallback((itemId) => {
+    const isPinned = pinnedItems.includes(itemId);
+    if (isPinned) { togglePin(itemId); return; }
+    if (pinnedItems.length >= MAX_PINNED) {
+      const item = items.find(i => i.id === itemId);
+      if (item) setPinPending(item);
+      return;
+    }
+    togglePin(itemId);
+  }, [pinnedItems, togglePin, items]);
+
+  const handleReplacePin = useCallback((oldItemId) => {
+    togglePin(oldItemId);
+    togglePin(pinPending.id);
+    setPinPending(null);
+    haptics.success();
+  }, [togglePin, pinPending]);
 
   const refs = {
     Items:    useRef(null),
@@ -186,6 +209,15 @@ export default function BackpackScreen({ userId }) {
 
   return (
     <div className="scroll-content">
+      {/* ── Pinned Resources — always first, answers "what am I focusing on" ── */}
+      <PinnedResources
+        items={items}
+        balances={balances}
+        transactions={transactions}
+        pinnedItems={pinnedItems}
+        onTogglePin={handleTogglePin}
+      />
+
       {/* ── Hero ── */}
       <div style={{ position:"relative" }}>
         <div style={{ fontSize:11, fontWeight:700, textTransform:"uppercase",
@@ -219,8 +251,6 @@ export default function BackpackScreen({ userId }) {
         summary={summary}
         items={items}
         transactions={transactions}
-        balances={balances}
-        pinnedItems={pinnedItems}
         onGain={() => openSheet("update", {})}
         onSpend={() => openSheet("update", {})}
         onSnapshot={handleSnapshot}
@@ -237,7 +267,7 @@ export default function BackpackScreen({ userId }) {
           balances={balances}
           transactions={transactions}
           pinnedItems={pinnedItems}
-          onTogglePin={togglePin}
+          onTogglePin={handleTogglePin}
           onGain={item  => openSheet("update", { itemId:item.id })}
           onSpend={item => openSheet("update", { itemId:item.id })}
           onGoal={item  => openSheet("goal", {
@@ -302,6 +332,13 @@ export default function BackpackScreen({ userId }) {
       />
 
       <CelebToast message={toast} type={toastType} />
+
+      <PinReplacePrompt
+        pendingItem={pinPending}
+        pinnedItemObjs={pinnedItems.map(id => items.find(i => i.id === id)).filter(Boolean)}
+        onReplace={handleReplacePin}
+        onCancel={() => setPinPending(null)}
+      />
     </div>
   );
 }
