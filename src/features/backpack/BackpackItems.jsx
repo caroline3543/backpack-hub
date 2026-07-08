@@ -102,7 +102,7 @@ function ProgressBar({ pct }) {
 }
 
 // ─── Item row ─────────────────────────────────────────────────────────────────
-function ItemRow({ item, balance, transactions, onGoal, onEdit, onUpdate, onDelete, onDeleteTransaction, onAverageReset, onClearAverageReset }) {
+function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, onEdit, onUpdate, onDelete, onDeleteTransaction, onAverageReset, onClearAverageReset }) {
   const { t, tItem, dateLocale } = useI18n();
   const [expanded, setExpanded] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -134,6 +134,15 @@ function ItemRow({ item, balance, transactions, onGoal, onEdit, onUpdate, onDele
         {/* Name + pace badge */}
         <div style={{ display:"flex", alignItems:"center",
           justifyContent:"space-between", marginBottom:6 }}>
+          <button
+            onClick={() => { onTogglePin(item.id); haptics.selection(); }}
+            aria-label={t(isPinned ? "itemsSection.unstar" : "itemsSection.star")}
+            style={{ background:"none", border:"none", cursor:"pointer",
+              padding:0, marginRight:6, flexShrink:0,
+              fontSize:15, lineHeight:1,
+              color: isPinned ? "#c9962f" : "#d6ddd6" }}>
+            {isPinned ? "★" : "☆"}
+          </button>
           <span style={{ fontSize:14, fontWeight:600, color:"#24312c",
             flex:1, marginRight:8, lineHeight:1.3 }}>{tItem(item.id, item.name)}</span>
           <span style={{ fontSize:10, fontWeight:700, borderRadius:99,
@@ -443,9 +452,9 @@ function ItemRow({ item, balance, transactions, onGoal, onEdit, onUpdate, onDele
 
 // ─── Category accordion — single open at a time via lifted state ───────────────
 function CategoryAccordion({
-  category, items, transactions, balances,
+  category, items, transactions, balances, pinnedItems,
   isOpen, onToggle,
-  onGoal, onEdit, onAddCustom, onDelete,
+  onGoal, onEdit, onAddCustom, onDelete, onTogglePin,
   onUpdate, onDeleteTransaction,
   onAverageReset, onClearAverageReset,
 }) {
@@ -460,7 +469,7 @@ function CategoryAccordion({
       borderRadius:22, overflow:"hidden", marginBottom:10,
     }}>
       <button
-        onClick={e => { e.preventDefault(); onToggle(); e.currentTarget.blur(); haptics.selection(); }}
+        onClick={e => { e.preventDefault(); onToggle(); haptics.selection(); }}
         style={{
           width:"100%", display:"flex", alignItems:"center",
           justifyContent:"space-between", padding:"14px 16px",
@@ -496,6 +505,8 @@ function CategoryAccordion({
               item={item}
               balance={balances[item.id] ?? 0}
               transactions={transactions}
+              isPinned={pinnedItems.includes(item.id)}
+              onTogglePin={onTogglePin}
               onGoal={onGoal}
               onEdit={onEdit}
               onUpdate={onUpdate}
@@ -539,8 +550,8 @@ function saveCategoryOrder(order) {
 
 // ─── BackpackItems ─────────────────────────────────────────────────────────────
 export default function BackpackItems({
-  items, balances, transactions,
-  onGoal, onEdit, onAddItem, onDelete,
+  items, balances, transactions, pinnedItems,
+  onGoal, onEdit, onAddItem, onDelete, onTogglePin,
   onUpdate, onDeleteTransaction,
   onAverageReset, onClearAverageReset,
 }) {
@@ -693,12 +704,14 @@ export default function BackpackItems({
             items={catItems}
             balances={balances}
             transactions={transactions}
+            pinnedItems={pinnedItems}
             isOpen={openCategory === cat}
             onToggle={() => toggle(cat)}
             onGoal={onGoal}
             onEdit={onEdit}
             onAddCustom={() => onAddItem(cat)}
             onDelete={onDelete}
+            onTogglePin={onTogglePin}
             onUpdate={onUpdate}
             onDeleteTransaction={onDeleteTransaction}
             onAverageReset={onAverageReset}

@@ -119,6 +119,7 @@ export default function BackpackScreen({ userId }) {
   const { t } = useI18n();
   const {
     items, transactions, projections, snapshots, balances, summary,
+    pinnedItems, togglePin,
     addItem, updateItem, deleteItem,
     addTransaction, updateTransaction, deleteTransaction, setTotal,
     addProjection, updateProjection, deleteProjection, clearProjections,
@@ -218,6 +219,8 @@ export default function BackpackScreen({ userId }) {
         summary={summary}
         items={items}
         transactions={transactions}
+        balances={balances}
+        pinnedItems={pinnedItems}
         onGain={() => openSheet("update", {})}
         onSpend={() => openSheet("update", {})}
         onSnapshot={handleSnapshot}
@@ -233,6 +236,8 @@ export default function BackpackScreen({ userId }) {
           items={items}
           balances={balances}
           transactions={transactions}
+          pinnedItems={pinnedItems}
+          onTogglePin={togglePin}
           onGain={item  => openSheet("update", { itemId:item.id })}
           onSpend={item => openSheet("update", { itemId:item.id })}
           onGoal={item  => openSheet("goal", {

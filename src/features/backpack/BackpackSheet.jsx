@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useI18n } from "../../i18n/I18nContext.jsx";
 import {
   CATEGORIES, PRIORITY_OPTIONS, RESOURCE_UNITS, UNIT_MULTIPLIER,
+  WIDGET_LEVEL_TARGETS, WIDGET_LEVELS,
   formatAmount, formatMinutes,
 } from "./backpackConstants.js";
 
@@ -256,6 +257,17 @@ function GoalForm({ initial, items, onSubmit }) {
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
   const selectedItem = items.find(i => i.id === (form.itemId || initial?.itemId));
+  const isWidget = selectedItem?.category === "Widgets";
+
+  // Reverse-lookup which level the current target amount corresponds to,
+  // so re-opening the goal for an already-leveled item shows the right level.
+  const currentLevel = isWidget
+    ? (WIDGET_LEVELS.find(lvl => WIDGET_LEVEL_TARGETS[lvl] === Number(form.targetAmount)) || 1)
+    : null;
+
+  const setLevel = (level) => {
+    setForm(f => ({ ...f, targetAmount: WIDGET_LEVEL_TARGETS[level] }));
+  };
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
@@ -275,12 +287,31 @@ function GoalForm({ initial, items, onSubmit }) {
           {t("sheet.settingGoalFor", { name: tItem(selectedItem.id, selectedItem.name) })}
         </div>
       )}
-      <div>
-        <label style={labelStyle}>{t("sheet.iWantToReach")}</label>
-        <input style={inputStyle} type="number" min="0"
-          value={form.targetAmount} onChange={set("targetAmount")}
-          placeholder={t("sheet.targetAmountPlaceholder")} />
-      </div>
+
+      {isWidget ? (
+        <div>
+          <label style={labelStyle}>{t("sheet.heroGearLevel")}</label>
+          <select style={{ ...inputStyle, appearance:"none", cursor:"pointer" }}
+            value={currentLevel} onChange={e => setLevel(Number(e.target.value))}>
+            {WIDGET_LEVELS.map(lvl => (
+              <option key={lvl} value={lvl}>
+                {t("sheet.heroGearLevelOption", { level: lvl, count: WIDGET_LEVEL_TARGETS[lvl] })}
+              </option>
+            ))}
+          </select>
+          <div style={{ fontSize:11, color:"#9aa59e", marginTop:4 }}>
+            {t("sheet.heroGearLevelHint")}
+          </div>
+        </div>
+      ) : (
+        <div>
+          <label style={labelStyle}>{t("sheet.iWantToReach")}</label>
+          <input style={inputStyle} type="number" min="0"
+            value={form.targetAmount} onChange={set("targetAmount")}
+            placeholder={t("sheet.targetAmountPlaceholder")} />
+        </div>
+      )}
+
       <div>
         <label style={labelStyle}>{t("sheet.byWhenOptional")}</label>
         <input style={inputStyle} type="date"

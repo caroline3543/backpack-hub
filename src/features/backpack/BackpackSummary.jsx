@@ -127,6 +127,22 @@ function SvsPrepCard() {
   );
 }
 
+// ─── Pinned (starred) item card ───────────────────────────────────────────────
+function PinnedStatCard({ item, balance }) {
+  const { t, tItem } = useI18n();
+  const hasTarget = Number(item.targetAmount) > 0;
+  const fmt = v => item.isMinutes ? formatMinutes(v) : formatAmount(v, item.displayUnit);
+  const pct = hasTarget ? Math.round(Math.min(100, (balance / Number(item.targetAmount)) * 100)) : null;
+
+  return (
+    <StatCard
+      label={`★ ${tItem(item.id, item.name)}`}
+      value={fmt(balance)}
+      sub={hasTarget ? t("summary.percentThere", { pct }) : undefined}
+    />
+  );
+}
+
 function timeAgo(iso, t) {
   if (!iso) return "";
   const diff = Date.now() - new Date(iso).getTime();
@@ -137,11 +153,46 @@ function timeAgo(iso, t) {
   return `${d}${t("common.dayAgo")}`;
 }
 
-export default function BackpackSummary({ summary, items, transactions, onGain, onSpend, onSnapshot }) {
+export default function BackpackSummary({ summary, items, transactions, balances, pinnedItems, onGain, onSpend, onSnapshot }) {
   const { t, tItem } = useI18n();
   const { topPriority, closestToTarget, biggestShortage, recent } = summary;
 
   useMemo(() => calcGrowthInsights(transactions, items), [transactions, items]);
+
+  // Starred items take over the remaining slots (after the SvS Prep card),
+  // in the order they were starred. Any unfilled slots fall back to the
+  // default stat cards.
+  const pinnedCards = (pinnedItems || [])
+    .map(id => items.find(i => i.id === id))
+    .filter(Boolean)
+    .slice(0, 3)
+    .map(item => (
+      <PinnedStatCard key={item.id} item={item} balance={balances?.[item.id] ?? 0} />
+    ));
+
+  const defaultCards = [
+    <StatCard
+      key="almost"
+      label={t("summary.almostThere")}
+      value={closestToTarget ? tItem(closestToTarget.id, closestToTarget.name) : undefined}
+      sub={closestToTarget ? t("summary.percentThere", { pct: Math.round((closestToTarget.ratio||0)*100) }) : undefined}
+      empty={!closestToTarget ? t("summary.setTargetToTrack") : undefined}
+    />,
+    <StatCard
+      key="love"
+      label={t("summary.couldUseLove")}
+      value={biggestShortage ? tItem(biggestShortage.id, biggestShortage.name) : undefined}
+      sub={biggestShortage ? t("summary.largestGap") : undefined}
+      empty={!biggestShortage ? t("summary.noGapsDetected") : undefined}
+    />,
+    <StatCard
+      key="focus"
+      label={t("summary.yourFocus")}
+      value={topPriority ? tItem(topPriority.id, topPriority.name) : undefined}
+      sub={topPriority ? t("summary.highestUrgency") : undefined}
+      empty={!topPriority ? t("summary.nothingSetYet") : undefined}
+    />,
+  ].slice(0, Math.max(0, 3 - pinnedCards.length));
 
   const recentActivity = recent.slice(0, 3).map(tx => {
     const item = items.find(i => i.id === tx.itemId);
@@ -164,24 +215,8 @@ export default function BackpackSummary({ summary, items, transactions, onGain, 
       {/* ── 4-stat grid ── */}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginTop:16 }}>
         <SvsPrepCard />
-        <StatCard
-          label={t("summary.almostThere")}
-          value={closestToTarget ? tItem(closestToTarget.id, closestToTarget.name) : undefined}
-          sub={closestToTarget ? t("summary.percentThere", { pct: Math.round((closestToTarget.ratio||0)*100) }) : undefined}
-          empty={!closestToTarget ? t("summary.setTargetToTrack") : undefined}
-        />
-        <StatCard
-          label={t("summary.couldUseLove")}
-          value={biggestShortage ? tItem(biggestShortage.id, biggestShortage.name) : undefined}
-          sub={biggestShortage ? t("summary.largestGap") : undefined}
-          empty={!biggestShortage ? t("summary.noGapsDetected") : undefined}
-        />
-        <StatCard
-          label={t("summary.yourFocus")}
-          value={topPriority ? tItem(topPriority.id, topPriority.name) : undefined}
-          sub={topPriority ? t("summary.highestUrgency") : undefined}
-          empty={!topPriority ? t("summary.nothingSetYet") : undefined}
-        />
+        {pinnedCards}
+        {defaultCards}
       </div>
 
       {/* ── Recent activity ── */}

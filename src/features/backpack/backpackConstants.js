@@ -127,6 +127,15 @@ export const PREDEFINED_ITEMS = [
 
 export const SECTION_CHIPS = ["Items", "Goals", "History", "Insights"];
 
+// Exclusive Hero Gear widget levels — Widgets-category items use this to let
+// the user pick a level instead of typing a raw target amount.
+export const WIDGET_LEVEL_TARGETS = {
+  1: 5,  2: 10, 3: 15, 4: 20, 5: 25,
+  6: 30, 7: 35, 8: 40, 9: 45, 10: 50,
+};
+export const WIDGET_LEVELS = Object.keys(WIDGET_LEVEL_TARGETS).map(Number);
+
+
 // Transaction types
 export const TRANSACTION_TYPES = [
   { value:"gain",              label:"Gain",              color:"#5c7a6e", bg:"#edf4ea" },
