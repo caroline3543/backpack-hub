@@ -155,12 +155,11 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
             display:"flex", alignItems:"center", gap:8 }}>
             {ITEM_ICONS[item.id] ? (
               <img src={ITEM_ICONS[item.id]} alt="" width={26} height={26}
-                style={{ borderRadius:8, objectFit:"cover", flexShrink:0,
-                  background:"rgba(72,94,80,0.06)" }} />
+                style={{ objectFit:"cover", flexShrink:0 }} />
             ) : (
-              <span aria-hidden="true" style={{ width:26, height:26, borderRadius:8,
-                background:"rgba(72,94,80,0.06)", flexShrink:0,
-                display:"flex", alignItems:"center", justifyContent:"center", fontSize:13 }}>
+              <span aria-hidden="true" style={{ width:26, height:26,
+                flexShrink:0,
+                display:"flex", alignItems:"center", justifyContent:"center", fontSize:16 }}>
                 🎒
               </span>
             )}
@@ -212,9 +211,6 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
             <span style={{ fontSize:12, color:"#9aa59e" }}>
               / {fmt(target)} · {Math.round(Math.min(pct,100))}%
             </span>
-          )}
-          {!hasTarget && (
-            <span style={{ fontSize:12, color:"#b8c0ba" }}>{t("itemsSection.noTargetSet")}</span>
           )}
         </div>
 
@@ -289,7 +285,7 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
           <button onClick={() => { onGoal(item); haptics.light(); }} style={{
             flex:1, height:44, borderRadius:12, fontSize:12, fontWeight:700,
             background:"#edf2ec", color:"#5c7a6e", border:"none", cursor:"pointer",
-          }}>{t("itemsSection.goalBtn")}</button>
+          }}>{t(hasTarget ? "itemsSection.editGoal" : "itemsSection.addGoal")}</button>
           <button onClick={() => setExpanded(e => !e)} style={{
             width:44, height:44, borderRadius:12, fontSize:12, fontWeight:700,
             background: expanded ? "#78917f" : "rgba(255,255,255,0.7)",

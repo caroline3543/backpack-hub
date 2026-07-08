@@ -20,7 +20,7 @@ export default function PinReplacePrompt({ pendingItem, pinnedItemObjs, onReplac
           background:"#f6f1e8", borderRadius:22, padding:20,
           width:"100%", maxWidth:360, boxShadow:"0 12px 40px rgba(0,0,0,0.2)",
         }}>
-          <div style={{ fontSize:28, marginBottom:8 }}>📌</div>
+          <div style={{ fontSize:28, marginBottom:8 }}>📍</div>
           <div style={{ fontFamily:"'Fraunces',serif", fontSize:18, fontWeight:600,
             color:"#24312c", marginBottom:6 }}>
             {t("pinnedSection.maxReachedTitle")}

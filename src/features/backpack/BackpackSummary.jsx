@@ -4,17 +4,21 @@
 import { useMemo, useState } from "react";
 import { useI18n } from "../../i18n/I18nContext.jsx";
 import { formatAmount, formatMinutes } from "./backpackConstants.js";
-import { calcGrowthInsights, formatCompact, calcDailyAverage, calcPaceStatus } from "./backpackForecast.js";
+import { calcGrowthInsights, formatCompact, calcDailyAverage } from "./backpackForecast.js";
 import { useSvsPrepDate } from "./useSvsPrepDate.js";
+import { useWidgetMode } from "./useWidgetMode.js";
 import { ITEM_ICONS } from "./itemIcons.js";
 
-function StatCard({ label, value, sub, empty }) {
+function StatCard({ label, value, sub, empty, onClick }) {
+  const Tag = onClick ? "button" : "div";
   return (
-    <div style={{
+    <Tag onClick={onClick} style={{
       background:"rgba(255,255,255,0.82)",
       border:"1px solid rgba(74,92,80,0.09)",
       boxShadow:"0 4px 16px rgba(71,86,75,0.07)",
       borderRadius:20, padding:"12px 14px",
+      textAlign:"left", width:"100%", font:"inherit",
+      cursor: onClick ? "pointer" : "default",
     }}>
       <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase",
         letterSpacing:"0.18em", color:"#819286", marginBottom:6, lineHeight:1.2 }}>
@@ -33,7 +37,7 @@ function StatCard({ label, value, sub, empty }) {
           )}
         </>
       )}
-    </div>
+    </Tag>
   );
 }
 
@@ -131,11 +135,11 @@ function SvsPrepCard() {
 function ItemIconChip({ item, size = 18 }) {
   return ITEM_ICONS[item.id] ? (
     <img src={ITEM_ICONS[item.id]} alt="" width={size} height={size}
-      style={{ borderRadius:6, objectFit:"cover", flexShrink:0 }} />
+      style={{ objectFit:"cover", flexShrink:0 }} />
   ) : (
-    <span aria-hidden="true" style={{ width:size, height:size, borderRadius:6,
-      background:"rgba(72,94,80,0.08)", display:"flex", alignItems:"center",
-      justifyContent:"center", fontSize:size*0.55, flexShrink:0 }}>🎒</span>
+    <span aria-hidden="true" style={{ width:size, height:size,
+      display:"flex", alignItems:"center",
+      justifyContent:"center", fontSize:size*0.85, flexShrink:0 }}>🎒</span>
   );
 }
 
@@ -169,30 +173,11 @@ function pickNeedsAttention(pinnedObjs, balances) {
     .sort((a, b) => b.gap - a.gap)[0];
 }
 
-const PRIORITY_RANK = { Urgent: 0, High: 1, Medium: 2, Low: 3 };
-const PACE_URGENCY_RANK = { behind: 0, "on-track": 1, ahead: 2, complete: 3, "no-data": 4, "no-target": 5 };
-
-function pickYourFocus(pinnedObjs, balances, transactions) {
+function pickFastestGrowth(pinnedObjs, transactions) {
   if (pinnedObjs.length === 0) return null;
-  const scored = pinnedObjs.map(item => {
-    const target = Number(item.targetAmount);
-    const balance = balances[item.id] ?? 0;
-    const dailyAvg = target > 0 ? calcDailyAverage(transactions, item.id) : 0;
-    const pace = target > 0 ? calcPaceStatus(balance, target, item.targetDate, dailyAvg) : "no-target";
-    const deadlineTime = item.targetDate ? new Date(item.targetDate).getTime() : Infinity;
-    return {
-      item, balance, target,
-      paceRank: PACE_URGENCY_RANK[pace] ?? 5,
-      deadlineTime,
-      priorityRank: PRIORITY_RANK[item.priority] ?? 4,
-    };
-  });
-  scored.sort((a, b) =>
-    a.paceRank - b.paceRank ||
-    a.deadlineTime - b.deadlineTime ||
-    a.priorityRank - b.priorityRank
-  );
-  return scored[0];
+  return pinnedObjs
+    .map(item => ({ item, dailyAvg: calcDailyAverage(transactions, item.id) }))
+    .sort((a, b) => b.dailyAvg - a.dailyAvg)[0];
 }
 
 function timeAgo(iso, t) {
@@ -214,9 +199,15 @@ export default function BackpackSummary({ summary, items, transactions, balances
   const pinnedObjs = (pinnedItems || []).map(id => items.find(i => i.id === id)).filter(Boolean);
   const hasPins = pinnedObjs.length > 0;
 
-  const almostThere   = useMemo(() => pickAlmostThere(pinnedObjs, balances), [pinnedObjs, balances]);
+  const almostThere    = useMemo(() => pickAlmostThere(pinnedObjs, balances), [pinnedObjs, balances]);
   const needsAttention = useMemo(() => pickNeedsAttention(pinnedObjs, balances), [pinnedObjs, balances]);
-  const yourFocus     = useMemo(() => pickYourFocus(pinnedObjs, balances, transactions), [pinnedObjs, balances, transactions]);
+  const fastestGrowth  = useMemo(() => pickFastestGrowth(pinnedObjs, transactions), [pinnedObjs, transactions]);
+
+  const [almostThereMode, cycleAlmostThereMode]       = useWidgetMode("almostThere", "pct");    // pct | qty
+  const [needsAttentionMode, cycleNeedsAttentionMode] = useWidgetMode("needsAttention", "qty");  // qty | pct
+  const [fastestGrowthMode, cycleFastestGrowthMode]   = useWidgetMode("fastestGrowth", "amounts"); // amounts | pct
+
+  const fmtFor = (item, v) => item.isMinutes ? formatMinutes(v) : formatAmount(v, item.displayUnit);
 
   const recentActivity = recent.slice(0, 3).map(tx => {
     const item = items.find(i => i.id === tx.itemId);
@@ -242,6 +233,7 @@ export default function BackpackSummary({ summary, items, transactions, balances
 
         <StatCard
           label={t("summary.almostThere")}
+          onClick={almostThere ? () => cycleAlmostThereMode(["pct", "qty"]) : undefined}
           value={almostThere ? (
             <span style={{ display:"flex", alignItems:"center", gap:6 }}>
               <ItemIconChip item={almostThere.item} />
@@ -252,7 +244,11 @@ export default function BackpackSummary({ summary, items, transactions, balances
           ) : undefined}
           sub={almostThere ? (
             <>
-              {t("summary.percentThere", { pct: Math.round(almostThere.pct) })}
+              {almostThereMode === "pct"
+                ? t("summary.percentThere", { pct: Math.round(almostThere.pct) })
+                : t("summary.goalRemaining", {
+                    amount: fmtFor(almostThere.item, Number(almostThere.item.targetAmount) - (balances[almostThere.item.id] ?? 0)),
+                  })}
               <MiniProgressBar pct={almostThere.pct} />
             </>
           ) : undefined}
@@ -261,6 +257,7 @@ export default function BackpackSummary({ summary, items, transactions, balances
 
         <StatCard
           label={t("summary.needsAttention")}
+          onClick={needsAttention ? () => cycleNeedsAttentionMode(["qty", "pct"]) : undefined}
           value={needsAttention ? (
             <span style={{ display:"flex", alignItems:"center", gap:6 }}>
               <ItemIconChip item={needsAttention.item} />
@@ -269,35 +266,47 @@ export default function BackpackSummary({ summary, items, transactions, balances
               </span>
             </span>
           ) : undefined}
-          sub={needsAttention ? t("summary.goalRemaining", {
-            amount: needsAttention.item.isMinutes
-              ? formatMinutes(needsAttention.gap)
-              : formatAmount(needsAttention.gap, needsAttention.item.displayUnit),
-          }) : undefined}
+          sub={needsAttention ? (
+            needsAttentionMode === "qty"
+              ? t("summary.goalRemaining", { amount: fmtFor(needsAttention.item, needsAttention.gap) })
+              : t("summary.percentThere", {
+                  pct: Math.round(Math.min(100, ((balances[needsAttention.item.id] ?? 0) / Number(needsAttention.item.targetAmount)) * 100)),
+                })
+          ) : undefined}
           empty={!needsAttention ? t("summary.pinToTrack") : undefined}
         />
 
         <StatCard
-          label={t("summary.yourFocus")}
-          value={yourFocus ? (
+          label={t("summary.fastestGrowth")}
+          onClick={fastestGrowth ? () => cycleFastestGrowthMode(["amounts", "pct"]) : undefined}
+          value={fastestGrowth ? (
             <span style={{ display:"flex", alignItems:"center", gap:6 }}>
-              <ItemIconChip item={yourFocus.item} />
+              <ItemIconChip item={fastestGrowth.item} />
               <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                {tItem(yourFocus.item.id, yourFocus.item.name)}
+                {tItem(fastestGrowth.item.id, fastestGrowth.item.name)}
               </span>
             </span>
           ) : undefined}
-          sub={yourFocus ? (
-            yourFocus.target > 0 ? (
-              <>
-                {(yourFocus.item.isMinutes ? formatMinutes(yourFocus.balance) : formatAmount(yourFocus.balance, yourFocus.item.displayUnit))}
-                {" / "}
-                {(yourFocus.item.isMinutes ? formatMinutes(yourFocus.target) : formatAmount(yourFocus.target, yourFocus.item.displayUnit))}
-                <MiniProgressBar pct={Math.min(100, (yourFocus.balance / yourFocus.target) * 100)} color="#5c7a6e" />
-              </>
-            ) : t("pinnedSection.noGoalSet")
+          sub={fastestGrowth ? (
+            Number(fastestGrowth.item.targetAmount) > 0 ? (
+              fastestGrowthMode === "amounts" ? (
+                <>
+                  {fmtFor(fastestGrowth.item, balances[fastestGrowth.item.id] ?? 0)}
+                  {" / "}
+                  {fmtFor(fastestGrowth.item, Number(fastestGrowth.item.targetAmount))}
+                  <MiniProgressBar pct={Math.min(100, ((balances[fastestGrowth.item.id] ?? 0) / Number(fastestGrowth.item.targetAmount)) * 100)} color="#5c7a6e" />
+                </>
+              ) : (
+                <>
+                  {t("summary.percentThere", {
+                    pct: Math.round(Math.min(100, ((balances[fastestGrowth.item.id] ?? 0) / Number(fastestGrowth.item.targetAmount)) * 100)),
+                  })}
+                  <MiniProgressBar pct={Math.min(100, ((balances[fastestGrowth.item.id] ?? 0) / Number(fastestGrowth.item.targetAmount)) * 100)} color="#5c7a6e" />
+                </>
+              )
+            ) : fmtFor(fastestGrowth.item, balances[fastestGrowth.item.id] ?? 0)
           ) : undefined}
-          empty={!yourFocus ? t("summary.pinToTrack") : undefined}
+          empty={!fastestGrowth ? t("summary.pinToTrack") : undefined}
         />
       </div>
 
@@ -308,7 +317,7 @@ export default function BackpackSummary({ summary, items, transactions, balances
           fontSize:13, fontWeight:700, border:"1px dashed rgba(201,150,47,0.35)",
           cursor:"pointer",
         }}>
-          📌 {t("summary.chooseResources")}
+          📍 {t("summary.chooseResources")}
         </button>
       )}
 
