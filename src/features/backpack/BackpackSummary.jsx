@@ -136,7 +136,7 @@ function PinnedStatCard({ item, balance }) {
 
   return (
     <StatCard
-      label={`★ ${tItem(item.id, item.name)}`}
+      label={`♥ ${tItem(item.id, item.name)}`}
       value={fmt(balance)}
       sub={hasTarget ? t("summary.percentThere", { pct }) : undefined}
     />

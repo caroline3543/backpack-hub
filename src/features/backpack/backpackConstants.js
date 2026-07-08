@@ -128,12 +128,24 @@ export const PREDEFINED_ITEMS = [
 export const SECTION_CHIPS = ["Items", "Goals", "History", "Insights"];
 
 // Exclusive Hero Gear widget levels — Widgets-category items use this to let
-// the user pick a level instead of typing a raw target amount.
-export const WIDGET_LEVEL_TARGETS = {
-  1: 5,  2: 10, 3: 15, 4: 20, 5: 25,
-  6: 30, 7: 35, 8: 40, 9: 45, 10: 50,
-};
-export const WIDGET_LEVELS = Object.keys(WIDGET_LEVEL_TARGETS).map(Number);
+// the user pick a goal level instead of typing a raw target amount.
+// Cost to level up STACKS: reaching level N costs 5*N widgets on top of
+// whatever it took to reach level N-1, so the total needed to reach a given
+// level from scratch is the running sum, not just that level's own cost.
+// e.g. level 1 = 5, level 2 = 5+10 = 15, level 3 = 5+10+15 = 30, etc.
+export const WIDGET_LEVEL_STEP = 5; // cost of level N's own step = WIDGET_LEVEL_STEP * N
+export const WIDGET_GOAL_LEVELS = [1,2,3,4,5,6,7,8,9,10];
+export const WIDGET_CURRENT_LEVEL_OPTIONS = [0,1,2,3,4,5,6,7,8,9];
+
+export function widgetLevelCumulativeTarget(level) {
+  // Sum of WIDGET_LEVEL_STEP*1 + WIDGET_LEVEL_STEP*2 + ... + WIDGET_LEVEL_STEP*level
+  return WIDGET_LEVEL_STEP * level * (level + 1) / 2;
+}
+
+// Precomputed lookup, 0 (start) through 10.
+export const WIDGET_LEVEL_TARGETS = Object.fromEntries(
+  [0, ...WIDGET_GOAL_LEVELS].map(lvl => [lvl, widgetLevelCumulativeTarget(lvl)])
+);
 
 
 // Transaction types

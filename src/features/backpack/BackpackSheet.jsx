@@ -7,7 +7,7 @@ import { useState } from "react";
 import { useI18n } from "../../i18n/I18nContext.jsx";
 import {
   CATEGORIES, PRIORITY_OPTIONS, RESOURCE_UNITS, UNIT_MULTIPLIER,
-  WIDGET_LEVEL_TARGETS, WIDGET_LEVELS,
+  WIDGET_LEVEL_TARGETS, WIDGET_GOAL_LEVELS, WIDGET_CURRENT_LEVEL_OPTIONS,
   formatAmount, formatMinutes,
 } from "./backpackConstants.js";
 
@@ -179,12 +179,14 @@ function ItemForm({ initial, onSubmit }) {
   const [form, setForm] = useState({
     name:"", category:"Widgets", priority:"Medium",
     currentAmount:0, targetAmount:0, displayUnit:null, notes:"",
+    currentLevel: null,
     ...initial,
   });
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
   const isResource = form.category === "Resources";
   const isSpeedup  = form.category === "Speedups";
+  const isWidget   = form.category === "Widgets";
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
@@ -200,6 +202,21 @@ function ItemForm({ initial, onSubmit }) {
           {CATEGORIES.map(c => <option key={c} value={c}>{tCategory(c)}</option>)}
         </select>
       </div>
+      {isWidget && (
+        <div>
+          <label style={labelStyle}>{t("sheet.currentWidgetLevel")}</label>
+          <select style={{ ...inputStyle, appearance:"none", cursor:"pointer" }}
+            value={form.currentLevel ?? ""} onChange={e => setForm(f => ({ ...f, currentLevel: e.target.value === "" ? null : Number(e.target.value) }))}>
+            <option value="">{t("sheet.currentWidgetLevelPlaceholder")}</option>
+            {WIDGET_CURRENT_LEVEL_OPTIONS.map(lvl => (
+              <option key={lvl} value={lvl}>{lvl}</option>
+            ))}
+          </select>
+          <div style={{ fontSize:11, color:"#9aa59e", marginTop:4 }}>
+            {t("sheet.currentWidgetLevelHint")}
+          </div>
+        </div>
+      )}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
         <div>
           <label style={labelStyle}>{t("sheet.startingAmount")}</label>
@@ -258,15 +275,23 @@ function GoalForm({ initial, items, onSubmit }) {
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
   const selectedItem = items.find(i => i.id === (form.itemId || initial?.itemId));
   const isWidget = selectedItem?.category === "Widgets";
+  const baseLevel = selectedItem?.currentLevel ?? 0;
 
-  // Reverse-lookup which level the current target amount corresponds to,
-  // so re-opening the goal for an already-leveled item shows the right level.
+  // Widgets goals are relative to the item's saved current level: the amount
+  // needed is the incremental cost from baseLevel up to the chosen goal
+  // level, not the full cumulative cost from zero.
+  const levelCost = (level) => Math.max(0, WIDGET_LEVEL_TARGETS[level] - WIDGET_LEVEL_TARGETS[baseLevel]);
+  const availableGoalLevels = WIDGET_GOAL_LEVELS.filter(lvl => lvl > baseLevel);
+
+  // Reverse-lookup which goal level the current target amount corresponds
+  // to, so re-opening the goal for an already-leveled item shows the right
+  // level instead of resetting to the first option.
   const currentLevel = isWidget
-    ? (WIDGET_LEVELS.find(lvl => WIDGET_LEVEL_TARGETS[lvl] === Number(form.targetAmount)) || 1)
+    ? (availableGoalLevels.find(lvl => levelCost(lvl) === Number(form.targetAmount)) || availableGoalLevels[0])
     : null;
 
   const setLevel = (level) => {
-    setForm(f => ({ ...f, targetAmount: WIDGET_LEVEL_TARGETS[level] }));
+    setForm(f => ({ ...f, targetAmount: levelCost(level) }));
   };
 
   return (
@@ -289,20 +314,29 @@ function GoalForm({ initial, items, onSubmit }) {
       )}
 
       {isWidget ? (
-        <div>
-          <label style={labelStyle}>{t("sheet.heroGearLevel")}</label>
-          <select style={{ ...inputStyle, appearance:"none", cursor:"pointer" }}
-            value={currentLevel} onChange={e => setLevel(Number(e.target.value))}>
-            {WIDGET_LEVELS.map(lvl => (
-              <option key={lvl} value={lvl}>
-                {t("sheet.heroGearLevelOption", { level: lvl, count: WIDGET_LEVEL_TARGETS[lvl] })}
-              </option>
-            ))}
-          </select>
-          <div style={{ fontSize:11, color:"#9aa59e", marginTop:4 }}>
-            {t("sheet.heroGearLevelHint")}
+        availableGoalLevels.length === 0 ? (
+          <div style={{ fontSize:13, color:"#9aa59e" }}>
+            {t("sheet.heroGearMaxLevel")}
           </div>
-        </div>
+        ) : (
+          <div>
+            <label style={labelStyle}>{t("sheet.heroGearLevel")}</label>
+            <div style={{ fontSize:12, color:"#9aa59e", marginBottom:6 }}>
+              {t("sheet.heroGearCurrentLevelNote", { level: baseLevel })}
+            </div>
+            <select style={{ ...inputStyle, appearance:"none", cursor:"pointer" }}
+              value={currentLevel} onChange={e => setLevel(Number(e.target.value))}>
+              {availableGoalLevels.map(lvl => (
+                <option key={lvl} value={lvl}>
+                  {t("sheet.heroGearLevelOption", { level: lvl, count: levelCost(lvl) })}
+                </option>
+              ))}
+            </select>
+            <div style={{ fontSize:11, color:"#9aa59e", marginTop:4 }}>
+              {t("sheet.heroGearLevelHint")}
+            </div>
+          </div>
+        )
       ) : (
         <div>
           <label style={labelStyle}>{t("sheet.iWantToReach")}</label>
