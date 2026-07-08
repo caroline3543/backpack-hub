@@ -4,8 +4,9 @@
 import { useMemo, useState } from "react";
 import { useI18n } from "../../i18n/I18nContext.jsx";
 import { formatAmount, formatMinutes } from "./backpackConstants.js";
-import { calcGrowthInsights, formatCompact } from "./backpackForecast.js";
+import { calcGrowthInsights, formatCompact, calcDailyAverage, calcPaceStatus } from "./backpackForecast.js";
 import { useSvsPrepDate } from "./useSvsPrepDate.js";
+import { ITEM_ICONS } from "./itemIcons.js";
 
 function StatCard({ label, value, sub, empty }) {
   return (
@@ -127,6 +128,73 @@ function SvsPrepCard() {
   );
 }
 
+function ItemIconChip({ item, size = 18 }) {
+  return ITEM_ICONS[item.id] ? (
+    <img src={ITEM_ICONS[item.id]} alt="" width={size} height={size}
+      style={{ borderRadius:6, objectFit:"cover", flexShrink:0 }} />
+  ) : (
+    <span aria-hidden="true" style={{ width:size, height:size, borderRadius:6,
+      background:"rgba(72,94,80,0.08)", display:"flex", alignItems:"center",
+      justifyContent:"center", fontSize:size*0.55, flexShrink:0 }}>🎒</span>
+  );
+}
+
+function MiniProgressBar({ pct, color = "#c9962f" }) {
+  return (
+    <div style={{ height:5, background:"rgba(72,94,80,0.10)",
+      borderRadius:99, overflow:"hidden", marginTop:5 }}>
+      <div style={{ height:"100%", borderRadius:99, width:`${Math.min(100,pct)}%`,
+        background: color, transition:"width 0.4s ease" }}/>
+    </div>
+  );
+}
+
+// ─── Pin-driven widget selection ──────────────────────────────────────────────
+// With only one resource pinned, it naturally "wins" every metric below and
+// so populates all three widgets — that's intentional, not a bug.
+
+function pickAlmostThere(pinnedObjs, balances) {
+  const withTarget = pinnedObjs.filter(i => Number(i.targetAmount) > 0);
+  if (withTarget.length === 0) return null;
+  return withTarget
+    .map(item => ({ item, pct: Math.min(100, ((balances[item.id] ?? 0) / Number(item.targetAmount)) * 100) }))
+    .sort((a, b) => b.pct - a.pct)[0];
+}
+
+function pickNeedsAttention(pinnedObjs, balances) {
+  const withTarget = pinnedObjs.filter(i => Number(i.targetAmount) > 0);
+  if (withTarget.length === 0) return null;
+  return withTarget
+    .map(item => ({ item, gap: Math.max(0, Number(item.targetAmount) - (balances[item.id] ?? 0)) }))
+    .sort((a, b) => b.gap - a.gap)[0];
+}
+
+const PRIORITY_RANK = { Urgent: 0, High: 1, Medium: 2, Low: 3 };
+const PACE_URGENCY_RANK = { behind: 0, "on-track": 1, ahead: 2, complete: 3, "no-data": 4, "no-target": 5 };
+
+function pickYourFocus(pinnedObjs, balances, transactions) {
+  if (pinnedObjs.length === 0) return null;
+  const scored = pinnedObjs.map(item => {
+    const target = Number(item.targetAmount);
+    const balance = balances[item.id] ?? 0;
+    const dailyAvg = target > 0 ? calcDailyAverage(transactions, item.id) : 0;
+    const pace = target > 0 ? calcPaceStatus(balance, target, item.targetDate, dailyAvg) : "no-target";
+    const deadlineTime = item.targetDate ? new Date(item.targetDate).getTime() : Infinity;
+    return {
+      item, balance, target,
+      paceRank: PACE_URGENCY_RANK[pace] ?? 5,
+      deadlineTime,
+      priorityRank: PRIORITY_RANK[item.priority] ?? 4,
+    };
+  });
+  scored.sort((a, b) =>
+    a.paceRank - b.paceRank ||
+    a.deadlineTime - b.deadlineTime ||
+    a.priorityRank - b.priorityRank
+  );
+  return scored[0];
+}
+
 function timeAgo(iso, t) {
   if (!iso) return "";
   const diff = Date.now() - new Date(iso).getTime();
@@ -137,11 +205,18 @@ function timeAgo(iso, t) {
   return `${d}${t("common.dayAgo")}`;
 }
 
-export default function BackpackSummary({ summary, items, transactions, onGain, onSpend, onSnapshot }) {
-  const { t, tItem } = useI18n();
-  const { topPriority, closestToTarget, biggestShortage, recent } = summary;
+export default function BackpackSummary({ summary, items, transactions, balances, pinnedItems, onGain, onSpend, onSnapshot, onChooseResources }) {
+  const { t, tItem, dateLocale } = useI18n();
+  const { recent } = summary;
 
   useMemo(() => calcGrowthInsights(transactions, items), [transactions, items]);
+
+  const pinnedObjs = (pinnedItems || []).map(id => items.find(i => i.id === id)).filter(Boolean);
+  const hasPins = pinnedObjs.length > 0;
+
+  const almostThere   = useMemo(() => pickAlmostThere(pinnedObjs, balances), [pinnedObjs, balances]);
+  const needsAttention = useMemo(() => pickNeedsAttention(pinnedObjs, balances), [pinnedObjs, balances]);
+  const yourFocus     = useMemo(() => pickYourFocus(pinnedObjs, balances, transactions), [pinnedObjs, balances, transactions]);
 
   const recentActivity = recent.slice(0, 3).map(tx => {
     const item = items.find(i => i.id === tx.itemId);
@@ -161,28 +236,81 @@ export default function BackpackSummary({ summary, items, transactions, onGain, 
 
   return (
     <>
-      {/* ── 4-stat grid ── */}
+      {/* ── 4-stat grid (SvS Prep + 3 pin-driven widgets) ── */}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginTop:16 }}>
         <SvsPrepCard />
+
         <StatCard
           label={t("summary.almostThere")}
-          value={closestToTarget ? tItem(closestToTarget.id, closestToTarget.name) : undefined}
-          sub={closestToTarget ? t("summary.percentThere", { pct: Math.round((closestToTarget.ratio||0)*100) }) : undefined}
-          empty={!closestToTarget ? t("summary.setTargetToTrack") : undefined}
+          value={almostThere ? (
+            <span style={{ display:"flex", alignItems:"center", gap:6 }}>
+              <ItemIconChip item={almostThere.item} />
+              <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                {tItem(almostThere.item.id, almostThere.item.name)}
+              </span>
+            </span>
+          ) : undefined}
+          sub={almostThere ? (
+            <>
+              {t("summary.percentThere", { pct: Math.round(almostThere.pct) })}
+              <MiniProgressBar pct={almostThere.pct} />
+            </>
+          ) : undefined}
+          empty={!almostThere ? t("summary.pinToTrack") : undefined}
         />
+
         <StatCard
-          label={t("summary.couldUseLove")}
-          value={biggestShortage ? tItem(biggestShortage.id, biggestShortage.name) : undefined}
-          sub={biggestShortage ? t("summary.largestGap") : undefined}
-          empty={!biggestShortage ? t("summary.noGapsDetected") : undefined}
+          label={t("summary.needsAttention")}
+          value={needsAttention ? (
+            <span style={{ display:"flex", alignItems:"center", gap:6 }}>
+              <ItemIconChip item={needsAttention.item} />
+              <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                {tItem(needsAttention.item.id, needsAttention.item.name)}
+              </span>
+            </span>
+          ) : undefined}
+          sub={needsAttention ? t("summary.goalRemaining", {
+            amount: needsAttention.item.isMinutes
+              ? formatMinutes(needsAttention.gap)
+              : formatAmount(needsAttention.gap, needsAttention.item.displayUnit),
+          }) : undefined}
+          empty={!needsAttention ? t("summary.pinToTrack") : undefined}
         />
+
         <StatCard
           label={t("summary.yourFocus")}
-          value={topPriority ? tItem(topPriority.id, topPriority.name) : undefined}
-          sub={topPriority ? t("summary.highestUrgency") : undefined}
-          empty={!topPriority ? t("summary.nothingSetYet") : undefined}
+          value={yourFocus ? (
+            <span style={{ display:"flex", alignItems:"center", gap:6 }}>
+              <ItemIconChip item={yourFocus.item} />
+              <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                {tItem(yourFocus.item.id, yourFocus.item.name)}
+              </span>
+            </span>
+          ) : undefined}
+          sub={yourFocus ? (
+            yourFocus.target > 0 ? (
+              <>
+                {(yourFocus.item.isMinutes ? formatMinutes(yourFocus.balance) : formatAmount(yourFocus.balance, yourFocus.item.displayUnit))}
+                {" / "}
+                {(yourFocus.item.isMinutes ? formatMinutes(yourFocus.target) : formatAmount(yourFocus.target, yourFocus.item.displayUnit))}
+                <MiniProgressBar pct={Math.min(100, (yourFocus.balance / yourFocus.target) * 100)} color="#5c7a6e" />
+              </>
+            ) : t("pinnedSection.noGoalSet")
+          ) : undefined}
+          empty={!yourFocus ? t("summary.pinToTrack") : undefined}
         />
       </div>
+
+      {!hasPins && (
+        <button onClick={onChooseResources} style={{
+          width:"100%", height:44, marginTop:10, borderRadius:14,
+          background:"rgba(201,150,47,0.10)", color:"#9a7746",
+          fontSize:13, fontWeight:700, border:"1px dashed rgba(201,150,47,0.35)",
+          cursor:"pointer",
+        }}>
+          📌 {t("summary.chooseResources")}
+        </button>
+      )}
 
       {/* ── Recent activity ── */}
       <div style={{

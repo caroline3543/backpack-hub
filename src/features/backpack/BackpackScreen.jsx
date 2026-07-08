@@ -5,7 +5,6 @@ import { useState, useRef, useCallback } from "react";
 import { useI18n }            from "../../i18n/I18nContext.jsx";
 import { useBackpackData }    from "./useBackpackData.js";
 import BackpackSummary        from "./BackpackSummary.jsx";
-import PinnedResources        from "./PinnedResources.jsx";
 import BackpackItems          from "./BackpackItems.jsx";
 import BackpackGoals          from "./BackpackGoals.jsx";
 import BackpackHistory        from "./BackpackHistory.jsx";
@@ -209,15 +208,6 @@ export default function BackpackScreen({ userId }) {
 
   return (
     <div className="scroll-content">
-      {/* ── Pinned Resources — always first, answers "what am I focusing on" ── */}
-      <PinnedResources
-        items={items}
-        balances={balances}
-        transactions={transactions}
-        pinnedItems={pinnedItems}
-        onTogglePin={handleTogglePin}
-      />
-
       {/* ── Hero ── */}
       <div style={{ position:"relative" }}>
         <div style={{ fontSize:11, fontWeight:700, textTransform:"uppercase",
@@ -251,9 +241,12 @@ export default function BackpackScreen({ userId }) {
         summary={summary}
         items={items}
         transactions={transactions}
+        balances={balances}
+        pinnedItems={pinnedItems}
         onGain={() => openSheet("update", {})}
         onSpend={() => openSheet("update", {})}
         onSnapshot={handleSnapshot}
+        onChooseResources={() => scrollTo("Items")}
       />
 
       {/* ── Section nav ── */}
