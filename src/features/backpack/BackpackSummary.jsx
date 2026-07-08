@@ -1,10 +1,11 @@
 // ─── BackpackSummary.jsx ──────────────────────────────────────────────────────
 // Hero stats + Recent Activity panel.
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useI18n } from "../../i18n/I18nContext.jsx";
 import { formatAmount, formatMinutes } from "./backpackConstants.js";
 import { calcGrowthInsights, formatCompact } from "./backpackForecast.js";
+import { useSvsPrepDate } from "./useSvsPrepDate.js";
 
 function StatCard({ label, value, sub, empty }) {
   return (
@@ -35,6 +36,97 @@ function StatCard({ label, value, sub, empty }) {
   );
 }
 
+// ─── SvS Prep countdown card ──────────────────────────────────────────────────
+// Tap the card to edit the target date inline (native <input type="date">).
+function SvsPrepCard() {
+  const { t, dateLocale } = useI18n();
+  const [date, setDate] = useSvsPrepDate();
+  const [editing, setEditing] = useState(false);
+
+  const daysLeft = useMemo(() => {
+    if (!date) return null;
+    const target = new Date(date + "T00:00:00");
+    const today  = new Date(); today.setHours(0,0,0,0);
+    return Math.round((target - today) / 86400000);
+  }, [date]);
+
+  let value, sub;
+  if (!date) {
+    value = "—";
+    sub = t("svsPrep.setDate");
+  } else if (daysLeft > 1) {
+    value = new Date(date + "T00:00:00").toLocaleDateString(dateLocale, { day:"numeric", month:"short" });
+    sub = t("svsPrep.daysLeft", { count: daysLeft });
+  } else if (daysLeft === 1) {
+    value = new Date(date + "T00:00:00").toLocaleDateString(dateLocale, { day:"numeric", month:"short" });
+    sub = t("svsPrep.dayLeft", { count: 1 });
+  } else if (daysLeft === 0) {
+    value = t("svsPrep.today");
+    sub = null;
+  } else {
+    value = new Date(date + "T00:00:00").toLocaleDateString(dateLocale, { day:"numeric", month:"short" });
+    sub = t("svsPrep.started");
+  }
+
+  if (editing) {
+    return (
+      <div style={{
+        background:"rgba(255,255,255,0.82)",
+        border:"1px solid rgba(74,92,80,0.09)",
+        boxShadow:"0 4px 16px rgba(71,86,75,0.07)",
+        borderRadius:20, padding:"12px 14px",
+      }}>
+        <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase",
+          letterSpacing:"0.18em", color:"#819286", marginBottom:6, lineHeight:1.2 }}>
+          {t("svsPrep.editLabel")}
+        </div>
+        <input
+          type="date"
+          autoFocus
+          value={date || ""}
+          onChange={e => setDate(e.target.value)}
+          style={{
+            width:"100%", border:"1px solid #e3e8e2", borderRadius:10,
+            padding:"6px 8px", fontSize:13, color:"#24312c",
+            fontFamily:"'DM Sans',sans-serif", outline:"none", boxSizing:"border-box",
+            marginBottom:8,
+          }}
+        />
+        <button onClick={() => setEditing(false)} style={{
+          width:"100%", height:32, borderRadius:10, border:"none",
+          background:"#78917f", color:"white", fontSize:12, fontWeight:700, cursor:"pointer",
+        }}>
+          {t("svsPrep.save")}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setEditing(true)}
+      style={{
+        textAlign:"left", background:"rgba(255,255,255,0.82)",
+        border:"1px solid rgba(74,92,80,0.09)",
+        boxShadow:"0 4px 16px rgba(71,86,75,0.07)",
+        borderRadius:20, padding:"12px 14px", cursor:"pointer",
+        font:"inherit",
+      }}>
+      <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase",
+        letterSpacing:"0.18em", color:"#819286", marginBottom:6, lineHeight:1.2 }}>
+        {t("svsPrep.label")}
+      </div>
+      <div style={{ fontFamily:"'Fraunces',serif", fontSize:18,
+        fontWeight:600, color:"#24312c", lineHeight:1.2 }}>
+        {value}
+      </div>
+      {sub && (
+        <div style={{ fontSize:11, color:"#9aa59e", marginTop:3 }}>{sub}</div>
+      )}
+    </button>
+  );
+}
+
 function timeAgo(iso, t) {
   if (!iso) return "";
   const diff = Date.now() - new Date(iso).getTime();
@@ -47,7 +139,7 @@ function timeAgo(iso, t) {
 
 export default function BackpackSummary({ summary, items, transactions, onGain, onSpend, onSnapshot }) {
   const { t, tItem } = useI18n();
-  const { tracked, topPriority, closestToTarget, biggestShortage, recent } = summary;
+  const { topPriority, closestToTarget, biggestShortage, recent } = summary;
 
   useMemo(() => calcGrowthInsights(transactions, items), [transactions, items]);
 
@@ -71,7 +163,7 @@ export default function BackpackSummary({ summary, items, transactions, onGain, 
     <>
       {/* ── 4-stat grid ── */}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginTop:16 }}>
-        <StatCard label={t("summary.inBackpack")} value={tracked} />
+        <SvsPrepCard />
         <StatCard
           label={t("summary.almostThere")}
           value={closestToTarget ? tItem(closestToTarget.id, closestToTarget.name) : undefined}

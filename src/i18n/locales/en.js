@@ -89,6 +89,17 @@ export default {
     "pet-food": "Pet Food",
   },
 
+  svsPrep: {
+    label: "Days to SvS Prep",
+    setDate: "Tap to set date",
+    today: "Today 🔥",
+    daysLeft: "{count}d left",
+    dayLeft: "{count}d left",
+    started: "Prep started",
+    save: "Save date",
+    editLabel: "SvS prep date",
+  },
+
   summary: {
     inBackpack: "In your backpack",
     almostThere: "Almost there 🎯",
@@ -174,6 +185,9 @@ export default {
     totalUpdated: "Total updated",
     manualEntry: "Manual entry",
     editItemSettings: "Edit item settings →",
+    deleteItem: "Delete item",
+    deleteConfirmText: "This removes the item and its history for good. This can't be undone.",
+    deleteNow: "Delete",
     update: "Update",
     goalBtn: "⭐ Goal",
   },
@@ -242,6 +256,7 @@ export default {
     goalSet: "Goal set! ⭐",
     snapshotSaved: "Snapshot saved ✓",
     entryRemoved: "Entry removed",
+    itemDeleted: "Item deleted",
     averageReset: "Average reset — rebuilding from today ↻",
     resetUndone: "Reset undone",
   },

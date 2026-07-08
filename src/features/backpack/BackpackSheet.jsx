@@ -339,36 +339,46 @@ export default function BackpackSheet({
       <div className="bp-sheet" style={{
         position:"fixed", bottom:0, left:0, right:0,
         margin:"0 auto", width:"100%", maxWidth:480,
-        maxHeight:"92vh", overflowY:"auto",
+        maxHeight:"min(92vh, 92dvh)", overflowY:"auto",
         background:"#f6f1e8",
         borderRadius:"28px 28px 0 0",
-        padding:"16px 20px 56px",
         zIndex:501, WebkitOverflowScrolling:"touch",
       }}>
-        <div style={{ width:48, height:6, background:"#d6ddd6",
-          borderRadius:99, margin:"0 auto 16px" }} />
-        <div style={{ display:"flex", alignItems:"flex-start",
-          justifyContent:"space-between", marginBottom:20 }}>
-          <div>
-            <div style={{ fontSize:11, fontWeight:700, textTransform:"uppercase",
-              letterSpacing:"0.2em", color:"#819286", marginBottom:4 }}>{kicker}</div>
-            <div style={{ fontFamily:"'Fraunces',serif", fontSize:24,
-              fontWeight:600, color:"#24312c" }}>
-              {selectedItem ? tItem(selectedItem.id, selectedItem.name) : title}
+        {/* Sticky header — stays visible & tappable no matter how large the
+            title text grows at big iOS Dynamic Type sizes, since it never
+            scrolls out of view along with the rest of the sheet's content. */}
+        <div style={{
+          position:"sticky", top:0, zIndex:2,
+          background:"#f6f1e8",
+          padding:"16px 20px 12px",
+        }}>
+          <div style={{ width:48, height:6, background:"#d6ddd6",
+            borderRadius:99, margin:"0 auto 16px" }} />
+          <div style={{ display:"flex", alignItems:"flex-start",
+            justifyContent:"space-between", gap:12 }}>
+            <div style={{ minWidth:0, flex:1 }}>
+              <div style={{ fontSize:11, fontWeight:700, textTransform:"uppercase",
+                letterSpacing:"0.2em", color:"#819286", marginBottom:4 }}>{kicker}</div>
+              <div style={{ fontFamily:"'Fraunces',serif", fontSize:24,
+                fontWeight:600, color:"#24312c", overflowWrap:"anywhere" }}>
+                {selectedItem ? tItem(selectedItem.id, selectedItem.name) : title}
+              </div>
             </div>
+            <button onClick={onClose} aria-label={t("common.close")} style={{
+              width:40, height:40, minWidth:40, minHeight:40, borderRadius:14,
+              background:"white", border:"1px solid rgba(74,92,80,0.10)",
+              display:"flex", alignItems:"center", justifyContent:"center",
+              cursor:"pointer", flexShrink:0 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="#6f7a73" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
           </div>
-          <button onClick={onClose} aria-label={t("common.close")} style={{ width:40, height:40, borderRadius:14,
-            background:"white", border:"1px solid rgba(74,92,80,0.10)",
-            display:"flex", alignItems:"center", justifyContent:"center",
-            cursor:"pointer", flexShrink:0 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-              stroke="#6f7a73" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
         </div>
 
+        <div style={{ padding:"0 20px 56px" }}>
         {mode === "update" && selectedItem && (
           <UpdateTotalForm
             item={selectedItem}
@@ -385,6 +395,7 @@ export default function BackpackSheet({
           <GoalForm initial={initial} items={items}
             onSubmit={data => { onSave(data); onClose(); }} />
         )}
+        </div>
       </div>
     </>
   );

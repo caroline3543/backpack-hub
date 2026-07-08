@@ -83,6 +83,17 @@ export default {
     "pet-food": "펫 사료",
   },
 
+  svsPrep: {
+    label: "SvS 준비까지",
+    setDate: "탭하여 날짜 설정",
+    today: "오늘 🔥",
+    daysLeft: "{count}일 남음",
+    dayLeft: "{count}일 남음",
+    started: "준비 시작됨",
+    save: "날짜 저장",
+    editLabel: "SvS 준비 날짜",
+  },
+
   summary: {
     inBackpack: "배낭 보유량",
     almostThere: "거의 다 왔어요 🎯",
@@ -168,6 +179,9 @@ export default {
     totalUpdated: "총량 업데이트됨",
     manualEntry: "수동 입력",
     editItemSettings: "아이템 설정 편집 →",
+    deleteItem: "아이템 삭제",
+    deleteConfirmText: "이 아이템과 관련 기록이 영구적으로 삭제됩니다. 되돌릴 수 없습니다.",
+    deleteNow: "삭제",
     update: "업데이트",
     goalBtn: "⭐ 목표",
   },
@@ -236,6 +250,7 @@ export default {
     goalSet: "목표가 설정되었습니다! ⭐",
     snapshotSaved: "스냅샷이 저장되었습니다 ✓",
     entryRemoved: "항목이 삭제되었습니다",
+    itemDeleted: "아이템이 삭제되었습니다",
     averageReset: "평균이 초기화되었습니다 — 오늘부터 다시 계산합니다 ↻",
     resetUndone: "초기화가 취소되었습니다",
   },

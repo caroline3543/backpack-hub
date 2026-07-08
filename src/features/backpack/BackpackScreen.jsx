@@ -243,6 +243,7 @@ export default function BackpackScreen({ userId }) {
           onEdit={item  => openSheet("item", item)}
           onAddItem={cat => openSheet("item", { category:cat })}
           onUpdate={item => openSheet("update", { itemId:item.id })}
+          onDelete={id => { deleteItem(id); showToast(t("toast.itemDeleted")); haptics.warning(); }}
           onDeleteTransaction={id => { deleteTransaction(id); showToast(t("toast.entryRemoved")); }}
           onAverageReset={id => { setAverageReset(id); showToast(t("toast.averageReset")); }}
           onClearAverageReset={id => { clearAverageReset(id); showToast(t("toast.resetUndone")); }}

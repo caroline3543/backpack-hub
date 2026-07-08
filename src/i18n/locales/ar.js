@@ -83,6 +83,17 @@ export default {
     "pet-food": "طعام الحيوانات الأليفة",
   },
 
+  svsPrep: {
+    label: "أيام حتى تحضير SvS",
+    setDate: "اضغط لتحديد التاريخ",
+    today: "اليوم 🔥",
+    daysLeft: "باقٍ {count} يوم",
+    dayLeft: "باقٍ {count} يوم",
+    started: "بدأ التحضير",
+    save: "حفظ التاريخ",
+    editLabel: "تاريخ تحضير SvS",
+  },
+
   summary: {
     inBackpack: "في حقيبتك",
     almostThere: "أوشكت على الوصول 🎯",
@@ -168,6 +179,9 @@ export default {
     totalUpdated: "تم تحديث الإجمالي",
     manualEntry: "إدخال يدوي",
     editItemSettings: "تعديل إعدادات العنصر ←",
+    deleteItem: "حذف العنصر",
+    deleteConfirmText: "سيؤدي هذا إلى حذف العنصر وسجله نهائيًا. لا يمكن التراجع عن هذا الإجراء.",
+    deleteNow: "حذف",
     update: "تحديث",
     goalBtn: "⭐ هدف",
   },
@@ -236,6 +250,7 @@ export default {
     goalSet: "تم تحديد الهدف! ⭐",
     snapshotSaved: "تم حفظ اللقطة ✓",
     entryRemoved: "تمت إزالة الإدخال",
+    itemDeleted: "تم حذف العنصر",
     averageReset: "تمت إعادة ضبط المعدّل — يُعاد البناء من اليوم ↻",
     resetUndone: "تم التراجع عن إعادة الضبط",
   },
