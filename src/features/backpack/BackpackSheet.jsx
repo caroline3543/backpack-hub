@@ -369,18 +369,95 @@ function GoalForm({ initial, items, onSubmit }) {
   );
 }
 
+// ─── Edit Transaction form ────────────────────────────────────────────────────
+// Fixes a real dead end: History's "Edit" button opens this mode, but until
+// now there was no form for it at all — just a blank sheet.
+function EditTransactionForm({ initial, items, onSubmit, onDelete }) {
+  const { t, tItem } = useI18n();
+  const item = items.find(i => i.id === initial.itemId);
+  const [amount, setAmount] = useState(initial.amount ?? 0);
+  const [reason, setReason] = useState(initial.reason || "");
+  const [date, setDate] = useState(initial.date ? initial.date.slice(0, 10) : "");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const isGain = initial.type === "gain" || initial.type === "goal_contribution";
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+      <div style={{ background:"#edf2ec", borderRadius:12, padding:"8px 12px",
+        fontSize:13, color:"#5c7a6e", fontWeight:600 }}>
+        {isGain ? t("summary.gain") : t("summary.spend")} · {item ? tItem(item.id, item.name) : t("history.unknownItem")}
+      </div>
+
+      <div>
+        <label style={labelStyle}>{t("sheet.startingAmount")}</label>
+        <input style={inputStyle} type="number" min="0"
+          value={amount} onChange={e => setAmount(e.target.value)} />
+      </div>
+
+      <div>
+        <label style={labelStyle}>{t("sheet.whatsItFrom")}</label>
+        <input style={inputStyle} value={reason}
+          onChange={e => setReason(e.target.value)} placeholder={t("sheet.egReason")} />
+      </div>
+
+      <div>
+        <label style={labelStyle}>{t("history.edit")}: {t("svsPrep.editLabel")}</label>
+        <input style={inputStyle} type="date" value={date}
+          onChange={e => setDate(e.target.value)} />
+      </div>
+
+      <button
+        onClick={() => onSubmit({ amount: Number(amount), reason, date: date || initial.date })}
+        style={{ width:"100%", height:50, borderRadius:16,
+          background:"#78917f", color:"white",
+          fontSize:15, fontWeight:600, border:"none", cursor:"pointer" }}>
+        {t("common.save")}
+      </button>
+
+      {confirmDelete ? (
+        <div style={{ background:"rgba(160,99,88,0.06)", borderRadius:12,
+          padding:"10px 12px", border:"1px solid rgba(160,99,88,0.2)" }}>
+          <div style={{ fontSize:12, color:"#a06358", lineHeight:1.5, marginBottom:8 }}>
+            {t("itemsSection.deleteConfirmText")}
+          </div>
+          <div style={{ display:"flex", gap:6 }}>
+            <button onClick={() => setConfirmDelete(false)} style={{
+              flex:1, height:34, borderRadius:8, fontSize:12, fontWeight:600,
+              background:"white", color:"#6f7a73",
+              border:"1px solid rgba(72,94,80,0.14)", cursor:"pointer",
+            }}>{t("common.cancel")}</button>
+            <button onClick={() => onDelete(initial.id)} style={{
+              flex:1, height:34, borderRadius:8, fontSize:12, fontWeight:700,
+              background:"#a06358", color:"white", border:"none", cursor:"pointer",
+            }}>{t("itemsSection.deleteNow")}</button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={() => setConfirmDelete(true)} style={{
+          background:"none", border:"none", cursor:"pointer",
+          fontSize:12, color:"#a06358", fontWeight:600, padding:0,
+        }}>
+          {t("history.deleteEntry")}
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ─── BackpackSheet ────────────────────────────────────────────────────────────
 export default function BackpackSheet({
   open, onClose, mode, initial, items,
-  onSave, currentBalance, hasTransactions,
+  onSave, onDeleteTransaction, currentBalance, hasTransactions,
 }) {
   const { t, tItem } = useI18n();
   if (!open) return null;
 
   const titles = {
-    update: { kicker: t("sheet.yourStash"),    title: t("sheet.updateTotal") },
-    item:   { kicker: t("sheet.yourBackpack"), title: initial?.id ? t("sheet.editItemTitle") : t("sheet.addItemTitle") },
-    goal:   { kicker: t("sheet.goalsKicker"),  title: t("sheet.setGoal") },
+    update:      { kicker: t("sheet.yourStash"),    title: t("sheet.updateTotal") },
+    item:        { kicker: t("sheet.yourBackpack"), title: initial?.id ? t("sheet.editItemTitle") : t("sheet.addItemTitle") },
+    goal:        { kicker: t("sheet.goalsKicker"),  title: t("sheet.setGoal") },
+    transaction: { kicker: t("nav.history"),        title: t("history.edit") },
   };
 
   const { kicker, title } = titles[mode] || titles.update;
@@ -459,6 +536,14 @@ export default function BackpackSheet({
         {mode === "goal" && (
           <GoalForm initial={initial} items={items}
             onSubmit={data => { onSave(data); onClose(); }} />
+        )}
+        {mode === "transaction" && (
+          <EditTransactionForm
+            initial={initial}
+            items={items}
+            onSubmit={data => { onSave(data); onClose(); }}
+            onDelete={id => { onDeleteTransaction(id); onClose(); }}
+          />
         )}
         </div>
       </div>

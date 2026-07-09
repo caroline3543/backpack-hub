@@ -185,8 +185,12 @@ export default function BackpackScreen({ userId }) {
       });
       celebrate(t("toast.goalSet"));
       haptics.medium();
+    } else if (mode === "transaction") {
+      updateTransaction(sheet.initial.id, data);
+      showToast(t("toast.entryUpdated"));
+      haptics.success();
     }
-  }, [sheet, addItem, updateItem, setTotal, showToast, celebrate, t]);
+  }, [sheet, addItem, updateItem, setTotal, updateTransaction, showToast, celebrate, t]);
 
   const handleSnapshot = useCallback(() => {
     takeSnapshot();
@@ -312,6 +316,7 @@ export default function BackpackScreen({ userId }) {
         initial={sheet?.initial || {}}
         items={items}
         onSave={handleSave}
+        onDeleteTransaction={id => { deleteTransaction(id); showToast(t("toast.entryRemoved")); }}
         currentBalance={
           sheet?.initial?.itemId
             ? (balances[sheet.initial.itemId] ?? 0)

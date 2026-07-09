@@ -156,6 +156,7 @@ export default {
     noTransactionsTitle: "Aún no hay transacciones",
     noTransactionsBody: "Usa Ganar o Gastar para registrar cambios de inventario.",
     edit: "Editar",
+    deleteEntry: "Eliminar entrada",
     unknownItem: "Artículo desconocido",
   },
 
@@ -276,6 +277,7 @@ export default {
     goalSet: "¡Objetivo definido! ⭐",
     snapshotSaved: "Instantánea guardada ✓",
     entryRemoved: "Entrada eliminada",
+    entryUpdated: "Entrada actualizada",
     itemDeleted: "Artículo eliminado",
     averageReset: "Promedio reiniciado — reconstruyendo desde hoy ↻",
     resetUndone: "Reinicio deshecho",

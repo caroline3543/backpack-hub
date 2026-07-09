@@ -156,6 +156,7 @@ export default {
     noTransactionsTitle: "لا توجد معاملات بعد",
     noTransactionsBody: "استخدم الكسب أو الإنفاق لتسجيل تغييرات المخزون.",
     edit: "تعديل",
+    deleteEntry: "حذف الإدخال",
     unknownItem: "عنصر غير معروف",
   },
 
@@ -276,6 +277,7 @@ export default {
     goalSet: "تم تحديد الهدف! ⭐",
     snapshotSaved: "تم حفظ اللقطة ✓",
     entryRemoved: "تمت إزالة الإدخال",
+    entryUpdated: "تم تحديث الإدخال",
     itemDeleted: "تم حذف العنصر",
     averageReset: "تمت إعادة ضبط المعدّل — يُعاد البناء من اليوم ↻",
     resetUndone: "تم التراجع عن إعادة الضبط",

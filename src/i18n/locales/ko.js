@@ -156,6 +156,7 @@ export default {
     noTransactionsTitle: "아직 거래 내역이 없습니다",
     noTransactionsBody: "획득 또는 소비 버튼으로 인벤토리 변경을 기록하세요.",
     edit: "편집",
+    deleteEntry: "항목 삭제",
     unknownItem: "알 수 없는 아이템",
   },
 
@@ -276,6 +277,7 @@ export default {
     goalSet: "목표가 설정되었습니다! ⭐",
     snapshotSaved: "스냅샷이 저장되었습니다 ✓",
     entryRemoved: "항목이 삭제되었습니다",
+    entryUpdated: "항목이 업데이트되었습니다",
     itemDeleted: "아이템이 삭제되었습니다",
     averageReset: "평균이 초기화되었습니다 — 오늘부터 다시 계산합니다 ↻",
     resetUndone: "초기화가 취소되었습니다",

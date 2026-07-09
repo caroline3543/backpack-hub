@@ -154,30 +154,53 @@ function MiniProgressBar({ pct, color = "#c9962f" }) {
 }
 
 // ─── Pin-driven widget selection ──────────────────────────────────────────────
-// With only one resource pinned, it naturally "wins" every metric below and
-// so populates all three widgets — that's intentional, not a bug.
+// Each pick function takes an explicit candidate pool (not just pinnedObjs
+// directly) so the caller can exclude resources already claimed by an earlier
+// widget — see assignWidgets() below. That's what stops all 3 widgets from
+// collapsing onto the same single "best" pinned resource when 3 are pinned.
 
-function pickAlmostThere(pinnedObjs, balances) {
-  const withTarget = pinnedObjs.filter(i => Number(i.targetAmount) > 0);
+function pickAlmostThere(pool, balances) {
+  const withTarget = pool.filter(i => Number(i.targetAmount) > 0);
   if (withTarget.length === 0) return null;
   return withTarget
     .map(item => ({ item, pct: Math.min(100, ((balances[item.id] ?? 0) / Number(item.targetAmount)) * 100) }))
     .sort((a, b) => b.pct - a.pct)[0];
 }
 
-function pickNeedsAttention(pinnedObjs, balances) {
-  const withTarget = pinnedObjs.filter(i => Number(i.targetAmount) > 0);
+function pickNeedsAttention(pool, balances) {
+  const withTarget = pool.filter(i => Number(i.targetAmount) > 0);
   if (withTarget.length === 0) return null;
   return withTarget
     .map(item => ({ item, gap: Math.max(0, Number(item.targetAmount) - (balances[item.id] ?? 0)) }))
     .sort((a, b) => b.gap - a.gap)[0];
 }
 
-function pickFastestGrowth(pinnedObjs, transactions) {
-  if (pinnedObjs.length === 0) return null;
-  return pinnedObjs
+function pickFastestGrowth(pool, transactions) {
+  if (pool.length === 0) return null;
+  return pool
     .map(item => ({ item, dailyAvg: calcDailyAverage(transactions, item.id) }))
     .sort((a, b) => b.dailyAvg - a.dailyAvg)[0];
+}
+
+// Assigns all 3 widgets in one pass: each widget picks its best candidate
+// from whichever pinned resources haven't already been claimed, so with 3+
+// eligible pins, all 3 favourites actually show up somewhere on the
+// dashboard. If a widget has no eligible unclaimed candidate (e.g. only one
+// pinned resource has a goal set), it falls back to the full pinned pool —
+// reusing a resource is correct in that case, not a bug.
+function assignWidgets(pinnedObjs, balances, transactions) {
+  const claimed = new Set();
+  const unclaimed = () => pinnedObjs.filter(i => !claimed.has(i.id));
+
+  const almostThere = pickAlmostThere(unclaimed(), balances) || pickAlmostThere(pinnedObjs, balances);
+  if (almostThere) claimed.add(almostThere.item.id);
+
+  const needsAttention = pickNeedsAttention(unclaimed(), balances) || pickNeedsAttention(pinnedObjs, balances);
+  if (needsAttention) claimed.add(needsAttention.item.id);
+
+  const fastestGrowth = pickFastestGrowth(unclaimed(), transactions) || pickFastestGrowth(pinnedObjs, transactions);
+
+  return { almostThere, needsAttention, fastestGrowth };
 }
 
 function timeAgo(iso, t) {
@@ -199,9 +222,10 @@ export default function BackpackSummary({ summary, items, transactions, balances
   const pinnedObjs = (pinnedItems || []).map(id => items.find(i => i.id === id)).filter(Boolean);
   const hasPins = pinnedObjs.length > 0;
 
-  const almostThere    = useMemo(() => pickAlmostThere(pinnedObjs, balances), [pinnedObjs, balances]);
-  const needsAttention = useMemo(() => pickNeedsAttention(pinnedObjs, balances), [pinnedObjs, balances]);
-  const fastestGrowth  = useMemo(() => pickFastestGrowth(pinnedObjs, transactions), [pinnedObjs, transactions]);
+  const { almostThere, needsAttention, fastestGrowth } = useMemo(
+    () => assignWidgets(pinnedObjs, balances, transactions),
+    [pinnedObjs, balances, transactions]
+  );
 
   const [almostThereMode, cycleAlmostThereMode]       = useWidgetMode("almostThere", "pct");    // pct | qty
   const [needsAttentionMode, cycleNeedsAttentionMode] = useWidgetMode("needsAttention", "qty");  // qty | pct

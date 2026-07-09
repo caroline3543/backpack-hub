@@ -162,6 +162,7 @@ export default {
     noTransactionsTitle: "No transactions yet",
     noTransactionsBody: "Use Gain or Spend to record inventory changes.",
     edit: "Edit",
+    deleteEntry: "Delete entry",
     unknownItem: "Unknown item",
   },
 
@@ -282,6 +283,7 @@ export default {
     goalSet: "Goal set! ⭐",
     snapshotSaved: "Snapshot saved ✓",
     entryRemoved: "Entry removed",
+    entryUpdated: "Entry updated",
     itemDeleted: "Item deleted",
     averageReset: "Average reset — rebuilding from today ↻",
     resetUndone: "Reset undone",
