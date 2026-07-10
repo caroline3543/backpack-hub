@@ -9,6 +9,7 @@ import BackpackItems          from "./BackpackItems.jsx";
 import BackpackGoals          from "./BackpackGoals.jsx";
 import BackpackHistory        from "./BackpackHistory.jsx";
 import BackpackSheet          from "./BackpackSheet.jsx";
+import QuickUpdateOverlay     from "./QuickUpdateOverlay.jsx";
 import { calcGrowthInsights, formatCompact } from "./backpackForecast.js";
 import haptics from "../../utils/haptics.js";
 import { Toast as CelebToast, useCelebration } from "../../components/Celebration.jsx";
@@ -134,6 +135,7 @@ export default function BackpackScreen({ userId }) {
   const [activeSection, setActiveSection] = useState("Items");
   const [sheet,         setSheet]         = useState(null);
   const [pinPending,    setPinPending]    = useState(null); // item pending pin, if at cap
+  const [quickUpdateOpen, setQuickUpdateOpen] = useState(false);
   const { toast, toastType, showToast, celebrate, warn } = useCelebration();
 
   const handleTogglePin = useCallback((itemId) => {
@@ -198,6 +200,10 @@ export default function BackpackScreen({ userId }) {
     haptics.success();
   }, [takeSnapshot, showToast, t]);
 
+  const handleNavigateSheet = useCallback((itemId) => {
+    setSheet({ mode: "update", initial: { itemId } });
+  }, []);
+
   if (backpackLoading) {
     return (
       <div className="scroll-content" style={{ display:"flex", alignItems:"center",
@@ -258,7 +264,16 @@ export default function BackpackScreen({ userId }) {
 
       {/* ── Items ── */}
       <div ref={refs.Items} style={{ scrollMarginTop:16, marginTop:8 }}>
-        <SectionHeading kicker={t("hero.kicker")} title={t("nav.items")} />
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <SectionHeading kicker={t("hero.kicker")} title={t("nav.items")} />
+          <button onClick={() => setQuickUpdateOpen(true)} style={{
+            height:34, padding:"0 14px", borderRadius:99, fontSize:12, fontWeight:700,
+            background:"#edf2ec", color:"#5c7a6e", border:"none", cursor:"pointer",
+            flexShrink:0, marginTop:8,
+          }}>
+            {t("quickUpdate.button")}
+          </button>
+        </div>
         <BackpackItems
           items={items}
           balances={balances}
@@ -317,6 +332,7 @@ export default function BackpackScreen({ userId }) {
         items={items}
         onSave={handleSave}
         onDeleteTransaction={id => { deleteTransaction(id); showToast(t("toast.entryRemoved")); }}
+        onNavigate={handleNavigateSheet}
         currentBalance={
           sheet?.initial?.itemId
             ? (balances[sheet.initial.itemId] ?? 0)
@@ -330,6 +346,17 @@ export default function BackpackScreen({ userId }) {
       />
 
       <CelebToast message={toast} type={toastType} />
+
+      <QuickUpdateOverlay
+        open={quickUpdateOpen}
+        onClose={() => setQuickUpdateOpen(false)}
+        items={items}
+        balances={balances}
+        transactions={transactions}
+        pinnedItems={pinnedItems}
+        onSaveTotal={setTotal}
+        onAllDone={() => { celebrate(t("quickUpdate.allDone")); haptics.success(); }}
+      />
 
       <PinReplacePrompt
         pendingItem={pinPending}

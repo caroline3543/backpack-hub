@@ -41,7 +41,7 @@ function UnitChips({ value, onChange }) {
 }
 
 // ─── Update Total form (primary) ──────────────────────────────────────────────
-function UpdateTotalForm({ item, currentBalance, isFirstEntry, onSubmit }) {
+export function UpdateTotalForm({ item, currentBalance, isFirstEntry, onSubmit }) {
   const { t, tItem } = useI18n();
   const isResource = item?.category === "Resources";
   const isSpeedup  = item?.isMinutes;
@@ -448,7 +448,7 @@ function EditTransactionForm({ initial, items, onSubmit, onDelete }) {
 // ─── BackpackSheet ────────────────────────────────────────────────────────────
 export default function BackpackSheet({
   open, onClose, mode, initial, items,
-  onSave, onDeleteTransaction, currentBalance, hasTransactions,
+  onSave, onDeleteTransaction, onNavigate, currentBalance, hasTransactions,
 }) {
   const { t, tItem } = useI18n();
   if (!open) return null;
@@ -466,6 +466,13 @@ export default function BackpackSheet({
     ? items.find(i => i.id === initial.itemId)
     : null;
 
+  // Prev/next carousel — lets the user walk through every item's Update
+  // sheet in sequence without closing and reopening it each time.
+  const canBrowse = mode === "update" && selectedItem && items.length > 1 && onNavigate;
+  const currentIndex = canBrowse ? items.findIndex(i => i.id === selectedItem.id) : -1;
+  const hasPrev = canBrowse && currentIndex > 0;
+  const hasNext = canBrowse && currentIndex < items.length - 1;
+
   return (
     <>
       <style>{`
@@ -477,6 +484,49 @@ export default function BackpackSheet({
         style={{ position:"fixed", inset:0, zIndex:500,
           background:"rgba(36,49,44,0.45)",
           backdropFilter:"blur(4px)", WebkitBackdropFilter:"blur(4px)" }} />
+
+      {canBrowse && (
+        <>
+          <button
+            onClick={() => hasPrev && onNavigate(items[currentIndex - 1].id)}
+            disabled={!hasPrev}
+            aria-label={t("sheet.prevItem")}
+            style={{
+              position:"fixed", top:"50%", insetInlineStart:10, transform:"translateY(-50%)",
+              zIndex:502, width:44, height:44, borderRadius:"50%",
+              background: hasPrev ? "white" : "rgba(255,255,255,0.5)",
+              border:"1px solid rgba(74,92,80,0.12)",
+              boxShadow:"0 4px 14px rgba(0,0,0,0.15)",
+              display:"flex", alignItems:"center", justifyContent:"center",
+              cursor: hasPrev ? "pointer" : "default",
+              opacity: hasPrev ? 1 : 0.4,
+            }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="#24312c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+          </button>
+          <button
+            onClick={() => hasNext && onNavigate(items[currentIndex + 1].id)}
+            disabled={!hasNext}
+            aria-label={t("sheet.nextItem")}
+            style={{
+              position:"fixed", top:"50%", insetInlineEnd:10, transform:"translateY(-50%)",
+              zIndex:502, width:44, height:44, borderRadius:"50%",
+              background: hasNext ? "white" : "rgba(255,255,255,0.5)",
+              border:"1px solid rgba(74,92,80,0.12)",
+              boxShadow:"0 4px 14px rgba(0,0,0,0.15)",
+              display:"flex", alignItems:"center", justifyContent:"center",
+              cursor: hasNext ? "pointer" : "default",
+              opacity: hasNext ? 1 : 0.4,
+            }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="#24312c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </button>
+        </>
+      )}
 
       <div className="bp-sheet" style={{
         position:"fixed", bottom:0, left:0, right:0,
@@ -499,8 +549,16 @@ export default function BackpackSheet({
           <div style={{ display:"flex", alignItems:"flex-start",
             justifyContent:"space-between", gap:12 }}>
             <div style={{ minWidth:0, flex:1 }}>
-              <div style={{ fontSize:11, fontWeight:700, textTransform:"uppercase",
-                letterSpacing:"0.2em", color:"#819286", marginBottom:4 }}>{kicker}</div>
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+                <span style={{ fontSize:11, fontWeight:700, textTransform:"uppercase",
+                  letterSpacing:"0.2em", color:"#819286" }}>{kicker}</span>
+                {canBrowse && (
+                  <span style={{ fontSize:10, fontWeight:700, color:"#9a7746",
+                    background:"#f7edd9", borderRadius:99, padding:"1px 8px" }}>
+                    {t("sheet.itemPosition", { current: currentIndex + 1, total: items.length })}
+                  </span>
+                )}
+              </div>
               <div style={{ fontFamily:"'Fraunces',serif", fontSize:24,
                 fontWeight:600, color:"#24312c", overflowWrap:"anywhere" }}>
                 {selectedItem ? tItem(selectedItem.id, selectedItem.name) : title}
@@ -523,10 +581,15 @@ export default function BackpackSheet({
         <div style={{ padding:"0 20px 56px" }}>
         {mode === "update" && selectedItem && (
           <UpdateTotalForm
+            key={selectedItem.id}
             item={selectedItem}
             currentBalance={currentBalance ?? 0}
             isFirstEntry={!hasTransactions}
-            onSubmit={data => { onSave(data); onClose(); }}
+            onSubmit={data => {
+              onSave(data);
+              if (hasNext) onNavigate(items[currentIndex + 1].id);
+              else onClose();
+            }}
           />
         )}
         {mode === "item" && (
