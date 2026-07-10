@@ -103,20 +103,6 @@ export default {
     cancel: "Cancel",
   },
 
-  quickUpdate: {
-    button: "⚡ Quick Update",
-    title: "Quick Update",
-    progress: "{current} of {total}",
-    pinnedFilter: "Pinned",
-    allFilter: "All items",
-    previous: "Previous item",
-    next: "Next item",
-    emptyPinnedTitle: "Nothing pinned yet",
-    emptyPinnedBody: "Pin a few resources to quick-update just those, or switch to all items.",
-    switchToAll: "Show all items instead",
-    allDone: "All caught up! ✓",
-  },
-
   svsPrep: {
     label: "Days to SvS Prep",
     setDate: "Tap to set date",
@@ -228,9 +214,6 @@ export default {
   sheet: {
     yourStash: "Your stash",
     updateTotal: "Update total",
-    prevItem: "Previous item",
-    nextItem: "Next item",
-    itemPosition: "{current} of {total}",
     yourBackpack: "Your backpack",
     editItemTitle: "Edit item",
     addItemTitle: "Add item",

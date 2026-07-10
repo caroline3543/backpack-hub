@@ -97,20 +97,6 @@ export default {
     cancel: "إلغاء",
   },
 
-  quickUpdate: {
-    button: "⚡ تحديث سريع",
-    title: "تحديث سريع",
-    progress: "{current} من {total}",
-    pinnedFilter: "المثبّتة",
-    allFilter: "كل العناصر",
-    previous: "العنصر السابق",
-    next: "العنصر التالي",
-    emptyPinnedTitle: "لا توجد عناصر مثبّتة بعد",
-    emptyPinnedBody: "ثبّت بعض الموارد لتحديثها بسرعة فقط، أو بدّل إلى عرض كل العناصر.",
-    switchToAll: "عرض كل العناصر بدلاً من ذلك",
-    allDone: "تم الانتهاء من الكل! ✓",
-  },
-
   svsPrep: {
     label: "أيام حتى تحضير SvS",
     setDate: "اضغط لتحديد التاريخ",
