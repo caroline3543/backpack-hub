@@ -32,38 +32,50 @@ screenshot import) are both complete for Crazy Joe and Bear Trap.
 - **Bear Trap**: ratio and exact-amount methods; `equalSquads` (proportional scale-down across all slots) and `fillInOrder` (deplete sequentially) strategies; `prioritiseMarksmen` reorders the clamp priority. Rally-leader and bonus marches are separate slots with independent capacity/ratio. Rally-leader UI shows personal march size and total rally capacity as two clearly separate numbers, per the spec's strongest warning ("never use total rally capacity as personal march capacity").
 - **Cyrille**: Ursa's Bane (personal capacity, +3,000/level, max 10) applies per march to every ordinary/rally/bonus march in Bear Trap only — never to Crazy Joe. Entrapment (+30,000/level, max 10) only affects the rally-leader slot's *total rally capacity* display, never added to ordinary marches.
 
-## OCR approach implemented
+## OCR approach implemented — now calibrated against a real screenshot
 
-**Tesseract.js loaded lazily from a CDN**, browser-side, no server. It's only
-fetched the first time someone actually clicks "Upload troop screenshot" —
-manual-entry-only users never download it. The image itself is never
-uploaded anywhere; it exists only as a local `URL.createObjectURL` preview
-for the current session, revoked as soon as it's replaced or the step
-unmounts.
+A real "Troops Preview" screenshot was supplied and used to calibrate the
+matching logic directly (see `ocrParser.test.js`, which replays that
+screenshot's exact word geometry as a synthetic test). Two things the real
+screenshot revealed that the first pass got wrong, both now fixed and
+tested:
 
-Parsing strategy: full-image OCR via `Tesseract.recognize()`, then for each
-of "Infantry"/"Lancer"/"Marksman" find the label word and take the nearest
-number-shaped word on the same visual line (using Tesseract's word-level
-bounding boxes), rather than assuming a fixed pixel crop region — more
-robust to different devices/crops, per the spec's own caution. Each troop
-type's confidence score is `min(labelWordConfidence, numberWordConfidence)`;
-anything under 60 gets flagged "Please check" directly on that field in the
-UI, and a summary warning appears above the form. Nothing auto-advances past
-the review screen — the user always sees and can edit the extracted values
-before continuing.
+1. **Troops are shown pre-split by tier** (e.g. "Apex Infantry" 196,477 +
+   "Supreme Infantry" 46,964). The parser now sums across every tier card
+   found for a troop type, and preserves each tier's own value in
+   `inventory[type].tiers` (shown to the user under the field, calculations
+   use the combined total).
+2. **The count sits on the line below its label**, not beside it. The
+   matcher now searches the next 1-2 lines down for the nearest
+   horizontal-center match to the tier+label word group, before falling
+   back to same-line-to-the-right for other possible layouts. The original
+   "generous horizontal overlap" version of this had a real bug: with two
+   columns of cards on the same row, a loose margin would match the *wrong
+   column's* number. Fixed by matching on nearest center distance of the
+   full label group instead — caught by the calibration test, not by
+   inspection.
 
-**Not yet done / can't verify from here:**
-- **No real screenshot was ever run through this** — I don't have a browser
-  in this sandbox, and no reference screenshot was provided. The label/geometry
-  matching logic is sound in principle but genuinely untested against an
-  actual Whiteout Survival UI. Test this first with a real screenshot before
-  trusting it.
-- **Tier extraction** (e.g. T10 vs T11 troops) isn't attempted — the label-based
-  approach only reads the three troop-type totals. The UI explicitly tells the
-  user this, per the spec's fallback instruction.
-- If Tesseract's CDN is unreachable (offline, blocked), `TesseractTroopParser.parse()`
-  returns a clear error string in `warnings` and all-zero values — the user
-  can still fall back to "Continue without it."
+**Tesseract.js loaded lazily from a CDN**, browser-side, no server, only
+fetched the first time someone clicks "Upload troop screenshot." The image
+is never uploaded anywhere — it's a local `URL.createObjectURL` preview,
+revoked on replace/unmount.
+
+The core matching logic (`extractTroopsFromWords`) is a pure function
+separated from the actual `Tesseract.recognize()` call, so it's fully
+unit-tested (8 tests) without needing to mock an OCR engine or a browser.
+
+**Still not verified — genuinely untested, not just "should work":**
+- The synthetic test uses hand-estimated bounding boxes from the screenshot,
+  not Tesseract's *actual* output on that image — I have no browser here to
+  run Tesseract itself. Real OCR noise (mis-segmented words, extra/missing
+  characters, icon glyphs misread as text) could still surface issues the
+  synthetic test can't catch. Test with the real upload flow next.
+- Layouts with 3+ tier cards, or a single-tier account, aren't in the
+  calibration test yet — the logic should handle them (nothing assumes
+  exactly 2 tiers), but isn't explicitly verified for those cases.
+- Tier *names* other than "Apex"/"Supreme" (e.g. lower/earlier tiers) aren't
+  tested, though the matching doesn't hardcode tier names — it just takes
+  whatever word precedes the type word.
 
 ## Cyrille values and sources
 
@@ -98,16 +110,16 @@ added without network access). All pass. Run: `npx react-scripts test squadCalcu
 
 ## Remaining limitations
 
-- **OCR is untested against a real screenshot** (biggest risk — see above).
+- **OCR is calibrated but not run through real Tesseract output yet** — the test replays hand-estimated geometry from the screenshot, not an actual OCR pass (see above).
 - **No dark mode** — the host app doesn't have one, so this doesn't either.
 - **English only** — see i18n note above; infrastructure exists, just not wired up for this feature yet.
 - **`minPerMarch` and multi-constraint edge cases** aren't a full solver (see Assumption 2).
 - **No accessibility pass yet** beyond the base app's existing conventions.
 - Rally-leader/bonus-march Cyrille interaction (Assumption 4) hasn't been cross-checked against a real in-game screenshot.
-- OCR tier extraction isn't attempted at all (see OCR section).
 
 ## Recommended next improvement
 
-Get a real Whiteout Survival troop-inventory screenshot in front of this and
-fix whatever the label/geometry matching gets wrong — that's the highest-value,
-lowest-effort next step now that the plumbing exists end-to-end.
+Actually run the upload flow with a real screenshot in a real browser and see
+what Tesseract's genuine output looks like — the geometry-matching logic is
+now well-calibrated against the *layout*, but real OCR text noise (misreads,
+extra punctuation, split/merged words) is the remaining unknown.

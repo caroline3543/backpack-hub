@@ -8,11 +8,12 @@ import { parseTroopNumber, formatTroopNumber } from "../squadCalculations.js";
 import { TesseractTroopParser, LOW_CONFIDENCE_THRESHOLD } from "../ocrParser.js";
 import { card, label, input, heading, kicker, buttonPrimary, buttonSecondary, TROOP_COLORS, TROOP_LABELS } from "../squadStyles.js";
 
-function TroopInput({ type, value, onChange, confidence }) {
+function TroopInput({ type, value, onChange, confidence, tiers }) {
   const [raw, setRaw] = useState(value ? formatTroopNumber(value) : "");
   useEffect(() => { setRaw(value ? formatTroopNumber(value) : ""); }, [value]);
 
   const lowConfidence = confidence !== undefined && confidence !== null && confidence < LOW_CONFIDENCE_THRESHOLD;
+  const tierEntries = tiers ? Object.entries(tiers) : [];
 
   return (
     <div style={{ marginBottom: 14 }}>
@@ -34,6 +35,11 @@ function TroopInput({ type, value, onChange, confidence }) {
         onChange={e => { setRaw(e.target.value); onChange(parseTroopNumber(e.target.value)); }}
         onBlur={() => setRaw(value ? formatTroopNumber(value) : "")}
       />
+      {tierEntries.length > 1 && (
+        <div style={{ fontSize: 11, color: "#9aa59e", marginTop: 4 }}>
+          {tierEntries.map(([name, v]) => `${name} ${formatTroopNumber(v)}`).join(" + ")}
+        </div>
+      )}
     </div>
   );
 }
@@ -42,6 +48,7 @@ export default function TroopsStep({ inventory, onChange, onContinue }) {
   const [mode, setMode] = useState("choose"); // choose | manual | uploading | review
   const [previewUrl, setPreviewUrl] = useState(null);
   const [confidence, setConfidence] = useState({});
+  const [tiers, setTiers] = useState({});
   const [ocrWarnings, setOcrWarnings] = useState([]);
   const fileInputRef = useRef(null);
 
@@ -65,6 +72,11 @@ export default function TroopsStep({ inventory, onChange, onContinue }) {
       marksman: result.inventory.marksman?.total || 0,
     });
     setConfidence(result.confidence);
+    setTiers({
+      infantry: result.inventory.infantry?.tiers,
+      lancer: result.inventory.lancer?.tiers,
+      marksman: result.inventory.marksman?.tiers,
+    });
     setOcrWarnings(result.warnings || []);
     setMode("review");
     // The image itself is never uploaded anywhere or persisted — it only
@@ -167,16 +179,16 @@ export default function TroopsStep({ inventory, onChange, onContinue }) {
 
       {mode === "review" && (
         <div style={{ fontSize: 11, color: "#b8c0ba", marginBottom: 14, lineHeight: 1.5 }}>
-          This reads total troop counts only — tier-specific breakdowns (e.g. T10 vs T11) aren't extracted, so calculations use totals for each troop type.
+          Per-tier amounts (shown below each total when found, e.g. Apex + Supreme) are for your reference — calculations always use the combined total for each troop type.
         </div>
       )}
 
       <div style={{ ...card, marginBottom: 16 }}>
-        <TroopInput type="infantry" value={inventory.infantry} confidence={confidence.infantry}
+        <TroopInput type="infantry" value={inventory.infantry} confidence={confidence.infantry} tiers={tiers.infantry}
           onChange={v => onChange({ ...inventory, infantry: v })} />
-        <TroopInput type="lancer" value={inventory.lancer} confidence={confidence.lancer}
+        <TroopInput type="lancer" value={inventory.lancer} confidence={confidence.lancer} tiers={tiers.lancer}
           onChange={v => onChange({ ...inventory, lancer: v })} />
-        <TroopInput type="marksman" value={inventory.marksman} confidence={confidence.marksman}
+        <TroopInput type="marksman" value={inventory.marksman} confidence={confidence.marksman} tiers={tiers.marksman}
           onChange={v => onChange({ ...inventory, marksman: v })} />
 
         <div style={{ borderTop: "1px solid rgba(72,94,80,0.08)", paddingTop: 10, marginTop: 4,
