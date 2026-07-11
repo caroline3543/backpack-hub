@@ -97,6 +97,20 @@ export default {
     cancel: "취소",
   },
 
+  quickUpdate: {
+    button: "⚡ 빠른 업데이트",
+    title: "빠른 업데이트",
+    progress: "{total}개 중 {current}번째",
+    pinnedFilter: "고정됨",
+    allFilter: "전체 아이템",
+    previous: "이전 아이템",
+    next: "다음 아이템",
+    emptyPinnedTitle: "아직 고정된 아이템이 없습니다",
+    emptyPinnedBody: "몇 가지 자원을 고정하여 해당 항목만 빠르게 업데이트하거나, 전체 아이템으로 전환하세요.",
+    switchToAll: "대신 전체 아이템 보기",
+    allDone: "모두 완료했어요! ✓",
+  },
+
   svsPrep: {
     label: "SvS 준비까지",
     setDate: "탭하여 날짜 설정",
@@ -208,6 +222,9 @@ export default {
   sheet: {
     yourStash: "내 보관함",
     updateTotal: "총량 업데이트",
+    prevItem: "이전 아이템",
+    nextItem: "다음 아이템",
+    itemPosition: "{total}개 중 {current}번째",
     yourBackpack: "내 배낭",
     editItemTitle: "아이템 편집",
     addItemTitle: "아이템 추가",

@@ -97,6 +97,20 @@ export default {
     cancel: "Cancelar",
   },
 
+  quickUpdate: {
+    button: "⚡ Actualización rápida",
+    title: "Actualización rápida",
+    progress: "{current} de {total}",
+    pinnedFilter: "Fijados",
+    allFilter: "Todos los artículos",
+    previous: "Artículo anterior",
+    next: "Siguiente artículo",
+    emptyPinnedTitle: "Aún no hay nada fijado",
+    emptyPinnedBody: "Fija algunos recursos para actualizar solo esos rápidamente, o cambia a todos los artículos.",
+    switchToAll: "Mostrar todos los artículos",
+    allDone: "¡Todo actualizado! ✓",
+  },
+
   svsPrep: {
     label: "Días para SvS Prep",
     setDate: "Toca para definir la fecha",
@@ -208,6 +222,9 @@ export default {
   sheet: {
     yourStash: "Tu reserva",
     updateTotal: "Actualizar total",
+    prevItem: "Artículo anterior",
+    nextItem: "Siguiente artículo",
+    itemPosition: "{current} de {total}",
     yourBackpack: "Tu mochila",
     editItemTitle: "Editar artículo",
     addItemTitle: "Añadir artículo",
