@@ -1,8 +1,7 @@
 # Squad Calculator — Handoff
 
-Phase 1 complete: **calculation engine + manual troop entry + full results
-screen**, for both Crazy Joe and Bear Trap. OCR/screenshot import was
-explicitly deferred — see "Remaining limitations."
+**Phase 1** (calc engine + manual entry + results) and **Phase 2** (OCR
+screenshot import) are both complete for Crazy Joe and Bear Trap.
 
 ## Files created
 
@@ -12,7 +11,8 @@ explicitly deferred — see "Remaining limitations."
 - `src/features/squad/squadStyles.js` — shared style tokens reused across all step components.
 - `src/features/squad/useSquadPresets.js` — localStorage-backed presets (event, march setup, ratios/strategy, buffs, Cyrille levels — never troop inventory).
 - `src/features/squad/SquadCalculatorScreen.jsx` — step orchestrator + calculation assembly (`runCalculation`, `buildOrdinaryCapacities`).
-- `src/features/squad/steps/TroopsStep.jsx` — manual troop entry (K/M/B/comma parsing via `parseTroopNumber`).
+- `src/features/squad/ocrParser.js` — `TesseractTroopParser` (the `TroopScreenshotParser` implementation): lazily loads Tesseract.js from a CDN, runs full-image OCR, then matches "Infantry"/"Lancer"/"Marksman" label words to the nearest number word on the same line using Tesseract's word-level bounding boxes and per-word confidence.
+- `src/features/squad/steps/TroopsStep.jsx` — now a 4-state flow (`choose` → `uploading` → `review` → back to `manual`/edit), with image preview, per-field low-confidence flags, "Replace screenshot," and "Continue without it."
 - `src/features/squad/steps/EventStep.jsx` — Crazy Joe / Bear Trap selection cards.
 - `src/features/squad/steps/MarchesStep.jsx` — march count, capacity (same/per-march), capacity buffs (flat/%), Cyrille toggle + levels (Bear Trap only).
 - `src/features/squad/steps/StrategyStep.jsx` — Crazy Joe method/ratio/priority + Include Marksmen; Bear Trap presets/ratio/exact amounts, allocation strategy, rally-leader march, bonus march.
@@ -32,11 +32,38 @@ explicitly deferred — see "Remaining limitations."
 - **Bear Trap**: ratio and exact-amount methods; `equalSquads` (proportional scale-down across all slots) and `fillInOrder` (deplete sequentially) strategies; `prioritiseMarksmen` reorders the clamp priority. Rally-leader and bonus marches are separate slots with independent capacity/ratio. Rally-leader UI shows personal march size and total rally capacity as two clearly separate numbers, per the spec's strongest warning ("never use total rally capacity as personal march capacity").
 - **Cyrille**: Ursa's Bane (personal capacity, +3,000/level, max 10) applies per march to every ordinary/rally/bonus march in Bear Trap only — never to Crazy Joe. Entrapment (+30,000/level, max 10) only affects the rally-leader slot's *total rally capacity* display, never added to ordinary marches.
 
-## OCR approach selected (not yet implemented)
+## OCR approach implemented
 
-**Tesseract.js via CDN `<script>` tag**, browser-side, no server. Rationale: no npm install was possible in the build sandbox (no network access), but a CDN script is fetched by the *end user's* browser at runtime, so it's unaffected by that constraint. Client-side OCR also means no image ever leaves the device — good for privacy and avoids any Vercel function size/cost concerns. Recommended parsing strategy once implemented: run full-image OCR, then regex/fuzzy-match for the labels "Infantry" / "Lancer" / "Marksman" and take the nearest number token — more robust to different devices/crops than fixed pixel regions, per the spec's own caution against assuming fixed screen dimensions.
+**Tesseract.js loaded lazily from a CDN**, browser-side, no server. It's only
+fetched the first time someone actually clicks "Upload troop screenshot" —
+manual-entry-only users never download it. The image itself is never
+uploaded anywhere; it exists only as a local `URL.createObjectURL` preview
+for the current session, revoked as soon as it's replaced or the step
+unmounts.
 
-The `TroopScreenshotParser` interface described in the original spec was not created yet since there's no concrete OCR call to abstract over — adding it prematurely would just be an unused interface. Recommend creating it in the same PR as the actual Tesseract.js integration.
+Parsing strategy: full-image OCR via `Tesseract.recognize()`, then for each
+of "Infantry"/"Lancer"/"Marksman" find the label word and take the nearest
+number-shaped word on the same visual line (using Tesseract's word-level
+bounding boxes), rather than assuming a fixed pixel crop region — more
+robust to different devices/crops, per the spec's own caution. Each troop
+type's confidence score is `min(labelWordConfidence, numberWordConfidence)`;
+anything under 60 gets flagged "Please check" directly on that field in the
+UI, and a summary warning appears above the form. Nothing auto-advances past
+the review screen — the user always sees and can edit the extracted values
+before continuing.
+
+**Not yet done / can't verify from here:**
+- **No real screenshot was ever run through this** — I don't have a browser
+  in this sandbox, and no reference screenshot was provided. The label/geometry
+  matching logic is sound in principle but genuinely untested against an
+  actual Whiteout Survival UI. Test this first with a real screenshot before
+  trusting it.
+- **Tier extraction** (e.g. T10 vs T11 troops) isn't attempted — the label-based
+  approach only reads the three troop-type totals. The UI explicitly tells the
+  user this, per the spec's fallback instruction.
+- If Tesseract's CDN is unreachable (offline, blocked), `TesseractTroopParser.parse()`
+  returns a clear error string in `warnings` and all-zero values — the user
+  can still fall back to "Continue without it."
 
 ## Cyrille values and sources
 
@@ -71,15 +98,16 @@ added without network access). All pass. Run: `npx react-scripts test squadCalcu
 
 ## Remaining limitations
 
-- **No OCR/screenshot import yet** — manual entry only. See "OCR approach" above for the recommended next step.
-- **No dark mode** — the host app doesn't have one, so this doesn't either (spec's dark-mode requirement is conditional on the host app supporting it).
-- **English only** — the host app has full i18n (en/ko/es/ar) for the Backpack feature; the Squad Calculator's UI text was kept English-only to keep this phase's scope contained. Translating it is a well-scoped follow-up (the `useI18n()` infrastructure already exists and can be reused directly).
+- **OCR is untested against a real screenshot** (biggest risk — see above).
+- **No dark mode** — the host app doesn't have one, so this doesn't either.
+- **English only** — see i18n note above; infrastructure exists, just not wired up for this feature yet.
 - **`minPerMarch` and multi-constraint edge cases** aren't a full solver (see Assumption 2).
-- **No accessibility pass yet** beyond the base app's existing conventions (44px touch targets, 16px inputs) — no dedicated screen-reader testing was done.
+- **No accessibility pass yet** beyond the base app's existing conventions.
 - Rally-leader/bonus-march Cyrille interaction (Assumption 4) hasn't been cross-checked against a real in-game screenshot.
+- OCR tier extraction isn't attempted at all (see OCR section).
 
 ## Recommended next improvement
 
-Wire up the OCR import flow (Tesseract.js via CDN + label-based parsing) once
-a real reference screenshot is available to calibrate against — that was the
-one genuine blocker for doing it in this pass.
+Get a real Whiteout Survival troop-inventory screenshot in front of this and
+fix whatever the label/geometry matching gets wrong — that's the highest-value,
+lowest-effort next step now that the plumbing exists end-to-end.
