@@ -97,6 +97,7 @@ export default function TroopsStep({ inventory, onChange, onContinue, onMarchQue
   const [previewUrl, setPreviewUrl] = useState(null);
   const [tiersByType, setTiersByType] = useState({ infantry: [], lancer: [], marksman: [] });
   const [screenshotSummary, setScreenshotSummary] = useState(null);
+  const [debugData, setDebugData] = useState(null);
   const [ocrWarnings, setOcrWarnings] = useState([]);
   const [simpleView, setSimpleView] = useState(false);
   const fileInputRef = useRef(null);
@@ -128,6 +129,14 @@ export default function TroopsStep({ inventory, onChange, onContinue, onMarchQue
     const result = await TesseractTroopScreenshotParser.parse(file);
     setTiersByType(tiersFromEntries(result.entries));
     setOcrWarnings(result.warnings || []);
+    setDebugData({
+      entries: result.entries.map(e => ({
+        rawLabel: e.rawLabel, tier: e.normalisedTier, class: e.troopClass, count: e.count,
+        rawCountText: e.rawCountText, confidence: { label: e.labelConfidence, count: e.countConfidence, association: e.associationConfidence },
+        box: e.boundingBox, column: e.column,
+      })),
+      rawWords: (result.debug?.rawOcrBlocks || []).map(w => ({ text: w.text, confidence: w.confidence, bbox: w.bbox })),
+    });
     setScreenshotSummary({
       extractedSum: result.extractedVisibleTroopSum,
       displayedMax: result.displayedTroops.maximum,
@@ -286,6 +295,13 @@ export default function TroopsStep({ inventory, onChange, onContinue, onMarchQue
           {ocrWarnings.map((w, i) => (
             <div key={i} style={{ fontSize: 12, color: "#9a7746", lineHeight: 1.5, marginBottom: i < ocrWarnings.length - 1 ? 6 : 0 }}>{w}</div>
           ))}
+          {debugData && (
+            <button onClick={() => {
+              navigator.clipboard?.writeText(JSON.stringify(debugData, null, 2)).catch(() => {});
+            }} style={{ ...buttonSecondary, fontSize: 11, marginTop: 10, minHeight: 34 }}>
+              Copy diagnostic info (if this looks wrong, paste this back for a fix)
+            </button>
+          )}
         </div>
       )}
 

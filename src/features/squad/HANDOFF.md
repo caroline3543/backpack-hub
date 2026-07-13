@@ -83,6 +83,43 @@ tabs) to see genuine Tesseract output — that's the one thing that can't be
 verified from this sandbox, and it's now the single highest-value next step
 given how much of the rest is calibrated and tested.
 
+## Phase 4: real-world failure on a second screenshot, and the limits of guessing blind
+
+A second real screenshot (different device, different troop numbers) produced
+different scrambled results: Infantry showed "192" (a truncated fragment,
+not the real 250,035), and the same value (53,633) appeared under *both*
+Lancer and Marksman. Unlike Phase 3, I could not reproduce this with a
+hand-modeled synthetic fixture, because I have no way to know the real
+Tesseract word geometry for this specific image — Phase 3's fix was
+verifiable because the bug was structural (column bleed); this one may be
+partly genuine OCR misread (a truncated number Tesseract itself read wrong)
+and partly association logic, and I can't tell which without real data.
+
+**What I could fix with confidence:** the duplicate-value symptom (53,633
+under two classes) has one clear, unconditional cause regardless of the
+specific geometry — nothing stopped two different labels from independently
+picking the *same* number as their closest match. Fixed by tracking claimed
+value-words per column; once a number is used by one entry, it's excluded
+from every other label's search in that column, forcing a fallback to the
+next-nearest candidate instead of duplicating. Covered by a new test
+(`troopScreenshot.test.js` → "two different labels never claim the same
+number").
+
+**What I could not fix blind:** the "192" instead of "192,541"-or-similar
+symptom could be a genuine Tesseract misread (in which case the system
+correctly flagged it low-confidence for manual correction — working as
+designed) or a real association bug I can't see without the actual OCR
+word list for that image.
+
+**Added instead: a way to get real data next time.** The review screen now
+has a "Copy diagnostic info" button (shown whenever there are warnings) that
+copies the exact extracted entries — raw label, tier, class, count, raw OCR
+text, per-field confidence, bounding box, column — as JSON to the clipboard.
+If another mismatch shows up, paste that JSON directly rather than a
+screenshot of the UI; it's the actual ground-truth data the parser saw, and
+turns "guess from symptoms" into "look at the real numbers," which is what
+made the Phase 3 fixes possible to verify at all.
+
 ---
 
 

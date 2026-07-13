@@ -101,14 +101,14 @@ function groupIntoLines(words) {
 
 function xCenter(w) { return (w.bbox.x0 + w.bbox.x1) / 2; }
 
-function findValueBelow(labelWord, tierWord, labelLineIndex, lines) {
+function findValueBelow(labelWord, tierWord, labelLineIndex, lines, claimedWords) {
   const groupX0 = tierWord ? Math.min(tierWord.bbox.x0, labelWord.bbox.x0) : labelWord.bbox.x0;
   const groupX1 = tierWord ? Math.max(tierWord.bbox.x1, labelWord.bbox.x1) : labelWord.bbox.x1;
   const groupCenter = (groupX0 + groupX1) / 2;
   const maxDist = Math.max(150, groupX1 - groupX0);
 
   for (let li = labelLineIndex + 1; li <= labelLineIndex + 2 && li < lines.length; li++) {
-    const numbers = lines[li].filter(w => looksLikeGameNumber(w.text));
+    const numbers = lines[li].filter(w => looksLikeGameNumber(w.text) && !claimedWords.has(w));
     if (numbers.length === 0) continue;
     let best = null, bestDist = Infinity;
     for (const w of numbers) {
@@ -118,7 +118,7 @@ function findValueBelow(labelWord, tierWord, labelLineIndex, lines) {
     if (best && bestDist <= maxDist) return { word: best, associationConfidence: Math.max(0.5, 1 - bestDist / (maxDist * 2)) };
   }
   const sameLine = lines[labelLineIndex].filter(w =>
-    w !== labelWord && looksLikeGameNumber(w.text) && w.bbox.x0 >= labelWord.bbox.x0
+    w !== labelWord && looksLikeGameNumber(w.text) && !claimedWords.has(w) && w.bbox.x0 >= labelWord.bbox.x0
   );
   if (sameLine.length > 0) return { word: sameLine[0], associationConfidence: 0.6 };
   return null;
@@ -143,6 +143,7 @@ function nextId() { idCounter += 1; return `entry-${idCounter}`; }
 function associateColumn(words, columnLabel) {
   const lines = groupIntoLines(words);
   const entries = [];
+  const claimedWords = new Set();
 
   lines.forEach((line, li) => {
     line.forEach(word => {
@@ -150,8 +151,9 @@ function associateColumn(words, columnLabel) {
       if (!match) return;
 
       const tierWord = findTierWord(word, line);
-      const found = findValueBelow(word, tierWord, li, lines);
+      const found = findValueBelow(word, tierWord, li, lines, claimedWords);
       if (!found) return;
+      claimedWords.add(found.word);
 
       const { normalisedTier } = normaliseTierName(tierWord ? tierWord.text : "Unknown");
       const parsed = parseGameNumber(found.word.text);

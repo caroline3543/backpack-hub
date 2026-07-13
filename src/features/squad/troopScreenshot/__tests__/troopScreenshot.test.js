@@ -233,6 +233,22 @@ describe("duplicate detection", () => {
     expect(result.totalsByClass.infantry).toBe(196477);
     expect(result.validation.duplicateEntriesDetected).toBe(true);
   });
+
+  test("two different labels never claim the same number, even if it's the nearest match for both", () => {
+    // Lancer and Marksman are both closest to the SAME number (48,374), but
+    // a second, slightly farther number (43,133) genuinely belongs to one
+    // of them. Once Lancer claims 48,374, Marksman must fall back to
+    // 43,133 rather than duplicating Lancer's value.
+    const words = [
+      word("Apex", 105, 100, 205, 135), word("Lancer", 215, 100, 500, 135), word("48,374", 200, 150, 480, 185),
+      word("Apex", 105, 300, 205, 335), word("Marksman", 215, 300, 545, 335), word("43,133", 205, 350, 485, 385),
+    ];
+    const result = buildResultFromWords(words);
+    const lancerEntry = result.entries.find(e => e.troopClass === "lancer");
+    const marksmanEntry = result.entries.find(e => e.troopClass === "marksman");
+    expect(lancerEntry.count).not.toBe(marksmanEntry.count);
+    expect([lancerEntry.count, marksmanEntry.count].sort()).toEqual([43133, 48374]);
+  });
 });
 
 describe("march queue variations", () => {
