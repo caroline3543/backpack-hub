@@ -1,7 +1,90 @@
 # Squad Calculator — Handoff
 
-**Phase 1** (calc engine + manual entry + results) and **Phase 2** (OCR
-screenshot import) are both complete for Crazy Joe and Bear Trap.
+**Phase 1** (calc engine + manual entry + results), **Phase 2** (OCR import),
+and **Phase 3** (column-aware troop screenshot parser rewrite) are complete
+for Crazy Joe and Bear Trap.
+
+## Phase 3: troop screenshot parser rewrite (root cause + fix)
+
+A real screenshot run through the deployed app produced scrambled results —
+Infantry showed Apex Lancer's + Supreme Marksman's values, Lancer showed a
+corrupted number, Marksman showed only one of its two tiers. **Root cause:**
+the old parser grouped OCR words into visual "lines" using vertical overlap
+across the *entire image width*, mixing both columns' text into shared line
+arrays. Real Tesseract output isn't pixel-synchronized between columns —
+baselines drift a few pixels, stray tokens shift indices — so "look N lines
+below the label" silently grabbed numbers from the *other column's* card
+once that drift accumulated. This is exactly the flaw the improved spec
+called out: line-index proximity isn't real spatial association.
+
+**Fix:** the entire pipeline was rewritten as a proper module
+(`src/features/squad/troopScreenshot/`) that splits OCR words into columns
+*first*, then does line-grouping and label→number association independently
+within each column — cross-column pairing is now structurally impossible,
+not just unlikely. Two more real bugs were caught by testing against the
+actual screenshot geometry during this rewrite (not just by inspection):
+
+1. The initial column-split heuristic ("biggest gap between any two word
+   centers") falsely triggered on ordinary single-column rows with wide
+   multi-word labels (e.g. "Apex Infantry" creates a bigger gap to the
+   number below it than within itself). Fixed by requiring the same split
+   point to recur across ≥2 lines with ≥3 words each — a lone 2-word label
+   has exactly one gap and nothing to compare it against, so it's never
+   used as column evidence on its own.
+2. The header stats (Total Troops / March Queue / Injured) sit side-by-side
+   on one shared visual line, so the naive "take the first fraction found"
+   approach had the identical bug at the header level — fixed the same way,
+   by matching the nearest horizontally-aligned fraction to each label
+   instead of just the first one encountered.
+
+### Files created
+- `troopScreenshot/types.js` — JSDoc typedefs (this app is plain JS, not TS — see below) + `TROOP_CLASSES`/`KNOWN_TIER_NAMES` config, kept separate from parsing logic.
+- `troopScreenshot/parseGameNumber.js` — number parsing with confidence + `wasAbbreviated` tracking; also folds space-separated digit groups back to commas when safe.
+- `troopScreenshot/parseTroopLabel.js` — fuzzy troop-class matching via edit distance (tolerates "rn"/"m", "l"/"I"/"1", "0"/"O" OCR substitutions) instead of a combinatorial regex-alternative list; refuses to guess when two classes are equally plausible.
+- `troopScreenshot/associateTroopRows.js` — **the core fix**: `splitIntoColumns` (line-recurrence-based) + per-column line grouping + nearest-center label→number matching.
+- `troopScreenshot/parseHeaderStats.js` — Total Troops / March Queue / Injured fractions (nearest-x matching) + selected-tab detection via pixel-color sampling.
+- `troopScreenshot/validateTroopResult.js` — dedup (class + bounding-box overlap), missing-class detection (never assumes zero), abbreviation-aware total-match tolerance.
+- `troopScreenshot/preprocessImage.js` — resize large images, minimum-size check, exposes a same-coordinate-space pixel sampler for tab detection.
+- `troopScreenshot/providers/tesseractProvider.js` — the only file that knows Tesseract.js exists; lazy CDN load + `recognize()`.
+- `troopScreenshot/index.js` — orchestrator; `buildResultFromWords` (pure, tested) + `TesseractTroopScreenshotParser.parse()` (real I/O wrapper).
+- `troopScreenshot/__tests__/troopScreenshot.test.js` — 29 tests, including the exact regression fixture from the spec.
+
+### Files modified
+- `steps/TroopsStep.jsx` — rewritten review screen: every tier shown individually and editable per troop class, combined total computed automatically, "Add another tier"/remove-tier, simple-view toggle, screenshot summary card (extracted sum / displayed total / match / march queues / tab), "Discard screenshot and enter manually" (replacing the vague "Continue without it").
+- `steps/MarchesStep.jsx` — accepts detected march-queue info; shows "X of Y" with an explicit "Use Y" button rather than silently overriding the user's march count.
+- `SquadCalculatorScreen.jsx` — threads march-queue detection from Troops through to Marches.
+- Deleted the old flat `ocrParser.js`/`ocrParser.test.js` (superseded by the `troopScreenshot/` module).
+
+### Deviations from the spec (flagged, not silent)
+- **Plain JavaScript, not TypeScript.** This app is Create React App with no TS toolchain; a full TS migration is a separate, much bigger project. JSDoc typedefs in `types.js` give equivalent editor support without one.
+- **Region/debug-mode not implemented.** No visual debug overlay (bounding boxes, association lines, etc.) — `debug.detectedRegions` is always `[]`, and `debug.rawOcrBlocks` just holds the raw word list. Real region segmentation (header/tabs/panel/nav as distinct detected boxes) wasn't built; the pipeline works directly off word positions instead of first segmenting named regions.
+- **No blur detection.** Only a minimum-dimension check in `preprocessImage.js` — true sharpness measurement (e.g. Laplacian variance) wasn't implemented.
+- **Not every one of the 25 listed test scenarios has a dedicated test** — 29 tests cover the regression fixture plus the highest-value scenarios (tier count variations, missing data, column swapping, OCR substitutions, duplicates, march queue variants, tab detection, number formats). Narrower/wider phone sizes, scaled resolution, low-contrast images, and another game language aren't separately tested (the geometry-relative approach should generalize, but isn't explicitly verified for those).
+
+### Regression fixture results
+All exact spec values verified: Infantry 243,441 · Lancer 240,915 · Marksman 424,752 · sum 909,108 · displayedTroops current≈870,700/max≈909,100 · marchQueue 5/6 · injured 0/210,400 · `displayedTotalMatchesExtractedSum: true`. See "never cross-pairs a label with the other column's number" test, which explicitly asserts the old bug's exact wrong values (192541+43133, 146964+43133) never recur.
+
+### Test results
+70/70 passing (29 new `troopScreenshot` tests + 41 existing `squadCalculations` tests, unaffected by this change).
+
+### Build results
+`CI=true npm run build` compiles cleanly (one invalid `eslint-disable` rule reference was caught and fixed during this pass).
+
+### Known limitations
+- Still genuinely untested against **real** Tesseract output in a real browser — all tests replay hand-estimated word geometry from the screenshot. Real OCR noise (word mis-segmentation, extra punctuation) could still surface new issues.
+- Region detection, blur rejection, and the dev debug view are not implemented (see deviations above).
+- Tab-selection detection depends on pixel-color sampling at a guessed offset above each tab label; not verified against the real image's actual tab-pill styling.
+- `minPerMarch` and other Phase-1 limitations are unchanged and still apply.
+
+### Recommended next improvement
+Run the actual upload flow in a real browser against this screenshot (and a
+few others, ideally with different tier counts and the City/Wilderness
+tabs) to see genuine Tesseract output — that's the one thing that can't be
+verified from this sandbox, and it's now the single highest-value next step
+given how much of the rest is calibrated and tested.
+
+---
+
 
 ## Files created
 

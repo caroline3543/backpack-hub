@@ -1,60 +1,120 @@
 // ─── TroopsStep.jsx ───────────────────────────────────────────────────────────
-// Step 1: Add Troops. Offers screenshot import (OCR, best-effort) or manual
-// entry — either way, every value stays editable and nothing calculates
-// silently on an uncertain read.
+// Step 1: Add Troops. Screenshot import (via the troopScreenshot module) or
+// manual entry. The review screen shows every extracted tier individually,
+// editable, with the combined total per troop class computed automatically
+// — never pre-combined before the user sees it.
 
 import { useState, useRef, useEffect } from "react";
-import { parseTroopNumber, formatTroopNumber } from "../squadCalculations.js";
-import { TesseractTroopParser, LOW_CONFIDENCE_THRESHOLD } from "../ocrParser.js";
+import { formatTroopNumber } from "../squadCalculations.js";
+import { parseGameNumberValue } from "../troopScreenshot/parseGameNumber.js";
+import { TesseractTroopScreenshotParser } from "../troopScreenshot/index.js";
 import { card, label, input, heading, kicker, buttonPrimary, buttonSecondary, TROOP_COLORS, TROOP_LABELS } from "../squadStyles.js";
 
-function TroopInput({ type, value, onChange, confidence, tiers }) {
-  const [raw, setRaw] = useState(value ? formatTroopNumber(value) : "");
-  useEffect(() => { setRaw(value ? formatTroopNumber(value) : ""); }, [value]);
+const TROOP_TYPES = ["infantry", "lancer", "marksman"];
 
-  const lowConfidence = confidence !== undefined && confidence !== null && confidence < LOW_CONFIDENCE_THRESHOLD;
-  const tierEntries = tiers ? Object.entries(tiers) : [];
+function tiersFromEntries(entries) {
+  const byType = { infantry: [], lancer: [], marksman: [] };
+  entries.forEach(e => {
+    byType[e.troopClass].push({
+      id: e.id,
+      name: e.normalisedTier,
+      count: e.count,
+      confidence: Math.min(e.labelConfidence, e.countConfidence || 1, e.associationConfidence),
+    });
+  });
+  // Types with nothing extracted still get one blank manual-entry row so
+  // the user can fill it in rather than the class silently defaulting to 0.
+  TROOP_TYPES.forEach(t => {
+    if (byType[t].length === 0) byType[t].push({ id: `${t}-manual`, name: "Total", count: 0, confidence: 1 });
+  });
+  return byType;
+}
+
+function combinedTotal(tiers) {
+  return tiers.reduce((s, t) => s + (Number(t.count) || 0), 0);
+}
+
+function TierRow({ tier, type, onChangeCount, onRemove, canRemove }) {
+  const [raw, setRaw] = useState(tier.count ? formatTroopNumber(tier.count) : "");
+  useEffect(() => { setRaw(tier.count ? formatTroopNumber(tier.count) : ""); }, [tier.count]);
+  const lowConfidence = tier.confidence < 0.70;
 
   return (
-    <div style={{ marginBottom: 14 }}>
-      <label style={{ ...label, color: TROOP_COLORS[type], display: "flex", alignItems: "center", gap: 6 }}>
-        {TROOP_LABELS[type]}
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+      <div style={{ flex: "0 0 92px", fontSize: 12, color: "#6f7a73", fontWeight: 600,
+        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {tier.name}
         {lowConfidence && (
-          <span style={{ fontSize: 10, fontWeight: 700, color: "#a06358",
-            background: "rgba(160,99,88,0.1)", borderRadius: 99, padding: "1px 7px" }}>
-            Please check
-          </span>
+          <div style={{ fontSize: 9, fontWeight: 700, color: "#a06358" }}>Please check</div>
         )}
-      </label>
+      </div>
       <input
-        style={{ ...input, border: lowConfidence ? "1px solid #a06358" : input.border }}
-        type="text"
-        inputMode="numeric"
-        placeholder="e.g. 153,250 or 1.2M"
+        style={{ ...input, padding: "9px 12px", fontSize: 14, border: lowConfidence ? "1px solid #a06358" : input.border }}
+        type="text" inputMode="numeric"
         value={raw}
-        onChange={e => { setRaw(e.target.value); onChange(parseTroopNumber(e.target.value)); }}
-        onBlur={() => setRaw(value ? formatTroopNumber(value) : "")}
+        onChange={e => { setRaw(e.target.value); onChangeCount(parseGameNumberValue(e.target.value)); }}
+        onBlur={() => setRaw(tier.count ? formatTroopNumber(tier.count) : "")}
       />
-      {tierEntries.length > 1 && (
-        <div style={{ fontSize: 11, color: "#9aa59e", marginTop: 4 }}>
-          {tierEntries.map(([name, v]) => `${name} ${formatTroopNumber(v)}`).join(" + ")}
-        </div>
+      {canRemove && (
+        <button onClick={onRemove} style={{ width: 30, height: 30, borderRadius: 8, border: "none",
+          background: "#fdf0ee", color: "#a1766e", cursor: "pointer", flexShrink: 0 }}>✕</button>
       )}
     </div>
   );
 }
 
-export default function TroopsStep({ inventory, onChange, onContinue }) {
+function TroopClassCard({ type, tiers, onChange }) {
+  const total = combinedTotal(tiers);
+  const updateTier = (id, count) => onChange(tiers.map(t => t.id === id ? { ...t, count } : t));
+  const removeTier = (id) => onChange(tiers.filter(t => t.id !== id).length ? tiers.filter(t => t.id !== id) : [{ id: `${type}-manual`, name: "Total", count: 0, confidence: 1 }]);
+  const addTier = () => onChange([...tiers, { id: `${type}-${Date.now()}`, name: "New tier", count: 0, confidence: 1 }]);
+
+  return (
+    <div style={{ ...card, marginBottom: 12 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
+        <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.14em", color: TROOP_COLORS[type] }}>
+          {TROOP_LABELS[type]}
+        </span>
+        <span style={{ fontSize: 15, fontWeight: 700, color: "#24312c" }}>{formatTroopNumber(total)}</span>
+      </div>
+      {tiers.map(tier => (
+        <TierRow key={tier.id} tier={tier} type={type}
+          onChangeCount={c => updateTier(tier.id, c)}
+          onRemove={() => removeTier(tier.id)}
+          canRemove={tiers.length > 1}
+        />
+      ))}
+      <button onClick={addTier} style={{ background: "none", border: "none", cursor: "pointer",
+        fontSize: 12, color: "#78917f", fontWeight: 600, padding: "4px 0 0" }}>
+        + Add another tier
+      </button>
+    </div>
+  );
+}
+
+export default function TroopsStep({ inventory, onChange, onContinue, onMarchQueueDetected }) {
   const [mode, setMode] = useState("choose"); // choose | manual | uploading | review
   const [previewUrl, setPreviewUrl] = useState(null);
-  const [confidence, setConfidence] = useState({});
-  const [tiers, setTiers] = useState({});
+  const [tiersByType, setTiersByType] = useState({ infantry: [], lancer: [], marksman: [] });
+  const [screenshotSummary, setScreenshotSummary] = useState(null);
   const [ocrWarnings, setOcrWarnings] = useState([]);
+  const [simpleView, setSimpleView] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     return () => { if (previewUrl) URL.revokeObjectURL(previewUrl); };
   }, [previewUrl]);
+
+  // Keep the parent's simple {infantry,lancer,marksman} totals in sync
+  // whenever the tier breakdown changes, in either mode.
+  useEffect(() => {
+    if (mode !== "review") return;
+    onChange({
+      infantry: combinedTotal(tiersByType.infantry),
+      lancer: combinedTotal(tiersByType.lancer),
+      marksman: combinedTotal(tiersByType.marksman),
+    });
+  }, [tiersByType, mode]); // eslint-disable-line -- onChange/inventory intentionally excluded, only tier edits should retrigger this
 
   const total = inventory.infantry + inventory.lancer + inventory.marksman;
 
@@ -65,23 +125,26 @@ export default function TroopsStep({ inventory, onChange, onContinue }) {
     setMode("uploading");
     setOcrWarnings([]);
 
-    const result = await TesseractTroopParser.parse(file);
-    onChange({
-      infantry: result.inventory.infantry?.total || 0,
-      lancer: result.inventory.lancer?.total || 0,
-      marksman: result.inventory.marksman?.total || 0,
-    });
-    setConfidence(result.confidence);
-    setTiers({
-      infantry: result.inventory.infantry?.tiers,
-      lancer: result.inventory.lancer?.tiers,
-      marksman: result.inventory.marksman?.tiers,
-    });
+    const result = await TesseractTroopScreenshotParser.parse(file);
+    setTiersByType(tiersFromEntries(result.entries));
     setOcrWarnings(result.warnings || []);
+    setScreenshotSummary({
+      extractedSum: result.extractedVisibleTroopSum,
+      displayedMax: result.displayedTroops.maximum,
+      matches: result.validation.displayedTotalMatchesExtractedSum,
+      marchQueue: result.marchQueue,
+      selectedTab: result.selectedTab,
+    });
+    if (result.marchQueue.maximum !== null && onMarchQueueDetected) {
+      onMarchQueueDetected(result.marchQueue);
+    }
     setMode("review");
-    // The image itself is never uploaded anywhere or persisted — it only
-    // exists as a local object URL for this session's preview, and that URL
-    // is revoked as soon as the component unmounts or a new file replaces it.
+  };
+
+  const discardScreenshot = () => {
+    setMode("manual");
+    setOcrWarnings([]);
+    setScreenshotSummary(null);
   };
 
   if (mode === "choose") {
@@ -102,8 +165,7 @@ export default function TroopsStep({ inventory, onChange, onContinue }) {
             📷 Upload troop screenshot
           </div>
           <div style={{ fontSize: 13, color: "#6f7a73", lineHeight: 1.5 }}>
-            We'll try to read Infantry, Lancer, and Marksman counts automatically. You'll
-            always get a chance to review and correct them first.
+            We'll try to read every troop tier automatically. You'll always get a chance to review and correct them first.
           </div>
         </button>
 
@@ -138,20 +200,39 @@ export default function TroopsStep({ inventory, onChange, onContinue }) {
     );
   }
 
-  // mode === "manual" or "review"
+  if (mode === "manual") {
+    return (
+      <div>
+        <div style={kicker}>Squad Calculator</div>
+        <div style={{ ...heading, marginBottom: 6 }}>Add your troops</div>
+        <p style={{ fontSize: 14, color: "#6f7a73", lineHeight: 1.5, marginBottom: 18 }}>
+          Enter how many of each troop type you currently have. You can use plain numbers, commas, or K/M/B shorthand (e.g. "1.2M").
+        </p>
+
+        <ManualEntryFields inventory={inventory} onChange={onChange} />
+
+        <button onClick={() => setMode("choose")} style={{ ...buttonSecondary, marginBottom: 10 }}>
+          ← Use a screenshot instead
+        </button>
+
+        <button onClick={onContinue} disabled={total <= 0}
+          style={{ ...buttonPrimary, opacity: total <= 0 ? 0.5 : 1, cursor: total <= 0 ? "default" : "pointer" }}>
+          Continue
+        </button>
+      </div>
+    );
+  }
+
+  // mode === "review"
   return (
     <div>
       <div style={kicker}>Squad Calculator</div>
-      <div style={{ ...heading, marginBottom: 6 }}>
-        {mode === "review" ? "Check your troops" : "Add your troops"}
-      </div>
-      <p style={{ fontSize: 14, color: "#6f7a73", lineHeight: 1.5, marginBottom: 18 }}>
-        {mode === "review"
-          ? "Here's what we could read from your screenshot — correct anything that looks off before continuing."
-          : "Enter how many of each troop type you currently have. You can use plain numbers, commas, or K/M/B shorthand (e.g. \"1.2M\")."}
+      <div style={{ ...heading, marginBottom: 6 }}>Check your troops</div>
+      <p style={{ fontSize: 14, color: "#6f7a73", lineHeight: 1.5, marginBottom: 14 }}>
+        Here's what we could read from your screenshot — correct anything that looks off before continuing.
       </p>
 
-      {mode === "review" && previewUrl && (
+      {previewUrl && (
         <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 14 }}>
           <img src={previewUrl} alt="Troop screenshot preview" style={{
             width: 64, height: 64, objectFit: "cover", borderRadius: 12, flexShrink: 0,
@@ -160,8 +241,8 @@ export default function TroopsStep({ inventory, onChange, onContinue }) {
             <button onClick={() => fileInputRef.current?.click()} style={{ ...buttonSecondary, fontSize: 12, flex: 1 }}>
               Replace screenshot
             </button>
-            <button onClick={() => { setMode("manual"); setOcrWarnings([]); }} style={{ ...buttonSecondary, fontSize: 12, flex: 1 }}>
-              Continue without it
+            <button onClick={discardScreenshot} style={{ ...buttonSecondary, fontSize: 12, flex: 1 }}>
+              Discard screenshot and enter manually
             </button>
           </div>
           <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }}
@@ -169,7 +250,38 @@ export default function TroopsStep({ inventory, onChange, onContinue }) {
         </div>
       )}
 
-      {mode === "review" && ocrWarnings.length > 0 && (
+      {screenshotSummary && (
+        <div style={{ ...card, marginBottom: 14 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
+            <span style={{ color: "#9aa59e" }}>Extracted total</span>
+            <span style={{ fontWeight: 700, color: "#24312c" }}>{formatTroopNumber(screenshotSummary.extractedSum)}</span>
+          </div>
+          {screenshotSummary.displayedMax !== null && (
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
+              <span style={{ color: "#9aa59e" }}>Screenshot total (approx.)</span>
+              <span style={{ fontWeight: 700, color: "#24312c" }}>{formatTroopNumber(screenshotSummary.displayedMax)}</span>
+            </div>
+          )}
+          {screenshotSummary.matches !== null && (
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
+              <span style={{ color: "#9aa59e" }}>Match</span>
+              <span style={{ fontWeight: 700, color: screenshotSummary.matches ? "#5c7a6e" : "#a06358" }}>
+                {screenshotSummary.matches ? "Yes" : "No"}
+              </span>
+            </div>
+          )}
+          {screenshotSummary.marchQueue?.maximum !== null && screenshotSummary.marchQueue?.current !== null && (
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+              <span style={{ color: "#9aa59e" }}>March queues</span>
+              <span style={{ fontWeight: 700, color: "#24312c" }}>
+                {screenshotSummary.marchQueue.current} of {screenshotSummary.marchQueue.maximum}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {ocrWarnings.length > 0 && (
         <div style={{ ...card, marginBottom: 14, background: "rgba(154,119,70,0.08)", border: "1px solid rgba(154,119,70,0.2)" }}>
           {ocrWarnings.map((w, i) => (
             <div key={i} style={{ fontSize: 12, color: "#9a7746", lineHeight: 1.5, marginBottom: i < ocrWarnings.length - 1 ? 6 : 0 }}>{w}</div>
@@ -177,40 +289,69 @@ export default function TroopsStep({ inventory, onChange, onContinue }) {
         </div>
       )}
 
-      {mode === "review" && (
-        <div style={{ fontSize: 11, color: "#b8c0ba", marginBottom: 14, lineHeight: 1.5 }}>
-          Per-tier amounts (shown below each total when found, e.g. Apex + Supreme) are for your reference — calculations always use the combined total for each troop type.
+      <button onClick={() => setSimpleView(v => !v)} style={{
+        background: "none", border: "none", cursor: "pointer", fontSize: 12,
+        color: "#78917f", fontWeight: 600, padding: 0, marginBottom: 10, display: "block",
+      }}>
+        {simpleView ? "Show tier breakdown" : "Show simple view (combined totals only)"}
+      </button>
+
+      {!simpleView && (
+        <div style={{ fontSize: 11, color: "#b8c0ba", marginBottom: 10, lineHeight: 1.5 }}>
+          Per-tier amounts are editable — the combined total updates automatically.
         </div>
       )}
 
-      <div style={{ ...card, marginBottom: 16 }}>
-        <TroopInput type="infantry" value={inventory.infantry} confidence={confidence.infantry} tiers={tiers.infantry}
-          onChange={v => onChange({ ...inventory, infantry: v })} />
-        <TroopInput type="lancer" value={inventory.lancer} confidence={confidence.lancer} tiers={tiers.lancer}
-          onChange={v => onChange({ ...inventory, lancer: v })} />
-        <TroopInput type="marksman" value={inventory.marksman} confidence={confidence.marksman} tiers={tiers.marksman}
-          onChange={v => onChange({ ...inventory, marksman: v })} />
+      {TROOP_TYPES.map(type => (
+        simpleView ? (
+          <div key={type} style={{ ...card, marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: TROOP_COLORS[type] }}>
+              {TROOP_LABELS[type]}
+            </span>
+            <span style={{ fontSize: 16, fontWeight: 700, color: "#24312c" }}>{formatTroopNumber(combinedTotal(tiersByType[type]))}</span>
+          </div>
+        ) : (
+          <TroopClassCard key={type} type={type} tiers={tiersByType[type]}
+            onChange={tiers => setTiersByType(prev => ({ ...prev, [type]: tiers }))} />
+        )
+      ))}
 
-        <div style={{ borderTop: "1px solid rgba(72,94,80,0.08)", paddingTop: 10, marginTop: 4,
-          display: "flex", justifyContent: "space-between" }}>
-          <span style={{ fontSize: 13, color: "#6f7a73", fontWeight: 600 }}>Total</span>
-          <span style={{ fontSize: 15, fontWeight: 700, color: "#24312c" }}>{formatTroopNumber(total)}</span>
-        </div>
+      <div style={{ ...card, marginBottom: 16, display: "flex", justifyContent: "space-between" }}>
+        <span style={{ fontSize: 13, color: "#6f7a73", fontWeight: 600 }}>Total</span>
+        <span style={{ fontSize: 15, fontWeight: 700, color: "#24312c" }}>{formatTroopNumber(total)}</span>
       </div>
 
-      {mode === "manual" && (
-        <button onClick={() => setMode("choose")} style={{ ...buttonSecondary, marginBottom: 10 }}>
-          ← Use a screenshot instead
-        </button>
-      )}
-
-      <button
-        onClick={onContinue}
-        disabled={total <= 0}
-        style={{ ...buttonPrimary, opacity: total <= 0 ? 0.5 : 1, cursor: total <= 0 ? "default" : "pointer" }}
-      >
-        Continue
+      <button onClick={onContinue} disabled={total <= 0}
+        style={{ ...buttonPrimary, opacity: total <= 0 ? 0.5 : 1, cursor: total <= 0 ? "default" : "pointer" }}>
+        Confirm troops
       </button>
+    </div>
+  );
+}
+
+function ManualEntryFields({ inventory, onChange }) {
+  return (
+    <div style={{ ...card, marginBottom: 16 }}>
+      {TROOP_TYPES.map(type => (
+        <ManualField key={type} type={type} value={inventory[type]}
+          onChange={v => onChange({ ...inventory, [type]: v })} />
+      ))}
+    </div>
+  );
+}
+
+function ManualField({ type, value, onChange }) {
+  const [raw, setRaw] = useState(value ? formatTroopNumber(value) : "");
+  useEffect(() => { setRaw(value ? formatTroopNumber(value) : ""); }, [value]);
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <label style={{ ...label, color: TROOP_COLORS[type] }}>{TROOP_LABELS[type]}</label>
+      <input
+        style={input} type="text" inputMode="numeric" placeholder="e.g. 153,250 or 1.2M"
+        value={raw}
+        onChange={e => { setRaw(e.target.value); onChange(parseGameNumberValue(e.target.value)); }}
+        onBlur={() => setRaw(value ? formatTroopNumber(value) : "")}
+      />
     </div>
   );
 }

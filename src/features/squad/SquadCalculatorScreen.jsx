@@ -117,6 +117,7 @@ export default function SquadCalculatorScreen() {
   const [inventory, setInventory] = useState({ infantry: 0, lancer: 0, marksman: 0 });
   const [event, setEvent] = useState(null);
   const [marchSetup, setMarchSetup] = useState(DEFAULT_MARCH_SETUP);
+  const [marchQueueInfo, setMarchQueueInfo] = useState(null); // { current, maximum } detected from a screenshot, if any
   const [crazyJoeStrategy, setCrazyJoeStrategy] = useState(DEFAULT_CRAZY_JOE_STRATEGY);
   const [bearTrapStrategy, setBearTrapStrategy] = useState(DEFAULT_BEAR_TRAP_STRATEGY);
   const { presets, savePreset, deletePreset } = useSquadPresets();
@@ -141,6 +142,7 @@ export default function SquadCalculatorScreen() {
     setInventory({ infantry: 0, lancer: 0, marksman: 0 });
     setEvent(null);
     setMarchSetup(DEFAULT_MARCH_SETUP);
+    setMarchQueueInfo(null);
     setCrazyJoeStrategy(DEFAULT_CRAZY_JOE_STRATEGY);
     setBearTrapStrategy(DEFAULT_BEAR_TRAP_STRATEGY);
   }, []);
@@ -170,7 +172,7 @@ export default function SquadCalculatorScreen() {
       </div>
 
       {step === "troops" && (
-        <TroopsStep inventory={inventory} onChange={setInventory} onContinue={next} />
+        <TroopsStep inventory={inventory} onChange={setInventory} onContinue={next} onMarchQueueDetected={setMarchQueueInfo} />
       )}
 
       {step === "event" && (
@@ -178,7 +180,7 @@ export default function SquadCalculatorScreen() {
       )}
 
       {step === "marches" && (
-        <MarchesStep event={event} setup={marchSetup} onChange={setMarchSetup} onContinue={next} onBack={back} />
+        <MarchesStep event={event} setup={marchSetup} onChange={setMarchSetup} onContinue={next} onBack={back} marchQueueInfo={marchQueueInfo} />
       )}
 
       {step === "strategy" && (

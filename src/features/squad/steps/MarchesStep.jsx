@@ -23,7 +23,7 @@ function NumberField({ value, onChange, placeholder }) {
   );
 }
 
-export default function MarchesStep({ event, setup, onChange, onContinue, onBack }) {
+export default function MarchesStep({ event, setup, onChange, onContinue, onBack, marchQueueInfo }) {
   const [showBuffs, setShowBuffs] = useState(false);
   const [showCyrille, setShowCyrille] = useState(!!setup.cyrille?.enabled);
 
@@ -76,6 +76,19 @@ export default function MarchesStep({ event, setup, onChange, onContinue, onBack
       </p>
 
       {/* March count */}
+      {marchQueueInfo && marchQueueInfo.maximum !== null && (
+        <div style={{ ...card, marginBottom: 14, background: "rgba(92,122,110,0.06)", border: "1px solid rgba(92,122,110,0.2)" }}>
+          <div style={{ fontSize: 12, color: "#5c7a6e", lineHeight: 1.5, marginBottom: marchCount !== marchQueueInfo.maximum ? 8 : 0 }}>
+            We read {marchQueueInfo.current} of {marchQueueInfo.maximum} march queues from your screenshot.
+            Squad calculations will use {marchCount} available queues unless you change this — {marchQueueInfo.current} are currently occupied, so not all of them may be free to deploy right away.
+          </div>
+          {marchCount !== marchQueueInfo.maximum && (
+            <button onClick={() => setMarchCount(marchQueueInfo.maximum)} style={{ ...chip(false), fontSize: 12 }}>
+              Use {marchQueueInfo.maximum}
+            </button>
+          )}
+        </div>
+      )}
       <div style={{ ...card, marginBottom: 14 }}>
         <label style={label}>How many marches?</label>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
