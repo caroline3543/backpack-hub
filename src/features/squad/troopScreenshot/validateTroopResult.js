@@ -17,7 +17,7 @@ function boxesOverlap(a, b) {
 /**
  * @param {{ entries: import('./types.js').ExtractedTroopEntry[], displayedTroops: import('./types.js').HeaderFraction, tolerancePercent?: number }} args
  */
-export function validateTroopResult({ entries, displayedTroops, tolerancePercent = 0.2 }) {
+export function validateTroopResult({ entries, displayedTroops }) {
   const warnings = [];
 
   // Dedupe: same class + tier appearing again with an overlapping bounding
@@ -54,14 +54,14 @@ export function validateTroopResult({ entries, displayedTroops, tolerancePercent
     totalDifferencePercent = displayedTroops.maximum > 0
       ? (totalDifference / displayedTroops.maximum) * 100
       : null;
-    // Configurable tolerance: a value shown as "909.1K" has already been
-    // rounded to one decimal place in K, i.e. it represents anything from
-    // 909,050 to 909,149 — roughly ±50. We use a slightly wider
-    // percentage-based tolerance on top of that to absorb additional OCR
-    // noise, since the spec explicitly calls out that ±50 alone is too
-    // tight to be robust against real-world extraction error.
-    const tolerance = Math.max(75, Math.abs(displayedTroops.maximum) * (tolerancePercent / 100));
-    displayedTotalMatchesExtractedSum = Math.abs(totalDifference) <= tolerance;
+    // A value shown as "929.8K" is already rounded to one decimal place in
+    // K — i.e. it represents anything from 929,750 to 929,849. Match if
+    // either the absolute gap is small (≤500 troops) or the relative gap
+    // is small (≤0.1%), since a fixed troop-count tolerance alone breaks
+    // down for very large or very small armies.
+    const withinAbsolute = Math.abs(totalDifference) <= 500;
+    const withinPercent = totalDifferencePercent !== null && Math.abs(totalDifferencePercent) <= 0.1;
+    displayedTotalMatchesExtractedSum = withinAbsolute || withinPercent;
   }
 
   if (duplicateEntriesDetected) {
@@ -81,6 +81,7 @@ export function validateTroopResult({ entries, displayedTroops, tolerancePercent
     entries: kept,
     totalsByClass,
     extractedVisibleTroopSum,
+    status: computeStatus(kept, missingTroopClasses, displayedTotalMatchesExtractedSum),
     validation: {
       totalDifference,
       totalDifferencePercent,
@@ -90,4 +91,19 @@ export function validateTroopResult({ entries, displayedTroops, tolerancePercent
     },
     warnings,
   };
+}
+
+/**
+ * "verified": a full, confident read with no rows needing review and a
+ * total that matches the displayed header.
+ * "partial": enough was read to be useful, but something needs a look —
+ * a missing class, a low-confidence row, or a total mismatch.
+ * "failed": too little was extracted to be useful at all.
+ */
+function computeStatus(entries, missingTroopClasses, totalsMatch) {
+  if (entries.length === 0) return "failed";
+  if (entries.length < 2 && missingTroopClasses.length >= 2) return "failed";
+  const anyNeedsReview = entries.some(e => e.requiresReview);
+  if (anyNeedsReview || missingTroopClasses.length > 0 || totalsMatch === false) return "partial";
+  return "verified";
 }

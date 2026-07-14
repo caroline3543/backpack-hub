@@ -101,6 +101,10 @@ function groupIntoLines(words) {
 
 function xCenter(w) { return (w.bbox.x0 + w.bbox.x1) / 2; }
 
+function digitCount(text) {
+  return (text.match(/\d/g) || []).length;
+}
+
 function findValueBelow(labelWord, tierWord, labelLineIndex, lines, claimedWords) {
   const groupX0 = tierWord ? Math.min(tierWord.bbox.x0, labelWord.bbox.x0) : labelWord.bbox.x0;
   const groupX1 = tierWord ? Math.max(tierWord.bbox.x1, labelWord.bbox.x1) : labelWord.bbox.x1;
@@ -108,20 +112,51 @@ function findValueBelow(labelWord, tierWord, labelLineIndex, lines, claimedWords
   const maxDist = Math.max(150, groupX1 - groupX0);
 
   for (let li = labelLineIndex + 1; li <= labelLineIndex + 2 && li < lines.length; li++) {
-    const numbers = lines[li].filter(w => looksLikeGameNumber(w.text) && !claimedWords.has(w));
-    if (numbers.length === 0) continue;
+    const allNumbers = lines[li].filter(w => looksLikeGameNumber(w.text) && !claimedWords.has(w));
+    if (allNumbers.length === 0) continue;
+    // Real troop counts are always at least a few thousand (4+ digits) in
+    // practice; a bare 1-2 digit token nearby is almost always a tier
+    // badge number, not the value — prefer substantial numbers when any
+    // exist, only falling back to short ones if that's truly all there is.
+    const substantial = allNumbers.filter(w => digitCount(w.text) >= 3);
+    const numbers = substantial.length > 0 ? substantial : allNumbers;
+
     let best = null, bestDist = Infinity;
     for (const w of numbers) {
       const dist = Math.abs(xCenter(w) - groupCenter);
       if (dist < bestDist) { bestDist = dist; best = w; }
     }
-    if (best && bestDist <= maxDist) return { word: best, associationConfidence: Math.max(0.5, 1 - bestDist / (maxDist * 2)) };
+    if (best && bestDist <= maxDist) {
+      // A second candidate with a heavily overlapping bounding box is a red
+      // flag that OCR detected the same physical number twice with
+      // different (both possibly incomplete) segmentation — e.g. "192,"
+      // and "92,541" both covering the same glyph region. We can't safely
+      // reconstruct the true value without the source image, so surface
+      // this as low confidence rather than silently trusting either read.
+      const overlapping = numbers.find(w => w !== best && boxesOverlapSignificantly(w.bbox, best.bbox));
+      const chosen = overlapping && digitCount(overlapping.text) > digitCount(best.text) ? overlapping : best;
+      const ambiguous = !!overlapping;
+      return {
+        word: chosen,
+        associationConfidence: ambiguous ? 0.4 : Math.max(0.5, 1 - bestDist / (maxDist * 2)),
+      };
+    }
   }
   const sameLine = lines[labelLineIndex].filter(w =>
     w !== labelWord && looksLikeGameNumber(w.text) && !claimedWords.has(w) && w.bbox.x0 >= labelWord.bbox.x0
   );
   if (sameLine.length > 0) return { word: sameLine[0], associationConfidence: 0.6 };
   return null;
+}
+
+function boxesOverlapSignificantly(a, b) {
+  const overlapX = Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0);
+  const overlapY = Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0);
+  if (overlapX <= 0 || overlapY <= 0) return false;
+  const areaA = (a.x1 - a.x0) * (a.y1 - a.y0);
+  const areaB = (b.x1 - b.x0) * (b.y1 - b.y0);
+  const overlapArea = overlapX * overlapY;
+  return overlapArea > Math.min(areaA, areaB) * 0.4;
 }
 
 function findTierWord(labelWord, line) {
@@ -155,9 +190,19 @@ function associateColumn(words, columnLabel) {
       if (!found) return;
       claimedWords.add(found.word);
 
-      const { normalisedTier } = normaliseTierName(tierWord ? tierWord.text : "Unknown");
+      // Honest null when no tier word was found — a fake "Unknown" string
+      // reads as if a tier was actually detected and just happened to be
+      // unrecognised; null makes clear no tier was read at all, so the UI
+      // can prompt the user to fill it in rather than silently accepting it.
+      const tierResult = tierWord ? normaliseTierName(tierWord.text) : null;
+      const normalisedTier = tierResult ? tierResult.normalisedTier : null;
+      const tierConfidence = tierResult ? (tierResult.isKnownTier ? 0.95 : 0.75) : 0;
+
       const parsed = parseGameNumber(found.word.text);
       if (parsed.value === null) return;
+
+      const countConfidence = found.word.confidence !== undefined ? found.word.confidence / 100 : parsed.confidence;
+      const requiresReview = normalisedTier === null || tierConfidence < 0.6 || countConfidence < 0.75 || found.associationConfidence < 0.6;
 
       const labelBox = tierWord
         ? { x0: Math.min(tierWord.bbox.x0, word.bbox.x0), y0: Math.min(tierWord.bbox.y0, word.bbox.y0), x1: Math.max(tierWord.bbox.x1, word.bbox.x1), y1: Math.max(tierWord.bbox.y1, word.bbox.y1) }
@@ -171,8 +216,10 @@ function associateColumn(words, columnLabel) {
         count: parsed.value,
         rawCountText: found.word.text,
         labelConfidence: match.confidence,
-        countConfidence: found.word.confidence !== undefined ? found.word.confidence / 100 : parsed.confidence,
+        tierConfidence,
+        countConfidence,
         associationConfidence: found.associationConfidence,
+        requiresReview,
         boundingBox: {
           x: labelBox.x0, y: labelBox.y0,
           width: labelBox.x1 - labelBox.x0, height: labelBox.y1 - labelBox.y0,

@@ -120,6 +120,85 @@ screenshot of the UI; it's the actual ground-truth data the parser saw, and
 turns "guess from symptoms" into "look at the real numbers," which is what
 made the Phase 3 fixes possible to verify at all.
 
+## Phase 5: real ground-truth debugging — 5 of 6 rows now exactly correct
+
+The "Copy diagnostic info" button did exactly what it was built for: pasted
+real Tesseract word-level output (not hand-modeled geometry) made it
+possible to pinpoint and fix the actual bugs, not just plausible-sounding
+ones. Three real, confirmed root causes found by running this data through
+the real pipeline (see `__tests__/real-screenshot-2.fixture.json` and
+`.test.js`):
+
+1. **Header/title/tab chrome text was corrupting column-split detection.**
+   "Troops Preview" (the page title) and the "All / City / Wilderness" tab
+   row each produced their own plausible-looking horizontal gap, and their
+   false-positive votes outvoted the one genuine troop-panel candidate in
+   the median calculation — landing the split point between "Apex" and
+   "Infantry" (i.e., inside a single tier+class label). **Fix:** filter out
+   every OCR word below confidence 70 before *any* processing. In every
+   real screenshot examined so far, genuine content (labels, tiers, values,
+   header stats) reads at 83-97 confidence; misread icon/badge glyphs read
+   at 5-68, with zero overlap — so this one filter removes all the noise
+   while never touching real content.
+2. **A tier-badge digit ("4") was picked over the real 6-digit value**
+   ("196,402") because it happened to sit slightly closer by horizontal
+   center. Troop counts are never 1-2 digits in practice — the value
+   matcher now prefers 3+-digit candidates whenever any exist, only
+   falling back to short ones if that's genuinely all there is.
+3. **A value with a stray leading `)`** (glued on from a misread icon
+   outline: `")382,485"`) was rejected outright because number parsing
+   required the string to *start* with a digit. Now strips stray
+   leading/trailing punctuation before parsing.
+
+Also fixed: two labels could independently claim the *same* number as their
+nearest match (the exact 53,633-under-both-Lancer-and-Marksman bug) — now
+tracked and excluded once claimed. And a cosmetic-but-real bug where
+`normalise()`'s OCR-substitution logic (meant to catch "l" misread for "I")
+was blindly mangling the legitimate lowercase "l" in "Lancer" itself,
+knocking its own confidence down for no reason — fixed by comparing both
+the raw and substituted forms and taking whichever gives the better match.
+
+**Result on the real fixture:** Infantry and Marksman combined totals are
+now *exactly* correct (250,035 and 432,277). The one remaining discrepancy
+(Apex Lancer reads 92,541 instead of 192,541) is a genuine Tesseract
+duplicate-detection artifact — it read the same glyphs twice with two
+different, both-incomplete segmentations ("192," and "92,541", overlapping
+bounding boxes) — and there's no way to reconstruct the true value from two
+incomplete reads without re-examining the source image. The system now
+does the honest thing: picks the more complete-looking read, flags it
+`requiresReview: true` with association confidence well under 0.6, and
+surfaces a specific warning — rather than either guessing silently or
+crashing.
+
+### Adopted from a follow-up spec proposing a full region-cropping rewrite
+
+That proposal (crop the screenshot into 6 separate row images, OCR each
+independently, use row position as a type signal) was **not** implemented —
+given the single-pass pipeline now hits 5/6 exact on real data, a 6x-OCR-
+call architecture with a new crop-boundary-detection problem to solve
+wasn't justified. Adopted instead, layered onto the existing pipeline:
+- `tier: null` (not a fake `"Unknown"` string) when no tier word was found,
+  so the UI can honestly show "unconfirmed" rather than pretending
+  detection happened. Each entry now also carries `tierConfidence` and a
+  computed `requiresReview` boolean.
+- Explicit `status: "verified" | "partial" | "failed"` on the top-level
+  result.
+- Tighter, spec-matched total-match tolerance: match if absolute difference
+  ≤500 troops **or** percentage difference ≤0.1% (previously a looser
+  combined formula).
+- Explicit `result.header` object (`availableTroops`, `totalTroops`,
+  `occupiedMarches`, `totalMarches`, `availableMarches`) alongside the
+  existing `displayedTroops`/`marchQueue` shape, for callers that want
+  unambiguous names rather than generic current/maximum pairs.
+
+### Screenshot preview thumbnail enlarged
+
+The review screen's preview was a 64×64 cropped square — essentially
+unreadable, defeating the point of letting someone manually cross-check a
+value against their own screenshot. It's now shown at full container width
+(up to 340px tall, `objectFit: contain` so nothing is cropped), tappable to
+open a full-screen view.
+
 ---
 
 

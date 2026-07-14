@@ -50,22 +50,25 @@ const MAX_EDIT_DISTANCE = 2;
  * @returns {{ troopClass: string, confidence: number } | null}
  */
 export function matchTroopClass(wordText) {
-  const cleaned = normalise(wordText);
-  if (cleaned.length < 4) return null; // too short to be any class name, avoid false positives
+  const bare = wordText.toLowerCase().replace(/[^a-z]/g, "");
+  const substituted = normalise(wordText);
+  if (bare.length < 4 && substituted.length < 4) return null; // too short to be any class name, avoid false positives
 
   let best = null;
   for (const [key, canonical] of Object.entries(CANONICAL_CLASSES)) {
-    const dist = editDistance(cleaned, canonical);
+    // Try both forms — the substituted form catches genuine OCR errors
+    // (e.g. "lnfantry" -> "infantry"), while the bare form avoids
+    // mis-penalising words that legitimately contain the letters being
+    // substituted (e.g. "Lancer" itself contains a real "l").
+    const dist = Math.min(editDistance(bare, canonical), editDistance(substituted, canonical));
     if (dist <= MAX_EDIT_DISTANCE && (!best || dist < best.dist)) {
       best = { troopClass: key, dist };
     }
   }
   if (!best) return null;
 
-  // Ambiguous match: acceptable distance to more than one class at the same
-  // distance means we genuinely can't tell — don't silently pick one.
-  const tiedCount = Object.values(CANONICAL_CLASSES).filter(
-    canonical => editDistance(cleaned, canonical) === best.dist
+  const tiedCount = Object.values(CANONICAL_CLASSES).filter(canonical =>
+    Math.min(editDistance(bare, canonical), editDistance(substituted, canonical)) === best.dist
   ).length;
   if (tiedCount > 1) return null;
 

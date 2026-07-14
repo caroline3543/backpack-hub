@@ -17,6 +17,25 @@ import { validateTroopResult } from "./validateTroopResult.js";
 
 const LOW_CONFIDENCE_THRESHOLD = 0.70;
 
+// Real screenshot text (labels, tier names, troop counts, header stats) has
+// consistently come back at ~83-97 OCR confidence; misread icon glyphs and
+// decorative UI chrome (checkmarks, arrows, badge outlines) come back at
+// ~5-68 with no overlap between the two groups in practice. Filtering these
+// out before column detection or association runs is what stops junk
+// tokens from (a) sitting in the middle of a genuine column gap and
+// shrinking it below the detection threshold, and (b) themselves forming
+// false "column gap" evidence out of unrelated chrome text like a page
+// title or a tab row, which is what caused a real production bug: two
+// false-positive candidates (from "Troops Preview" and the All/City/
+// Wilderness tab row) outvoted the one genuine troop-panel candidate in
+// the median calculation, landing the split between a tier name and the
+// troop class name that followed it.
+const WORD_CONFIDENCE_FLOOR = 70;
+
+function filterNoiseWords(words) {
+  return words.filter(w => w.confidence === undefined || w.confidence >= WORD_CONFIDENCE_FLOOR);
+}
+
 /**
  * Pure core: given raw OCR words (+ optional colour sampler/image
  * dimensions), returns the full TroopScreenshotResult. No I/O.
@@ -31,10 +50,15 @@ export function buildResultFromWords(words, opts = {}) {
     return emptyTroopScreenshotResult([...preWarnings, "No readable text was found in that image."]);
   }
 
-  const header = parseHeaderStats(words, sampleColor);
-  const rawEntries = associateTroopRows(words);
+  const cleanWords = filterNoiseWords(words);
+  if (cleanWords.length === 0) {
+    return emptyTroopScreenshotResult([...preWarnings, "No readable text was found in that image."]);
+  }
+
+  const header = parseHeaderStats(cleanWords, sampleColor);
+  const rawEntries = associateTroopRows(cleanWords);
   const {
-    entries, totalsByClass, extractedVisibleTroopSum, validation,
+    entries, totalsByClass, extractedVisibleTroopSum, status, validation,
     warnings: validationWarnings,
   } = validateTroopResult({ entries: rawEntries, displayedTroops: header.displayedTroops });
 
@@ -60,10 +84,23 @@ export function buildResultFromWords(words, opts = {}) {
     entries,
     totalsByClass,
     extractedVisibleTroopSum,
+    status,
     displayedTroops: header.displayedTroops,
     marchQueue: header.marchQueue,
     injured: header.injured,
     selectedTab: header.selectedTab,
+    // Explicit, unambiguous naming alongside the fields above — occupied/
+    // total/available marches spelled out separately, since "2/6" is easy
+    // to misread as "2 marches owned" rather than "2 of 6 in use."
+    header: {
+      availableTroops: header.displayedTroops.current,
+      totalTroops: header.displayedTroops.maximum,
+      occupiedMarches: header.marchQueue.current,
+      totalMarches: header.marchQueue.maximum,
+      availableMarches: (header.marchQueue.current !== null && header.marchQueue.maximum !== null)
+        ? header.marchQueue.maximum - header.marchQueue.current
+        : null,
+    },
     validation,
     confidence: {
       overall: overallConfidence,

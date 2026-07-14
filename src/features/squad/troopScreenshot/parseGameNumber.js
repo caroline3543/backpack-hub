@@ -13,7 +13,15 @@ const CLEAN_PATTERN = /^(\d[\d,\s]*\.?\d*|\.\d+)\s*([KMBkmb])?$/;
  */
 export function parseGameNumber(value) {
   const raw = value == null ? "" : String(value);
-  const trimmed = raw.trim();
+  let trimmed = raw.trim();
+  if (trimmed === "") {
+    return { value: null, raw, confidence: 0, wasAbbreviated: false };
+  }
+
+  // Strip stray leading/trailing punctuation that sometimes gets glued onto
+  // a number when OCR misreads a nearby icon/graphic as a character (e.g.
+  // ")382,485" from a badge outline next to the real number).
+  trimmed = trimmed.replace(/^[^\d.]+/, "").replace(/[^\d.KMBkmb]+$/, "");
   if (trimmed === "") {
     return { value: null, raw, confidence: 0, wasAbbreviated: false };
   }
@@ -66,8 +74,10 @@ export function parseGameNumberValue(value) {
   return parseGameNumber(value).value ?? 0;
 }
 
-/** True if `text` looks like a number the game UI might show (with optional K/M/B suffix). */
+/** True if `text` looks like a number the game UI might show (with optional K/M/B suffix), tolerating stray glued-on punctuation from OCR noise. */
 export function looksLikeGameNumber(text) {
   if (!text) return false;
-  return CLEAN_PATTERN.test(text.trim().replace(/,/g, ""));
+  const stripped = text.trim().replace(/^[^\d.]+/, "").replace(/[^\d.KMBkmb]+$/, "");
+  if (!stripped) return false;
+  return CLEAN_PATTERN.test(stripped.replace(/,/g, ""));
 }

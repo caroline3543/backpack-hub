@@ -205,6 +205,12 @@ describe("number formats", () => {
     expect(parseGameNumber("1.25M").value).toBe(1250000);
     expect(parseGameNumber("2M").value).toBe(2000000);
   });
+
+  test("stray glued-on punctuation from a misread icon is stripped before parsing", () => {
+    expect(parseGameNumber(")382,485").value).toBe(382485);
+    expect(parseGameNumber("(196,402").value).toBe(196402);
+    expect(parseGameNumber("53,633.").value).toBe(53633);
+  });
 });
 
 describe("OCR substitution tolerance", () => {

@@ -17,9 +17,9 @@ function tiersFromEntries(entries) {
   entries.forEach(e => {
     byType[e.troopClass].push({
       id: e.id,
-      name: e.normalisedTier,
+      name: e.normalisedTier || "Unconfirmed tier",
       count: e.count,
-      confidence: Math.min(e.labelConfidence, e.countConfidence || 1, e.associationConfidence),
+      confidence: e.requiresReview ? 0.5 : Math.min(e.labelConfidence, e.countConfidence || 1, e.associationConfidence),
     });
   });
   // Types with nothing extracted still get one blank manual-entry row so
@@ -100,6 +100,7 @@ export default function TroopsStep({ inventory, onChange, onContinue, onMarchQue
   const [debugData, setDebugData] = useState(null);
   const [ocrWarnings, setOcrWarnings] = useState([]);
   const [simpleView, setSimpleView] = useState(false);
+  const [showFullPreview, setShowFullPreview] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -132,7 +133,8 @@ export default function TroopsStep({ inventory, onChange, onContinue, onMarchQue
     setDebugData({
       entries: result.entries.map(e => ({
         rawLabel: e.rawLabel, tier: e.normalisedTier, class: e.troopClass, count: e.count,
-        rawCountText: e.rawCountText, confidence: { label: e.labelConfidence, count: e.countConfidence, association: e.associationConfidence },
+        rawCountText: e.rawCountText, requiresReview: e.requiresReview,
+        confidence: { label: e.labelConfidence, tier: e.tierConfidence, count: e.countConfidence, association: e.associationConfidence },
         box: e.boundingBox, column: e.column,
       })),
       rawWords: (result.debug?.rawOcrBlocks || []).map(w => ({ text: w.text, confidence: w.confidence, bbox: w.bbox })),
@@ -242,11 +244,22 @@ export default function TroopsStep({ inventory, onChange, onContinue, onMarchQue
       </p>
 
       {previewUrl && (
-        <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 14 }}>
-          <img src={previewUrl} alt="Troop screenshot preview" style={{
-            width: 64, height: 64, objectFit: "cover", borderRadius: 12, flexShrink: 0,
-          }} />
-          <div style={{ display: "flex", gap: 8, flex: 1 }}>
+        <div style={{ marginBottom: 14 }}>
+          <button
+            onClick={() => setShowFullPreview(true)}
+            aria-label="View screenshot at full size"
+            style={{
+              display: "block", width: "100%", padding: 0, border: "1px solid rgba(74,92,80,0.14)",
+              borderRadius: 16, cursor: "pointer", background: "rgba(72,94,80,0.04)", marginBottom: 8,
+            }}>
+            <img src={previewUrl} alt="Troop screenshot preview" style={{
+              width: "100%", maxHeight: 340, objectFit: "contain", borderRadius: 16, display: "block",
+            }} />
+          </button>
+          <div style={{ fontSize: 11, color: "#9aa59e", marginBottom: 8 }}>
+            Tap the screenshot to view it full-size — handy for checking any value yourself.
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
             <button onClick={() => fileInputRef.current?.click()} style={{ ...buttonSecondary, fontSize: 12, flex: 1 }}>
               Replace screenshot
             </button>
@@ -256,6 +269,23 @@ export default function TroopsStep({ inventory, onChange, onContinue, onMarchQue
           </div>
           <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }}
             onChange={e => handleFile(e.target.files?.[0])} />
+        </div>
+      )}
+
+      {showFullPreview && previewUrl && (
+        <div
+          onClick={() => setShowFullPreview(false)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 700, background: "rgba(20,26,23,0.92)",
+            display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
+          }}>
+          <img src={previewUrl} alt="Troop screenshot, full size" style={{
+            maxWidth: "100%", maxHeight: "100%", objectFit: "contain", borderRadius: 12,
+          }} />
+          <button onClick={() => setShowFullPreview(false)} aria-label="Close" style={{
+            position: "absolute", top: 20, right: 20, width: 40, height: 40, borderRadius: 20,
+            background: "rgba(255,255,255,0.15)", border: "none", color: "white", fontSize: 18, cursor: "pointer",
+          }}>✕</button>
         </div>
       )}
 
