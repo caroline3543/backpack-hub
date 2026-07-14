@@ -199,6 +199,42 @@ value against their own screenshot. It's now shown at full container width
 (up to 340px tall, `objectFit: contain` so nothing is cropped), tappable to
 open a full-screen view.
 
+## Phase 6: arithmetic reconciliation for the one remaining ambiguous case
+
+A follow-up spec proposed fixing the Apex Lancer truncation via a full
+crop-and-multi-pass-OCR rewrite (crop 4 regions × 4 preprocessing variants
+per number). **Not implemented** — and importantly, its core premise didn't
+match this codebase: there is no per-field cropping step here at all. A
+single whole-image OCR pass produces word-level bounding boxes; the
+truncation is Tesseract detecting the same glyphs twice with different
+incomplete segmentation in that one pass, not a crop-boundary or
+preprocessing bug. Building the proposed pipeline would mean up to ~96
+extra OCR calls per screenshot (multiple seconds each) for a problem
+already mostly solved.
+
+Implemented instead, using data already computed (no new OCR calls):
+- `associateTroopRows.js` now keeps the *alternate* overlapping candidate
+  word (not just the chosen one) on each entry as `alternateCandidates`.
+- New `suggestCorrections.js`: when the extracted total doesn't match the
+  displayed header total and *exactly one* row is flagged for review, tests
+  whether that row's alternate reading — or a plausible missing leading
+  digit (100,000 / 1,000,000 / 10,000 / 1,000) — would reconcile the total
+  within tolerance. Deliberately refuses to guess when more than one row is
+  uncertain (arithmetic can't tell you *which* row is wrong, or by how
+  much, once there's more than one unknown). Never auto-applies — returns a
+  structured suggestion (`rowId`, `currentAmount`, `suggestedAmount`,
+  `reason`, `reconciledTotal`, `wouldMatchScreenshotTotal`, `confidence`)
+  for the UI to present.
+- `TroopsStep.jsx` shows a dedicated banner with the richer copy
+  ("Possible missing leading digit... would make the troop rows agree with
+  the screenshot total") and **Use / Keep** buttons — manual editing was
+  already available on every tier row, so a third "Edit manually" button
+  would have been redundant.
+- 6 new tests in `real-screenshot-2.test.js`, including one confirming the
+  real fixture's own alternate reading correctly drives the 192,541
+  suggestion, and one confirming multiple uncertain rows correctly suppress
+  any suggestion at all.
+
 ---
 
 

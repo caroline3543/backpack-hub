@@ -132,12 +132,17 @@ function findValueBelow(labelWord, tierWord, labelLineIndex, lines, claimedWords
       // different (both possibly incomplete) segmentation — e.g. "192,"
       // and "92,541" both covering the same glyph region. We can't safely
       // reconstruct the true value without the source image, so surface
-      // this as low confidence rather than silently trusting either read.
+      // this as low confidence rather than silently trusting either read
+      // — but we DO keep the alternate around, since arithmetic
+      // reconciliation against the header total can sometimes tell us
+      // which of the two was actually right (see suggestCorrections.js).
       const overlapping = numbers.find(w => w !== best && boxesOverlapSignificantly(w.bbox, best.bbox));
       const chosen = overlapping && digitCount(overlapping.text) > digitCount(best.text) ? overlapping : best;
+      const alternate = overlapping ? (chosen === overlapping ? best : overlapping) : null;
       const ambiguous = !!overlapping;
       return {
         word: chosen,
+        alternateWord: alternate,
         associationConfidence: ambiguous ? 0.4 : Math.max(0.5, 1 - bestDist / (maxDist * 2)),
       };
     }
@@ -204,6 +209,14 @@ function associateColumn(words, columnLabel) {
       const countConfidence = found.word.confidence !== undefined ? found.word.confidence / 100 : parsed.confidence;
       const requiresReview = normalisedTier === null || tierConfidence < 0.6 || countConfidence < 0.75 || found.associationConfidence < 0.6;
 
+      const alternateCandidates = [];
+      if (found.alternateWord) {
+        const altParsed = parseGameNumber(found.alternateWord.text);
+        if (altParsed.value !== null && altParsed.value !== parsed.value) {
+          alternateCandidates.push({ count: altParsed.value, rawText: found.alternateWord.text });
+        }
+      }
+
       const labelBox = tierWord
         ? { x0: Math.min(tierWord.bbox.x0, word.bbox.x0), y0: Math.min(tierWord.bbox.y0, word.bbox.y0), x1: Math.max(tierWord.bbox.x1, word.bbox.x1), y1: Math.max(tierWord.bbox.y1, word.bbox.y1) }
         : word.bbox;
@@ -220,6 +233,7 @@ function associateColumn(words, columnLabel) {
         countConfidence,
         associationConfidence: found.associationConfidence,
         requiresReview,
+        alternateCandidates,
         boundingBox: {
           x: labelBox.x0, y: labelBox.y0,
           width: labelBox.x1 - labelBox.x0, height: labelBox.y1 - labelBox.y0,

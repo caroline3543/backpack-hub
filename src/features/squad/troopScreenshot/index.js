@@ -14,6 +14,7 @@ import { recognizeCanvas } from "./providers/tesseractProvider.js";
 import { associateTroopRows } from "./associateTroopRows.js";
 import { parseHeaderStats } from "./parseHeaderStats.js";
 import { validateTroopResult } from "./validateTroopResult.js";
+import { suggestCorrections } from "./suggestCorrections.js";
 
 const LOW_CONFIDENCE_THRESHOLD = 0.70;
 
@@ -64,7 +65,22 @@ export function buildResultFromWords(words, opts = {}) {
 
   const warnings = [...preWarnings, ...header.warnings, ...validationWarnings];
 
+  const suggestion = suggestCorrections({
+    entries,
+    extractedVisibleTroopSum,
+    displayedTotalMatchesExtractedSum: validation.displayedTotalMatchesExtractedSum,
+    displayedMaximum: header.displayedTroops.maximum,
+  });
+  if (suggestion) {
+    const fmt = n => n.toLocaleString("en-US");
+    warnings.push(
+      `Possible missing leading digit on ${suggestion.tier || "Unconfirmed"} ${suggestion.troopClass}. ` +
+      `We read ${fmt(suggestion.currentAmount)}, but ${fmt(suggestion.suggestedAmount)} would make the troop rows agree with the screenshot total.`
+    );
+  }
+
   entries.forEach(e => {
+    if (suggestion && suggestion.rowId === e.id) return; // richer message already added above
     const overall = Math.min(e.labelConfidence, e.countConfidence || 1, e.associationConfidence);
     if (overall < LOW_CONFIDENCE_THRESHOLD) {
       warnings.push(`Low confidence on ${e.normalisedTier} ${e.troopClass}. We read ${e.count.toLocaleString()}. Please check this tier.`);
@@ -102,6 +118,7 @@ export function buildResultFromWords(words, opts = {}) {
         : null,
     },
     validation,
+    suggestion,
     confidence: {
       overall: overallConfidence,
       troopEntries: troopEntryConfidence,

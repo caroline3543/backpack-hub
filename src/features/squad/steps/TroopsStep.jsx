@@ -97,6 +97,7 @@ export default function TroopsStep({ inventory, onChange, onContinue, onMarchQue
   const [previewUrl, setPreviewUrl] = useState(null);
   const [tiersByType, setTiersByType] = useState({ infantry: [], lancer: [], marksman: [] });
   const [screenshotSummary, setScreenshotSummary] = useState(null);
+  const [suggestion, setSuggestion] = useState(null);
   const [debugData, setDebugData] = useState(null);
   const [ocrWarnings, setOcrWarnings] = useState([]);
   const [simpleView, setSimpleView] = useState(false);
@@ -130,6 +131,7 @@ export default function TroopsStep({ inventory, onChange, onContinue, onMarchQue
     const result = await TesseractTroopScreenshotParser.parse(file);
     setTiersByType(tiersFromEntries(result.entries));
     setOcrWarnings(result.warnings || []);
+    setSuggestion(result.suggestion || null);
     setDebugData({
       entries: result.entries.map(e => ({
         rawLabel: e.rawLabel, tier: e.normalisedTier, class: e.troopClass, count: e.count,
@@ -156,6 +158,7 @@ export default function TroopsStep({ inventory, onChange, onContinue, onMarchQue
     setMode("manual");
     setOcrWarnings([]);
     setScreenshotSummary(null);
+    setSuggestion(null);
   };
 
   if (mode === "choose") {
@@ -317,6 +320,32 @@ export default function TroopsStep({ inventory, onChange, onContinue, onMarchQue
               </span>
             </div>
           )}
+        </div>
+      )}
+
+      {suggestion && (
+        <div style={{ ...card, marginBottom: 14, background: "rgba(92,122,110,0.08)", border: "1px solid rgba(92,122,110,0.25)" }}>
+          <div style={{ fontSize: 12, color: "#4c5a52", lineHeight: 1.5, marginBottom: 10 }}>
+            Possible missing leading digit on {suggestion.tier || "Unconfirmed"} {suggestion.troopClass}.
+            We read {formatTroopNumber(suggestion.currentAmount)}, but {formatTroopNumber(suggestion.suggestedAmount)} would
+            make the troop rows agree with the screenshot total.
+          </div>
+          <div style={{ display: "flex", gap: 6 }}>
+            <button onClick={() => {
+              setTiersByType(prev => ({
+                ...prev,
+                [suggestion.troopClass]: prev[suggestion.troopClass].map(t =>
+                  t.id === suggestion.rowId ? { ...t, count: suggestion.suggestedAmount, confidence: 1 } : t
+                ),
+              }));
+              setSuggestion(null);
+            }} style={{ ...buttonSecondary, flex: 1, fontSize: 12, background: "#5c7a6e", color: "white" }}>
+              Use {formatTroopNumber(suggestion.suggestedAmount)}
+            </button>
+            <button onClick={() => setSuggestion(null)} style={{ ...buttonSecondary, flex: 1, fontSize: 12 }}>
+              Keep {formatTroopNumber(suggestion.currentAmount)}
+            </button>
+          </div>
         </div>
       )}
 
