@@ -8,13 +8,15 @@ import en from "./locales/en.js";
 import ko from "./locales/ko.js";
 import es from "./locales/es.js";
 import ar from "./locales/ar.js";
+import tr from "./locales/tr.js";
 
-const LOCALES = { en, ko, es, ar };
+const LOCALES = { en, ko, es, ar, tr };
 export const LANGUAGE_OPTIONS = [
-  { code: "en", name: "English" },
-  { code: "ko", name: "한국어" },
-  { code: "es", name: "Español" },
-  { code: "ar", name: "العربية" },
+  { code: "en", name: "English", flag: "🇺🇸" },
+  { code: "ko", name: "한국어", flag: "🇰🇷" },
+  { code: "es", name: "Español", flag: "🇪🇸" },
+  { code: "ar", name: "العربية", flag: "🇸🇦" },
+  { code: "tr", name: "Türkçe", flag: "🇹🇷" },
 ];
 
 const LS_KEY = "backpack-hub-language";

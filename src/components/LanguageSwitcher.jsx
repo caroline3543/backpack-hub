@@ -1,5 +1,8 @@
 // ─── LanguageSwitcher.jsx ─────────────────────────────────────────────────────
-// Small pill-style dropdown for the four supported languages.
+// Small pill-style dropdown for the supported languages. Each option shows
+// a flag next to its name, and every name is written in its own language
+// (not translated into whichever language is currently active) — so anyone
+// can find their language by sight regardless of what's currently selected.
 
 import { useI18n } from "../i18n/I18nContext.jsx";
 
@@ -32,7 +35,7 @@ export default function LanguageSwitcher() {
         }}
       >
         {options.map(opt => (
-          <option key={opt.code} value={opt.code}>{opt.name}</option>
+          <option key={opt.code} value={opt.code}>{opt.flag} {opt.name}</option>
         ))}
       </select>
     </label>

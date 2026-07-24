@@ -222,6 +222,9 @@ export default {
   sheet: {
     yourStash: "مخزونك",
     updateTotal: "تحديث الإجمالي",
+    prevItem: "العنصر السابق",
+    nextItem: "العنصر التالي",
+    itemPosition: "{current} من {total}",
     yourBackpack: "حقيبتك",
     editItemTitle: "تعديل العنصر",
     addItemTitle: "إضافة عنصر",
