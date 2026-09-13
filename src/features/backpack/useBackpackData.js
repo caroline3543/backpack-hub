@@ -8,14 +8,36 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { PREDEFINED_ITEMS } from "./backpackConstants.js";
 
-const LS_KEY = "backpack-hub-data-v1";
+// Pre-multi-backpack versions of this app stored everything under this one
+// fixed key, regardless of who was using it. Keep the name as the prefix so
+// each backpack now gets its own key, and migrate the default backpack's
+// data across once so existing users don't appear to lose everything.
+const LEGACY_LS_KEY = "backpack-hub-data-v1";
+const LS_KEY_PREFIX = "backpack-hub-data-v1";
+
+function storageKey(userId) {
+  return `${LS_KEY_PREFIX}:${userId || "local-user"}`;
+}
 
 function nowISO() { return new Date().toISOString(); }
 function uid(prefix = "id") { return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`; }
 
-function loadState() {
+function loadState(userId) {
+  const key = storageKey(userId);
   try {
-    const raw = localStorage.getItem(LS_KEY);
+    let raw = localStorage.getItem(key);
+
+    // One-time migration: adopt the old single fixed key's data as this
+    // backpack's data, but only for the original default backpack and only
+    // if it hasn't already been migrated (its own scoped key is still empty).
+    if (!raw && userId === "local-user") {
+      const legacy = localStorage.getItem(LEGACY_LS_KEY);
+      if (legacy) {
+        raw = legacy;
+        try { localStorage.setItem(key, legacy); } catch {}
+      }
+    }
+
     if (raw) {
       const parsed = JSON.parse(raw);
       return {
@@ -32,9 +54,9 @@ function loadState() {
   return { items: [], transactions: [], projections: [], snapshots: [], pinnedItems: [] };
 }
 
-function persist(state) {
+function persist(userId, state) {
   try {
-    localStorage.setItem(LS_KEY, JSON.stringify(state));
+    localStorage.setItem(storageKey(userId), JSON.stringify(state));
   } catch (e) {
     console.error("Backpack: failed to save to local storage:", e.message);
   }
@@ -73,7 +95,7 @@ export function useBackpackData({ userId } = {}) {
   const hydrated = useRef(false);
 
   useEffect(() => {
-    const state = loadState();
+    const state = loadState(userId);
     const seededItems = seedPredefinedItems(state.items);
     setItems(seededItems);
     setTransactions(state.transactions);
@@ -81,7 +103,7 @@ export function useBackpackData({ userId } = {}) {
     setSnapshots(state.snapshots);
     setPinnedItems(state.pinnedItems);
     if (seededItems.length !== state.items.length) {
-      persist({ ...state, items: seededItems });
+      persist(userId, { ...state, items: seededItems });
     }
     hydrated.current = true;
     setLoading(false);
@@ -89,8 +111,8 @@ export function useBackpackData({ userId } = {}) {
 
   useEffect(() => {
     if (!hydrated.current) return;
-    persist({ items, transactions, projections, snapshots, pinnedItems });
-  }, [items, transactions, projections, snapshots, pinnedItems]);
+    persist(userId, { items, transactions, projections, snapshots, pinnedItems });
+  }, [userId, items, transactions, projections, snapshots, pinnedItems]);
 
   // ── Derived: computed balance per item ───────────────────────────────────
   const balances = useMemo(() => {
