@@ -9,6 +9,7 @@ import BackpackItems          from "./BackpackItems.jsx";
 import BackpackGoals          from "./BackpackGoals.jsx";
 import BackpackHistory        from "./BackpackHistory.jsx";
 import BackpackSheet          from "./BackpackSheet.jsx";
+import MithrilCalculator      from "./MithrilCalculator.jsx";
 import { calcGrowthInsights, formatCompact } from "./backpackForecast.js";
 import haptics from "../../utils/haptics.js";
 import { Toast as CelebToast, useCelebration } from "../../components/Celebration.jsx";
@@ -24,6 +25,7 @@ function SectionNav({ active, onChange }) {
     { key: "Goals",    label: t("nav.goals") },
     { key: "History",  label: t("nav.history") },
     { key: "Insights", label: t("nav.insights") },
+    { key: "Mithril",  label: "Mithril" },
   ];
   return (
     <div style={{ display:"flex", gap:8, overflowX:"auto", padding:"12px 0 4px",
@@ -167,6 +169,7 @@ export default function BackpackScreen({ userId }) {
     Goals:    useRef(null),
     History:  useRef(null),
     Insights: useRef(null),
+    Mithril:  useRef(null),
   };
 
   const scrollTo = useCallback((section) => {
@@ -355,6 +358,12 @@ export default function BackpackScreen({ userId }) {
           <InsightsSection items={items} transactions={transactions} balances={balances} />
         </div>
       )}
+
+      {/* ── Mithril calculator ── */}
+      <div ref={refs.Mithril} style={{ scrollMarginTop:16, marginTop:32 }}>
+        <SectionHeading kicker="Hero Gear" title="Mithril" />
+        <MithrilCalculator mithrilBalance={balances["mithril"] ?? 0} />
+      </div>
 
       {/* ── Sheet ── */}
       <BackpackSheet

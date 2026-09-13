@@ -162,3 +162,41 @@ export const TRANSACTION_TYPES = [
   { value:"spend",             label:"Spend",             color:"#9a7746", bg:"#f7edd9" },
   { value:"goal_contribution", label:"Goal Contribution",  color:"#5c7a6e", bg:"#edf2ec" },
 ];
+
+// ─── Legendary Hero Gear Mithril empowerment ──────────────────────────────────
+// Empowerment milestones unlock at gear levels 20/40/60/80/100. Each
+// milestone costs Mithril + Mythic Gear on top of whatever was spent to
+// reach the last one. Costs confirmed against in-game sources: 150 Mithril
+// total to fully empower one Legendary gear piece (10+20+30+40+50).
+export const MITHRIL_MILESTONES = [20, 40, 60, 80, 100];
+
+export const MITHRIL_MILESTONE_COST = {
+  20:  { mithril: 10, mythicGear: 3 },
+  40:  { mithril: 20, mythicGear: 5 },
+  60:  { mithril: 30, mythicGear: 5 },
+  80:  { mithril: 40, mythicGear: 10 },
+  100: { mithril: 50, mythicGear: 10 },
+};
+
+// Cumulative Mithril / Mythic Gear needed from level 0 up through each milestone.
+export const MITHRIL_CUMULATIVE = (() => {
+  let mithril = 0, mythicGear = 0;
+  const out = { 0: { mithril: 0, mythicGear: 0 } };
+  MITHRIL_MILESTONES.forEach(lvl => {
+    mithril += MITHRIL_MILESTONE_COST[lvl].mithril;
+    mythicGear += MITHRIL_MILESTONE_COST[lvl].mythicGear;
+    out[lvl] = { mithril, mythicGear };
+  });
+  return out;
+})();
+
+// Mithril + Mythic Gear needed to go from one milestone level to another
+// (e.g. from 40 to 100). Returns 0s if toLevel isn't after fromLevel.
+export function mithrilNeededBetween(fromLevel, toLevel) {
+  const from = MITHRIL_CUMULATIVE[fromLevel] || MITHRIL_CUMULATIVE[0];
+  const to   = MITHRIL_CUMULATIVE[toLevel]   || MITHRIL_CUMULATIVE[0];
+  return {
+    mithril:    Math.max(0, to.mithril    - from.mithril),
+    mythicGear: Math.max(0, to.mythicGear - from.mythicGear),
+  };
+}
