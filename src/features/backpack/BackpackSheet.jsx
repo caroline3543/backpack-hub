@@ -45,7 +45,7 @@ export function UpdateTotalForm({ item, currentBalance, isFirstEntry, onSubmit }
   const { t, tItem } = useI18n();
   const isResource = item?.category === "Resources";
   const isSpeedup  = item?.isMinutes;
-  const isWidgetItem = item?.category === "Widgets";
+  const isWidgetItem = item?.category === "Widgets" && item?.trackLevel !== false;
   const unit       = item?.displayUnit || null;
 
   const [rawAmount,   setRawAmount]   = useState("");
@@ -217,7 +217,7 @@ function ItemForm({ initial, onSubmit }) {
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
   const isResource = form.category === "Resources";
   const isSpeedup  = form.category === "Speedups";
-  const isWidget   = form.category === "Widgets";
+  const isWidget   = form.category === "Widgets" && form.trackLevel !== false;
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
@@ -305,7 +305,7 @@ function GoalForm({ initial, items, onSubmit }) {
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
   const selectedItem = items.find(i => i.id === (form.itemId || initial?.itemId));
-  const isWidget = selectedItem?.category === "Widgets";
+  const isWidget = selectedItem?.category === "Widgets" && selectedItem?.trackLevel !== false;
   const baseLevel = selectedItem?.currentLevel ?? 0;
 
   // Widgets goals are relative to the item's saved current level: the amount

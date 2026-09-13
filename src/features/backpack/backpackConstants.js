@@ -90,10 +90,13 @@ export const PREDEFINED_ITEMS = [
   // Widgets — hero/gear widgets tracked by upgrade level (see currentLevel,
   // WIDGET_GOAL_LEVELS, WIDGET_LEVEL_TARGETS above). currentLevel starts
   // null until the user is asked which level they're on.
+  // The Chest is the exception: it's a flexible allocation pool, not tied
+  // to one hero's gear, so trackLevel:false keeps it behaving like a plain
+  // item (normal amount goal, no level prompt, no Lv. badge).
+  { id:"hector-widget",     name:"Hector Widget",              category:"Widgets", priority:"High",   defaultUnit:null, currentLevel:null },
   { id:"norah-widget",      name:"Norah Widget",              category:"Widgets", priority:"High",   defaultUnit:null, currentLevel:null },
   { id:"gwen-widget",       name:"Gwen Widget",                category:"Widgets", priority:"High",   defaultUnit:null, currentLevel:null },
-  { id:"hector-widget",     name:"Hector Widget",              category:"Widgets", priority:"High",   defaultUnit:null, currentLevel:null },
-  { id:"gen5-widget-chest", name:"Generation 5 Widget Chest",  category:"Widgets", priority:"Medium", defaultUnit:null, currentLevel:null },
+  { id:"gen5-widget-chest", name:"Generation 5 Widget Chest",  category:"Widgets", priority:"Medium", defaultUnit:null, trackLevel:false },
 
   // Speedups (stored in minutes)
   { id:"speedup-general",    name:"General Speed Ups",        category:"Speedups",     priority:"High",   defaultUnit:null, isMinutes:true },

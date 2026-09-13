@@ -18,7 +18,7 @@ import PinReplacePrompt from "../../components/PinReplacePrompt.jsx";
 const MAX_PINNED = 3;
 
 // ─── Section chip nav ─────────────────────────────────────────────────────────
-function SectionNav({ active, onChange }) {
+function SectionNav({ active, onChange, accent }) {
   const { t } = useI18n();
   const chips = [
     { key: "Items",    label: t("nav.items") },
@@ -34,9 +34,9 @@ function SectionNav({ active, onChange }) {
         <button key={chip.key} onClick={() => onChange(chip.key)} style={{
           padding:"7px 16px", borderRadius:99, fontSize:12, fontWeight:700,
           whiteSpace:"nowrap", flexShrink:0,
-          background: active === chip.key ? "#78917f" : "rgba(255,255,255,0.72)",
+          background: active === chip.key ? accent : "rgba(255,255,255,0.72)",
           color: active === chip.key ? "white" : "#6f7a73",
-          border: active === chip.key ? "1px solid #78917f" : "1px solid rgba(72,94,80,0.14)",
+          border: active === chip.key ? `1px solid ${accent}` : "1px solid rgba(72,94,80,0.14)",
           cursor:"pointer", transition:"all 0.15s",
         }}>{chip.label}</button>
       ))}
@@ -120,7 +120,7 @@ function InsightsSection({ items, transactions, balances }) {
 }
 
 // ─── BackpackScreen ───────────────────────────────────────────────────────────
-export default function BackpackScreen({ userId }) {
+export default function BackpackScreen({ userId, accent = "#78917f" }) {
   const { t } = useI18n();
   const {
     items, transactions, projections, snapshots, balances, summary,
@@ -246,9 +246,9 @@ export default function BackpackScreen({ userId }) {
         <button onClick={() => openSheet("item")} style={{
           position:"absolute", top:0, insetInlineEnd:0,
           width:48, height:48, borderRadius:"50%",
-          background:"#78917f", border:"none",
+          background:accent, border:"none",
           display:"flex", alignItems:"center", justifyContent:"center",
-          cursor:"pointer", boxShadow:"0 6px 20px rgba(120,145,127,0.35)",
+          cursor:"pointer", boxShadow:`0 6px 20px ${accent}59`,
         }} aria-label={t("hero.addItem")}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
             stroke="white" strokeWidth="2.5" strokeLinecap="round">
@@ -272,7 +272,7 @@ export default function BackpackScreen({ userId }) {
       />
 
       {/* ── Section nav ── */}
-      <SectionNav active={activeSection} onChange={scrollTo} />
+      <SectionNav active={activeSection} onChange={scrollTo} accent={accent} />
 
       {/* ── Items ── */}
       <div ref={refs.Items} style={{ scrollMarginTop:16, marginTop:8 }}>

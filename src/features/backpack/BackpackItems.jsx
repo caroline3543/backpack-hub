@@ -164,7 +164,7 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
             )}
             <span>
               {tItem(item.id, item.name)}
-              {item.category === "Widgets" && item.currentLevel !== null && item.currentLevel !== undefined && (
+              {item.category === "Widgets" && item.trackLevel !== false && item.currentLevel !== null && item.currentLevel !== undefined && (
                 <span style={{ fontSize:10, fontWeight:700, color:"#78917f",
                   background:"#edf2ec", borderRadius:99, padding:"1px 7px", marginLeft:6 }}>
                   Lv.{item.currentLevel}

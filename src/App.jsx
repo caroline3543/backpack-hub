@@ -1,13 +1,38 @@
+import { useState } from "react";
 import { I18nProvider, useI18n } from "./i18n/I18nContext.jsx";
 import LanguageSwitcher from "./components/LanguageSwitcher.jsx";
 import BackpackScreen from "./features/backpack/BackpackScreen.jsx";
-
-// This is a stripped-down, single-tab build — there's no login flow, so
-// everything is stored locally under one fixed local user id.
-const LOCAL_USER_ID = "local-user";
+import BackpackSwitcher, {
+  loadProfiles, loadActiveId, saveProfiles, saveActiveId,
+} from "./features/backpack/BackpackSwitcher.jsx";
 
 function AppShell() {
   const { t, dir } = useI18n();
+
+  const [profiles, setProfiles] = useState(loadProfiles);
+  const [activeId, setActiveId] = useState(() => loadActiveId(loadProfiles()));
+
+  const activeProfile = profiles.find(p => p.id === activeId) || profiles[0];
+  const accent = activeProfile.color;
+
+  const handleSwitch = (id) => {
+    setActiveId(id);
+    saveActiveId(id);
+  };
+
+  const handleCreate = ({ name, color }) => {
+    const id = `backpack-${Date.now()}`;
+    const next = [...profiles, { id, name, color }];
+    setProfiles(next);
+    saveProfiles(next);
+    handleSwitch(id);
+  };
+
+  const handleUpdate = (id, { name, color }) => {
+    const next = profiles.map(p => p.id === id ? { ...p, name, color } : p);
+    setProfiles(next);
+    saveProfiles(next);
+  };
 
   return (
     <div
@@ -16,6 +41,7 @@ function AppShell() {
         minHeight: "100vh",
         background: "#f6f1e8",
         fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+        "--bp-accent": accent,
       }}
     >
       <header style={{
@@ -30,8 +56,15 @@ function AppShell() {
         <LanguageSwitcher />
       </header>
 
-      <main style={{ maxWidth: 480, margin: "0 auto", padding: "0 20px 40px" }}>
-        <BackpackScreen userId={LOCAL_USER_ID} />
+      <main style={{ maxWidth: 480, margin: "0 auto", padding: "12px 20px 40px" }}>
+        <BackpackSwitcher
+          profiles={profiles}
+          activeId={activeId}
+          onSwitch={handleSwitch}
+          onCreate={handleCreate}
+          onUpdate={handleUpdate}
+        />
+        <BackpackScreen key={activeId} userId={activeId} accent={accent} />
       </main>
     </div>
   );
