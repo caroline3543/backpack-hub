@@ -181,6 +181,9 @@ export default function BackpackScreen({ userId }) {
     const mode = sheet?.mode;
     if (mode === "update") {
       setTotal(sheet.initial.itemId, data.newTotal, { reason: data.reason });
+      if (data.currentLevel !== undefined) {
+        updateItem(sheet.initial.itemId, { currentLevel: data.currentLevel });
+      }
       showToast(t("toast.backpackUpdated"));
       haptics.success();
     } else if (mode === "item") {

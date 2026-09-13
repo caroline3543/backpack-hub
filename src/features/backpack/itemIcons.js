@@ -19,13 +19,17 @@ import fireCrystals        from "../../assets/icons/fire-crystals.webp";
 import fireCrystalShards   from "../../assets/icons/fire-crystal-shard.png";
 import gems                from "../../assets/icons/gems.png";
 import generalShards       from "../../assets/icons/general-shards.webp";
+import gen5WidgetChest     from "../../assets/icons/gen5-widget-chest.webp";
+import gwenWidget          from "../../assets/icons/gwen-widget.png";
 import hardenedAlloy       from "../../assets/icons/hardened-alloy.webp";
+import hectorWidget        from "../../assets/icons/hector-widget.png";
 import iron                from "../../assets/icons/iron.webp";
 import jewelSecrets        from "../../assets/icons/jewel-secrets.webp";
 import lunarAmber          from "../../assets/icons/lunar-amber.webp";
 import meat                from "../../assets/icons/meat.webp";
 import mithril             from "../../assets/icons/mithril.webp";
 import mysteryBadges       from "../../assets/icons/mystery-badges.png";
+import norahWidget         from "../../assets/icons/norah-widget.png";
 import petFood             from "../../assets/icons/pet-food.webp";
 import polishingSol        from "../../assets/icons/polishing-sol.webp";
 import refinedFire         from "../../assets/icons/refined-fire.webp";
@@ -59,13 +63,17 @@ export const ITEM_ICONS = {
   "fire-crystal-shards":  fireCrystalShards,
   "gems":                 gems,
   "general-shards":       generalShards,
+  "gen5-widget-chest":    gen5WidgetChest,
+  "gwen-widget":          gwenWidget,
   "hardened-alloy":       hardenedAlloy,
+  "hector-widget":        hectorWidget,
   "iron":                 iron,
   "jewel-secrets":        jewelSecrets,
   "lunar-amber":          lunarAmber,
   "meat":                 meat,
   "mithril":              mithril,
   "mystery-badges":       mysteryBadges,
+  "norah-widget":         norahWidget,
   "pet-food":             petFood,
   "polishing-sol":        polishingSol,
   "refined-fire":         refinedFire,

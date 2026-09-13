@@ -87,6 +87,14 @@ export const PREDEFINED_ITEMS = [
   { id:"essence-stones",  name:"Essence Stones",         category:"Power Boost",  priority:"High",   defaultUnit:null },
   { id:"mithril",         name:"Mithril",                category:"Power Boost",  priority:"Urgent", defaultUnit:null },
 
+  // Widgets — hero/gear widgets tracked by upgrade level (see currentLevel,
+  // WIDGET_GOAL_LEVELS, WIDGET_LEVEL_TARGETS above). currentLevel starts
+  // null until the user is asked which level they're on.
+  { id:"norah-widget",      name:"Norah Widget",              category:"Widgets", priority:"High",   defaultUnit:null, currentLevel:null },
+  { id:"gwen-widget",       name:"Gwen Widget",                category:"Widgets", priority:"High",   defaultUnit:null, currentLevel:null },
+  { id:"hector-widget",     name:"Hector Widget",              category:"Widgets", priority:"High",   defaultUnit:null, currentLevel:null },
+  { id:"gen5-widget-chest", name:"Generation 5 Widget Chest",  category:"Widgets", priority:"Medium", defaultUnit:null, currentLevel:null },
+
   // Speedups (stored in minutes)
   { id:"speedup-general",    name:"General Speed Ups",        category:"Speedups",     priority:"High",   defaultUnit:null, isMinutes:true },
   { id:"speedup-troop",      name:"Troop Training Speed Ups",  category:"Speedups",     priority:"High",   defaultUnit:null, isMinutes:true },

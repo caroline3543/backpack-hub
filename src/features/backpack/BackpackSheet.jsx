@@ -45,11 +45,21 @@ export function UpdateTotalForm({ item, currentBalance, isFirstEntry, onSubmit }
   const { t, tItem } = useI18n();
   const isResource = item?.category === "Resources";
   const isSpeedup  = item?.isMinutes;
+  const isWidgetItem = item?.category === "Widgets";
   const unit       = item?.displayUnit || null;
 
   const [rawAmount,   setRawAmount]   = useState("");
   const [displayUnit, setDisplayUnit] = useState(unit);
   const [reason,      setReason]      = useState("");
+  const [currentLevel, setCurrentLevel] = useState(
+    item?.currentLevel !== null && item?.currentLevel !== undefined ? String(item.currentLevel) : ""
+  );
+
+  // A widget item's upgrade level is separate from its raw balance — if it
+  // hasn't been recorded yet, we ask for it right here on first entry
+  // instead of only in the (easy to miss) Edit Item Settings screen.
+  const needsLevel = isFirstEntry && isWidgetItem &&
+    (item?.currentLevel === null || item?.currentLevel === undefined);
 
   const parsedAmount = rawAmount === "" ? null : (() => {
     let n = Number(rawAmount);
@@ -66,7 +76,7 @@ export function UpdateTotalForm({ item, currentBalance, isFirstEntry, onSubmit }
     : null;
 
   const canSubmit = isFirstEntry
-    ? parsedAmount !== null && parsedAmount > 0
+    ? parsedAmount !== null && parsedAmount >= 0 && (!needsLevel || currentLevel !== "")
     : parsedAmount !== null && delta !== 0;
 
   return (
@@ -95,6 +105,23 @@ export function UpdateTotalForm({ item, currentBalance, isFirstEntry, onSubmit }
         </div>
       )}
 
+      {needsLevel && (
+        <div>
+          <label style={labelStyle}>{t("sheet.currentWidgetLevel")}</label>
+          <select style={{ ...inputStyle, appearance:"none", cursor:"pointer" }}
+            value={currentLevel}
+            onChange={e => setCurrentLevel(e.target.value)}>
+            <option value="">{t("sheet.currentWidgetLevelPlaceholder")}</option>
+            {WIDGET_CURRENT_LEVEL_OPTIONS.map(lvl => (
+              <option key={lvl} value={lvl}>{lvl}</option>
+            ))}
+          </select>
+          <div style={{ fontSize:11, color:"#9aa59e", marginTop:4 }}>
+            {t("sheet.currentWidgetLevelHint")}
+          </div>
+        </div>
+      )}
+
       <div>
         <label style={labelStyle}>
           {isFirstEntry ? t("sheet.howMuchNow") : t("sheet.whatsNewTotal")}
@@ -116,7 +143,7 @@ export function UpdateTotalForm({ item, currentBalance, isFirstEntry, onSubmit }
         )}
       </div>
 
-      {isFirstEntry && rawAmount !== "" && parsedAmount !== null && parsedAmount > 0 && (
+      {isFirstEntry && rawAmount !== "" && parsedAmount !== null && parsedAmount >= 0 && (
         <div style={{ borderRadius:12, padding:"10px 14px",
           background:"#edf2ec", border:"1px solid rgba(92,122,110,0.2)" }}>
           <div style={{ fontSize:12, fontWeight:700, color:"#5c7a6e" }}>
@@ -161,7 +188,11 @@ export function UpdateTotalForm({ item, currentBalance, isFirstEntry, onSubmit }
           placeholder={t("sheet.egReason")} />
       </div>
 
-      <button onClick={() => canSubmit && onSubmit({ newTotal: parsedAmount, reason })}
+      <button onClick={() => canSubmit && onSubmit({
+          newTotal: parsedAmount,
+          reason,
+          ...(needsLevel ? { currentLevel: Number(currentLevel) } : {}),
+        })}
         style={{ width:"100%", height:50, borderRadius:16,
           background: canSubmit ? "#78917f" : "rgba(72,94,80,0.2)",
           color: canSubmit ? "white" : "#9aa59e",
