@@ -9,7 +9,6 @@ import BackpackItems          from "./BackpackItems.jsx";
 import BackpackGoals          from "./BackpackGoals.jsx";
 import BackpackHistory        from "./BackpackHistory.jsx";
 import BackpackSheet          from "./BackpackSheet.jsx";
-import QuickUpdateOverlay     from "./QuickUpdateOverlay.jsx";
 import { calcGrowthInsights, formatCompact } from "./backpackForecast.js";
 import haptics from "../../utils/haptics.js";
 import { Toast as CelebToast, useCelebration } from "../../components/Celebration.jsx";
@@ -135,8 +134,15 @@ export default function BackpackScreen({ userId }) {
   const [activeSection, setActiveSection] = useState("Items");
   const [sheet,         setSheet]         = useState(null);
   const [pinPending,    setPinPending]    = useState(null); // item pending pin, if at cap
-  const [quickUpdateOpen, setQuickUpdateOpen] = useState(false);
+  const [confirmResetAll, setConfirmResetAll] = useState(false);
   const { toast, toastType, showToast, celebrate, warn } = useCelebration();
+
+  const handleResetAllAverages = useCallback(() => {
+    items.forEach(item => setAverageReset(item.id));
+    setConfirmResetAll(false);
+    showToast("Daily averages reset for all items");
+    haptics.success();
+  }, [items, setAverageReset, showToast]);
 
   const handleTogglePin = useCallback((itemId) => {
     const isPinned = pinnedItems.includes(itemId);
@@ -266,14 +272,39 @@ export default function BackpackScreen({ userId }) {
       <div ref={refs.Items} style={{ scrollMarginTop:16, marginTop:8 }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <SectionHeading kicker={t("hero.kicker")} title={t("nav.items")} />
-          <button onClick={() => setQuickUpdateOpen(true)} style={{
-            height:34, padding:"0 14px", borderRadius:99, fontSize:12, fontWeight:700,
-            background:"#edf2ec", color:"#5c7a6e", border:"none", cursor:"pointer",
-            flexShrink:0, marginTop:8,
-          }}>
-            {t("quickUpdate.button")}
-          </button>
+          {!confirmResetAll && (
+            <button onClick={() => setConfirmResetAll(true)} style={{
+              height:34, padding:"0 14px", borderRadius:99, fontSize:12, fontWeight:700,
+              background:"rgba(154,122,98,0.08)", color:"#9a7746",
+              border:"1px dashed rgba(154,122,98,0.3)", cursor:"pointer",
+              flexShrink:0, marginTop:8,
+            }}>
+              Reset for SvS
+            </button>
+          )}
         </div>
+        {confirmResetAll && (
+          <div style={{ background:"rgba(154,122,98,0.06)", borderRadius:14,
+            padding:"12px 14px", border:"1px solid rgba(154,122,98,0.2)",
+            marginBottom:14 }}>
+            <div style={{ fontSize:12, color:"#9a7746", lineHeight:1.5, marginBottom:10 }}>
+              This resets the daily-average tracking for every item back to
+              today, so a big SvS spend or dump doesn't distort your pace
+              for weeks afterward. It doesn't change any balances.
+            </div>
+            <div style={{ display:"flex", gap:6 }}>
+              <button onClick={() => setConfirmResetAll(false)} style={{
+                flex:1, height:36, borderRadius:9, fontSize:12, fontWeight:600,
+                background:"rgba(255,255,255,0.8)", color:"#6f7a73",
+                border:"1px solid rgba(72,94,80,0.14)", cursor:"pointer",
+              }}>{t("common.cancel")}</button>
+              <button onClick={handleResetAllAverages} style={{
+                flex:1, height:36, borderRadius:9, fontSize:12, fontWeight:700,
+                background:"#9a7746", color:"white", border:"none", cursor:"pointer",
+              }}>Reset All Now</button>
+            </div>
+          </div>
+        )}
         <BackpackItems
           items={items}
           balances={balances}
@@ -292,7 +323,6 @@ export default function BackpackScreen({ userId }) {
           onUpdate={item => openSheet("update", { itemId:item.id })}
           onDelete={id => { deleteItem(id); showToast(t("toast.itemDeleted")); haptics.warning(); }}
           onDeleteTransaction={id => { deleteTransaction(id); showToast(t("toast.entryRemoved")); }}
-          onAverageReset={id => { setAverageReset(id); showToast(t("toast.averageReset")); }}
           onClearAverageReset={id => { clearAverageReset(id); showToast(t("toast.resetUndone")); }}
         />
       </div>
@@ -346,17 +376,6 @@ export default function BackpackScreen({ userId }) {
       />
 
       <CelebToast message={toast} type={toastType} />
-
-      <QuickUpdateOverlay
-        open={quickUpdateOpen}
-        onClose={() => setQuickUpdateOpen(false)}
-        items={items}
-        balances={balances}
-        transactions={transactions}
-        pinnedItems={pinnedItems}
-        onSaveTotal={setTotal}
-        onAllDone={() => { celebrate(t("quickUpdate.allDone")); haptics.success(); }}
-      />
 
       <PinReplacePrompt
         pendingItem={pinPending}

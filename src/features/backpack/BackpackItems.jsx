@@ -104,10 +104,9 @@ function ProgressBar({ pct }) {
 }
 
 // ─── Item row ─────────────────────────────────────────────────────────────────
-function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, onEdit, onUpdate, onDelete, onDeleteTransaction, onAverageReset, onClearAverageReset }) {
+function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, onEdit, onUpdate, onDelete, onDeleteTransaction, onClearAverageReset }) {
   const { t, tItem, dateLocale } = useI18n();
   const [expanded, setExpanded] = useState(false);
-  const [confirmReset, setConfirmReset] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [pinTip, setPinTip] = useState(null); // null | "pinned" | "unpinned"
   const pinTipTimer = useRef(null);
@@ -333,51 +332,23 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
             </div>
           )}
 
-          {/* ── SvS / event reset ── */}
-          <div style={{ marginBottom:12 }}>
-            {!resetAt && !confirmReset && (
-              <button onClick={() => setConfirmReset(true)} style={{
-                width:"100%", height:38, borderRadius:10, fontSize:12, fontWeight:700,
-                background:"rgba(154,122,98,0.08)", color:"#9a7746",
-                border:"1px dashed rgba(154,122,98,0.3)", cursor:"pointer",
-                display:"flex", alignItems:"center", justifyContent:"center", gap:6,
-              }}>
-                {t("itemsSection.resetAverage")}
-              </button>
-            )}
-            {!resetAt && confirmReset && (
-              <div style={{ background:"rgba(154,122,98,0.06)", borderRadius:10,
-                padding:"10px 12px", border:"1px solid rgba(154,122,98,0.2)" }}>
-                <div style={{ fontSize:12, color:"#9a7746", lineHeight:1.5, marginBottom:8 }}>
-                  {t("itemsSection.resetConfirmText")}
-                </div>
-                <div style={{ display:"flex", gap:6 }}>
-                  <button onClick={() => setConfirmReset(false)} style={{
-                    flex:1, height:34, borderRadius:8, fontSize:12, fontWeight:600,
-                    background:"rgba(255,255,255,0.8)", color:"#6f7a73",
-                    border:"1px solid rgba(72,94,80,0.14)", cursor:"pointer",
-                  }}>{t("common.cancel")}</button>
-                  <button onClick={() => { onAverageReset(item.id); setConfirmReset(false); haptics.medium(); }} style={{
-                    flex:1, height:34, borderRadius:8, fontSize:12, fontWeight:700,
-                    background:"#9a7746", color:"white", border:"none", cursor:"pointer",
-                  }}>{t("itemsSection.resetNow")}</button>
-                </div>
-              </div>
-            )}
-            {resetAt && (
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
-                background:"rgba(154,122,98,0.06)", borderRadius:10,
-                padding:"8px 12px", border:"1px solid rgba(154,122,98,0.2)" }}>
-                <span style={{ fontSize:11, color:"#9a7746" }}>
-                  {t("itemsSection.rebuildingSince", { date: formatDate(resetAt, dateLocale) })}
-                </span>
-                <button onClick={() => { onClearAverageReset(item.id); haptics.light(); }} style={{
-                  fontSize:11, fontWeight:700, color:"#9aa59e",
-                  background:"none", border:"none", cursor:"pointer",
-                }}>{t("common.undo")}</button>
-              </div>
-            )}
-          </div>
+          {/* ── SvS / event reset status — triggered globally from the Items
+                header now; this just shows the per-item status + lets you
+                undo a reset for a single item if it caught the wrong one. ── */}
+          {resetAt && (
+            <div style={{ marginBottom:12, display:"flex", alignItems:"center",
+              justifyContent:"space-between",
+              background:"rgba(154,122,98,0.06)", borderRadius:10,
+              padding:"8px 12px", border:"1px solid rgba(154,122,98,0.2)" }}>
+              <span style={{ fontSize:11, color:"#9a7746" }}>
+                {t("itemsSection.rebuildingSince", { date: formatDate(resetAt, dateLocale) })}
+              </span>
+              <button onClick={() => { onClearAverageReset(item.id); haptics.light(); }} style={{
+                fontSize:11, fontWeight:700, color:"#9aa59e",
+                background:"none", border:"none", cursor:"pointer",
+              }}>{t("common.undo")}</button>
+            </div>
+          )}
 
           {/* Mini chart */}
           <div style={{ fontSize:10, color:"#9aa59e", fontWeight:600,
@@ -503,7 +474,7 @@ function CategoryAccordion({
   isOpen, onToggle,
   onGoal, onEdit, onAddCustom, onDelete, onTogglePin,
   onUpdate, onDeleteTransaction,
-  onAverageReset, onClearAverageReset,
+  onClearAverageReset,
 }) {
   const { t, tCategory } = useI18n();
   const isWidgets = category === "Widgets";
@@ -559,7 +530,6 @@ function CategoryAccordion({
               onUpdate={onUpdate}
               onDelete={onDelete}
               onDeleteTransaction={onDeleteTransaction}
-              onAverageReset={onAverageReset}
               onClearAverageReset={onClearAverageReset}
             />
           ))}
@@ -600,7 +570,7 @@ export default function BackpackItems({
   items, balances, transactions, pinnedItems,
   onGoal, onEdit, onAddItem, onDelete, onTogglePin,
   onUpdate, onDeleteTransaction,
-  onAverageReset, onClearAverageReset,
+  onClearAverageReset,
 }) {
   const { t, tCategory } = useI18n();
   const [openCategory,   setOpenCategory]   = useState("General");
@@ -773,7 +743,6 @@ export default function BackpackItems({
             onTogglePin={onTogglePin}
             onUpdate={onUpdate}
             onDeleteTransaction={onDeleteTransaction}
-            onAverageReset={onAverageReset}
             onClearAverageReset={onClearAverageReset}
           />
         );

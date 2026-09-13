@@ -493,7 +493,7 @@ export default function BackpackSheet({
             aria-label={t("sheet.prevItem")}
             style={{
               position:"fixed", top:"50%", insetInlineStart:10, transform:"translateY(-50%)",
-              zIndex:502, width:44, height:44, borderRadius:"50%",
+              zIndex:500, width:44, height:44, borderRadius:"50%",
               background: hasPrev ? "white" : "rgba(255,255,255,0.5)",
               border:"1px solid rgba(74,92,80,0.12)",
               boxShadow:"0 4px 14px rgba(0,0,0,0.15)",
@@ -512,7 +512,7 @@ export default function BackpackSheet({
             aria-label={t("sheet.nextItem")}
             style={{
               position:"fixed", top:"50%", insetInlineEnd:10, transform:"translateY(-50%)",
-              zIndex:502, width:44, height:44, borderRadius:"50%",
+              zIndex:500, width:44, height:44, borderRadius:"50%",
               background: hasNext ? "white" : "rgba(255,255,255,0.5)",
               border:"1px solid rgba(74,92,80,0.12)",
               boxShadow:"0 4px 14px rgba(0,0,0,0.15)",

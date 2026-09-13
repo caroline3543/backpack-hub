@@ -121,9 +121,10 @@ export default function BackpackHistory({ transactions, snapshots, items, balanc
   const { t } = useI18n();
   const [filter, setFilter] = useState("all"); // all | gain | spend
 
-  const filtered = transactions.filter(tx =>
-    filter === "all" ? true : tx.type === filter
-  );
+  const filtered = transactions
+    .filter(tx => filter === "all" ? true : tx.type === filter)
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 10);
 
   const filterLabels = { all: t("history.all"), gain: t("history.gainsFilter"), spend: t("history.spendsFilter") };
 

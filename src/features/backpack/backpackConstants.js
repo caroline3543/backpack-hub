@@ -73,6 +73,7 @@ export const PREDEFINED_ITEMS = [
   { id:"stamina-cans",        name:"Stamina Cans",           category:"General",      priority:"Medium", defaultUnit:null },
   { id:"fire-crystals",       name:"Fire Crystals",          category:"General",      priority:"High",   defaultUnit:null },
   { id:"fire-crystal-shards", name:"Fire Crystal Shards",    category:"General",      priority:"Medium", defaultUnit:null },
+  { id:"refined-fire",        name:"Refined Fire Crystals",  category:"General",      priority:"Urgent", defaultUnit:null },
 
   // Resources
   { id:"meat",            name:"Meat",                   category:"Resources",    priority:"Medium", defaultUnit:"B" },
@@ -83,7 +84,6 @@ export const PREDEFINED_ITEMS = [
 
   // Power Boost
   { id:"general-shards",  name:"General Hero Shards",    category:"Power Boost",  priority:"High",   defaultUnit:null },
-  { id:"refined-fire",    name:"Refined Fire Crystals",  category:"Power Boost",  priority:"Urgent", defaultUnit:null },
   { id:"essence-stones",  name:"Essence Stones",         category:"Power Boost",  priority:"High",   defaultUnit:null },
   { id:"mithril",         name:"Mithril",                category:"Power Boost",  priority:"Urgent", defaultUnit:null },
 
