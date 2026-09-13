@@ -65,6 +65,12 @@ function SkillCard({ skill }) {
           <div style={{ fontSize:11, color:"#9a7746", marginBottom:8 }}>
             Unlocks at: {skill.unlock}
           </div>
+          {skill.note && (
+            <div style={{ fontSize:11, color:"#a06358", marginBottom:8,
+              background:"rgba(160,99,88,0.08)", borderRadius:8, padding:"6px 8px" }}>
+              {skill.note}
+            </div>
+          )}
           {skill.levels.map(lv => (
             <div key={lv.level} style={{ display:"flex", justifyContent:"space-between",
               fontSize:12, color:"#4c5a52", padding:"4px 0" }}>
