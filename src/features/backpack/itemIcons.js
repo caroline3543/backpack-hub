@@ -16,7 +16,7 @@ import energisingPot       from "../../assets/icons/energising-pot.webp";
 import essenceStones       from "../../assets/icons/essence-stones.webp";
 import expertSigils        from "../../assets/icons/expert-sigils.webp";
 import fireCrystals        from "../../assets/icons/fire-crystals.webp";
-import fireCrystalShards   from "../../assets/icons/fire-crystal-shards.png";
+import fireCrystalShards   from "../../assets/icons/fire-crystal-shard.png";
 import gems                from "../../assets/icons/gems.png";
 import generalShards       from "../../assets/icons/general-shards.webp";
 import hardenedAlloy       from "../../assets/icons/hardened-alloy.webp";
@@ -29,7 +29,6 @@ import mysteryBadges       from "../../assets/icons/mystery-badges.png";
 import petFood             from "../../assets/icons/pet-food.webp";
 import polishingSol        from "../../assets/icons/polishing-sol.webp";
 import refinedFire         from "../../assets/icons/refined-fire.webp";
-import skinTokens          from "../../assets/icons/skin-tokens.png";
 import speedupConstruction from "../../assets/icons/speedup-construction.png";
 import speedupGeneral      from "../../assets/icons/speedup-general.png";
 import speedupHealing      from "../../assets/icons/speedup-healing.png";
@@ -70,7 +69,6 @@ export const ITEM_ICONS = {
   "pet-food":             petFood,
   "polishing-sol":        polishingSol,
   "refined-fire":         refinedFire,
-  "skin-tokens":          skinTokens,
   "speedup-construction": speedupConstruction,
   "speedup-general":      speedupGeneral,
   "speedup-healing":      speedupHealing,
