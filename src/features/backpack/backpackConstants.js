@@ -126,6 +126,26 @@ export const PREDEFINED_ITEMS = [
   { id:"expert-sigils",   name:"Expert Sigils",          category:"Dawn Experts", priority:"High",   defaultUnit:null },
   { id:"books-knowledge", name:"Books of Knowledge",     category:"Dawn Experts", priority:"Medium", defaultUnit:null },
 
+  // Affinity gifts — raise an Expert's Relationship Level. Compass = 10
+  // affinity, Fiery Heart = 100 affinity, Sail of Conquest = 1000 affinity.
+  { id:"compass",         name:"Compass",                category:"Dawn Experts", priority:"Medium", defaultUnit:null },
+  { id:"fiery-heart",     name:"Fiery Heart",            category:"Dawn Experts", priority:"Medium", defaultUnit:null },
+  { id:"sail-of-conquest",name:"Sail of Conquest",       category:"Dawn Experts", priority:"Medium", defaultUnit:null },
+
+  // The 10 named Experts themselves — tracked by Relationship Level
+  // (0–100, in steps of 10), the same way Hero Gear Widgets are tracked by
+  // upgrade level, since everyone's Experts sit at different levels.
+  { id:"cyrille-expert",  name:"Cyrille",                category:"Dawn Experts", priority:"High", defaultUnit:null, hasLevel:true, currentLevel:null },
+  { id:"agnes-expert",    name:"Agnes",                  category:"Dawn Experts", priority:"High", defaultUnit:null, hasLevel:true, currentLevel:null },
+  { id:"holger-expert",   name:"Holger",                 category:"Dawn Experts", priority:"High", defaultUnit:null, hasLevel:true, currentLevel:null },
+  { id:"romulus-expert",  name:"Romulus",                category:"Dawn Experts", priority:"High", defaultUnit:null, hasLevel:true, currentLevel:null },
+  { id:"baldur-expert",   name:"Baldur",                 category:"Dawn Experts", priority:"High", defaultUnit:null, hasLevel:true, currentLevel:null },
+  { id:"fabian-expert",   name:"Fabian",                 category:"Dawn Experts", priority:"High", defaultUnit:null, hasLevel:true, currentLevel:null },
+  { id:"valeria-expert",  name:"Valeria",                category:"Dawn Experts", priority:"High", defaultUnit:null, hasLevel:true, currentLevel:null },
+  { id:"ronne-expert",    name:"Ronne",                  category:"Dawn Experts", priority:"High", defaultUnit:null, hasLevel:true, currentLevel:null },
+  { id:"kathy-expert",    name:"Kathy",                  category:"Dawn Experts", priority:"High", defaultUnit:null, hasLevel:true, currentLevel:null },
+  { id:"gareth-expert",   name:"Gareth",                 category:"Dawn Experts", priority:"High", defaultUnit:null, hasLevel:true, currentLevel:null },
+
   // Pets
   { id:"custom-chest",    name:"Custom Chest",           category:"Pets",         priority:"Medium", defaultUnit:null },
   { id:"taming-manual",   name:"Taming Manual",          category:"Pets",         priority:"Medium", defaultUnit:null },
@@ -147,6 +167,28 @@ export const SECTION_CHIPS = ["Items", "Goals", "History", "Insights"];
 export const WIDGET_LEVEL_STEP = 5; // cost of level N's own step = WIDGET_LEVEL_STEP * N
 export const WIDGET_GOAL_LEVELS = [1,2,3,4,5,6,7,8,9,10];
 export const WIDGET_CURRENT_LEVEL_OPTIONS = [0,1,2,3,4,5,6,7,8,9];
+
+// Dawn Academy Experts level up via Relationship Level, 0–100 in steps of
+// 10 — a different scale from Hero Gear Widgets (0–10), so their level
+// picker uses the real in-game numbers instead of the widget scale.
+export const EXPERT_LEVEL_OPTIONS = [0,10,20,30,40,50,60,70,80,90,100];
+
+// Whether an item should be asked about / show a level (Lv. badge, "what
+// level are you on" prompt) at all. True Hero Gear Widgets are level-
+// tracked by default unless explicitly opted out (see the Chest, which
+// sets trackLevel:false). Anything outside the Widgets category — like
+// Dawn Experts — only gets level-tracking if it explicitly opts in via
+// hasLevel:true, since most non-Widget items have no notion of "level".
+export function itemHasLevel(item) {
+  if (!item) return false;
+  if (item.category === "Widgets") return item.trackLevel !== false;
+  return !!item.hasLevel;
+}
+
+// Which level scale to show in the picker for a given item.
+export function levelOptionsFor(item) {
+  return item?.category === "Dawn Experts" ? EXPERT_LEVEL_OPTIONS : WIDGET_CURRENT_LEVEL_OPTIONS;
+}
 
 export function widgetLevelCumulativeTarget(level) {
   // Sum of WIDGET_LEVEL_STEP*1 + WIDGET_LEVEL_STEP*2 + ... + WIDGET_LEVEL_STEP*level

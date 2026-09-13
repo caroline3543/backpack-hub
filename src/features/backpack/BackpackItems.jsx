@@ -5,7 +5,7 @@
 
 import { useState, useMemo, useRef } from "react";
 import { useI18n } from "../../i18n/I18nContext.jsx";
-import { CATEGORIES, formatAmount, formatMinutes } from "./backpackConstants.js";
+import { CATEGORIES, formatAmount, formatMinutes, itemHasLevel } from "./backpackConstants.js";
 import { ITEM_ICONS } from "./itemIcons.js";
 import PinIcon from "../../components/PinIcon.jsx";
 import haptics from "../../utils/haptics.js";
@@ -164,7 +164,7 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
             )}
             <span>
               {tItem(item.id, item.name)}
-              {item.category === "Widgets" && item.trackLevel !== false && item.currentLevel !== null && item.currentLevel !== undefined && (
+              {itemHasLevel(item) && item.currentLevel !== null && item.currentLevel !== undefined && (
                 <span style={{ fontSize:10, fontWeight:700, color:"#78917f",
                   background:"#edf2ec", borderRadius:99, padding:"1px 7px", marginLeft:6 }}>
                   Lv.{item.currentLevel}
