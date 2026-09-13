@@ -254,6 +254,19 @@ export function mithrilNeededBetween(fromLevel, toLevel) {
 // Each row's giftXP/sigil is the cost to ADVANCE INTO that tier (not
 // cumulative) — matching the numbers tracked in-game exactly.
 export const EXPERT_ADVANCEMENT = {
+  "cyrille-expert": [
+    { level:0,   tier:"Unlock",       range:"0",      giftXP:1000,  sigil:0,  defenseBonus:"—",      benefits:"Hunter's Heart Lv.1" },
+    { level:10,  tier:"Stranger",     range:"1-10",   giftXP:2260,  sigil:5,  defenseBonus:"+0.60%", benefits:"Talent Unlocked (Hunter's Heart Lv.1)" },
+    { level:20,  tier:"Acquaintance 1", range:"11-20", giftXP:4300,  sigil:10, defenseBonus:"+1.20%", benefits:"Hunter's Heart Lv.2" },
+    { level:30,  tier:"Acquaintance 2", range:"21-30", giftXP:6310,  sigil:15, defenseBonus:"+1.80%", benefits:"Hunter's Heart Lv.3 + Entrapment Lv.1" },
+    { level:40,  tier:"Acquaintance 3", range:"31-40", giftXP:8960,  sigil:20, defenseBonus:"+2.40%", benefits:"Hunter's Heart Lv.4 + Scavenging Lv.5 + Weapon Master Lv.1" },
+    { level:50,  tier:"Casual 1",     range:"41-50",  giftXP:12610, sigil:25, defenseBonus:"+3.00%", benefits:"Hunter's Heart Lv.5 + Entrapment Lv.1 + Weapon Master Lv.3" },
+    { level:60,  tier:"Casual 2",     range:"51-60",  giftXP:17250, sigil:30, defenseBonus:"+3.60%", benefits:"Hunter's Heart Lv.6 + Scavenging Lv.8" },
+    { level:70,  tier:"Casual 3",     range:"61-70",  giftXP:22250, sigil:35, defenseBonus:"+4.20%", benefits:"Hunter's Heart Lv.7" },
+    { level:80,  tier:"Close 1",      range:"71-80",  giftXP:27250, sigil:40, defenseBonus:"+4.80%", benefits:"Hunter's Heart Lv.8 + Scavenging Lv.10" },
+    { level:90,  tier:"Close 2",      range:"81-90",  giftXP:32250, sigil:45, defenseBonus:"+5.40%", benefits:"Hunter's Heart Lv.9 + Weapon Master Lv.5" },
+    { level:100, tier:"Stranger (final)", range:"91-100", giftXP:37250, sigil:50, defenseBonus:"+6.00%", benefits:"Hunter's Heart Lv.10" },
+  ],
   "agnes-expert": [
     { level:0,   tier:"Unlock",           range:"0",      giftXP:1000,  sigil:0,  defenseBonus:"—",      benefits:"—" },
     { level:10,  tier:"Stranger",         range:"1-10",   giftXP:2750,  sigil:5,  defenseBonus:"+0.60%", benefits:"Earthbreaker Lv.1 (Talent unlocked)" },
@@ -386,6 +399,72 @@ export const AFFINITY_GIFT_XP = {
 // tracked in-game. "requirement" is any extra gate beyond the relationship
 // tier already implied by "unlock" (usually a Total Skill Level threshold).
 export const EXPERT_SKILLS = {
+  "cyrille-expert": {
+    talent: {
+      name: "Hunter's Heart",
+      effect: "+2/4/6/9/12/15/18/21/24/27/30% of Bear Hunt Damage Points (self only).",
+    },
+    skills: [
+      {
+        name: "Entrapment",
+        effect: "+30000/60000/90000/120000/180000/210000/240000/270000/300000 Bear Hunt Rally Capacity.",
+        unlock: "Unlock Expert",
+        levels: [
+          { level:1, xp:3600,  books:70,  requirement:null },
+          { level:2, xp:7200,  books:140, requirement:null },
+          { level:3, xp:10800, books:210, requirement:"Acquaintance 3" },
+          { level:4, xp:14400, books:280, requirement:null },
+          { level:5, xp:18000, books:350, requirement:null },
+          { level:6, xp:21600, books:420, requirement:"Casual 2" },
+          { level:7, xp:25200, books:490, requirement:null },
+          { level:8, xp:28800, books:560, requirement:null },
+          { level:9, xp:32400, books:630, requirement:"Close 1" },
+        ],
+        totalXP: 162000, totalBooks: 3150,
+      },
+      {
+        name: "Scavenging",
+        effect: "+1/2/3/5 x100 Enhancement XP Component every Bear.",
+        unlock: "Acquaintance 2",
+        levels: [
+          { level:1, xp:27600,  books:400,  requirement:null },
+          { level:2, xp:55200,  books:800,  requirement:"Casual 1" },
+          { level:3, xp:110400, books:1600, requirement:null },
+          { level:4, xp:220800, books:3200, requirement:"Close 2" },
+        ],
+        totalXP: 414000, totalBooks: 6000,
+      },
+      {
+        name: "Weapon Master",
+        effect: "+1/2/3/5 Essence Stone(s) per Bear.",
+        unlock: "Acquaintance 3",
+        levels: [
+          { level:1, xp:43200,  books:500,  requirement:null },
+          { level:2, xp:86400,  books:1000, requirement:"Total Skills Lv.10" },
+          { level:3, xp:172800, books:2000, requirement:null },
+          { level:4, xp:345600, books:4000, requirement:"Total Skills Lv.15" },
+        ],
+        totalXP: 648000, totalBooks: 7500,
+      },
+      {
+        name: "Ursa's Bane",
+        effect: "+3000/6000/9000/12000/18000/21000/24000/27000/30000 Bear Hunt Deployment Capacity.",
+        unlock: "Casual 1",
+        levels: [
+          { level:1, xp:10200, books:100, requirement:null },
+          { level:2, xp:20400, books:200, requirement:null },
+          { level:3, xp:30600, books:300, requirement:null },
+          { level:4, xp:41400, books:400, requirement:"Total Skills Lv.18" },
+          { level:5, xp:51600, books:500, requirement:null },
+          { level:6, xp:61800, books:600, requirement:null },
+          { level:7, xp:72600, books:700, requirement:"Total Skills Lv.24" },
+          { level:8, xp:82800, books:800, requirement:null },
+          { level:9, xp:93000, books:900, requirement:"Total Skills Lv.29" },
+        ],
+        totalXP: 464400, totalBooks: 4500,
+      },
+    ],
+  },
   "agnes-expert": {
     talent: {
       name: "Earthbreaker",
