@@ -104,7 +104,7 @@ function ProgressBar({ pct }) {
 }
 
 // ─── Item row ─────────────────────────────────────────────────────────────────
-function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, onEdit, onUpdate, onDelete, onDeleteTransaction, onClearAverageReset }) {
+function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, onEdit, onUpdate, onDelete, onDeleteTransaction }) {
   const { t, tItem, dateLocale } = useI18n();
   const [expanded, setExpanded] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -332,24 +332,6 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
             </div>
           )}
 
-          {/* ── SvS / event reset status — triggered globally from the Items
-                header now; this just shows the per-item status + lets you
-                undo a reset for a single item if it caught the wrong one. ── */}
-          {resetAt && (
-            <div style={{ marginBottom:12, display:"flex", alignItems:"center",
-              justifyContent:"space-between",
-              background:"rgba(154,122,98,0.06)", borderRadius:10,
-              padding:"8px 12px", border:"1px solid rgba(154,122,98,0.2)" }}>
-              <span style={{ fontSize:11, color:"#9a7746" }}>
-                {t("itemsSection.rebuildingSince", { date: formatDate(resetAt, dateLocale) })}
-              </span>
-              <button onClick={() => { onClearAverageReset(item.id); haptics.light(); }} style={{
-                fontSize:11, fontWeight:700, color:"#9aa59e",
-                background:"none", border:"none", cursor:"pointer",
-              }}>{t("common.undo")}</button>
-            </div>
-          )}
-
           {/* Mini chart */}
           <div style={{ fontSize:10, color:"#9aa59e", fontWeight:600,
             textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:4 }}>
@@ -474,7 +456,6 @@ function CategoryAccordion({
   isOpen, onToggle,
   onGoal, onEdit, onAddCustom, onDelete, onTogglePin,
   onUpdate, onDeleteTransaction,
-  onClearAverageReset,
 }) {
   const { t, tCategory } = useI18n();
   const isWidgets = category === "Widgets";
@@ -530,7 +511,6 @@ function CategoryAccordion({
               onUpdate={onUpdate}
               onDelete={onDelete}
               onDeleteTransaction={onDeleteTransaction}
-              onClearAverageReset={onClearAverageReset}
             />
           ))}
           {isWidgets && (
@@ -570,7 +550,6 @@ export default function BackpackItems({
   items, balances, transactions, pinnedItems,
   onGoal, onEdit, onAddItem, onDelete, onTogglePin,
   onUpdate, onDeleteTransaction,
-  onClearAverageReset,
 }) {
   const { t, tCategory } = useI18n();
   const [openCategory,   setOpenCategory]   = useState("General");
@@ -743,7 +722,6 @@ export default function BackpackItems({
             onTogglePin={onTogglePin}
             onUpdate={onUpdate}
             onDeleteTransaction={onDeleteTransaction}
-            onClearAverageReset={onClearAverageReset}
           />
         );
       })}

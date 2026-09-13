@@ -245,3 +245,128 @@ export function mithrilNeededBetween(fromLevel, toLevel) {
     mythicGear: Math.max(0, to.mythicGear - from.mythicGear),
   };
 }
+
+// ─── Dawn Expert Relationship Advancement data ────────────────────────────────
+// Real per-tier costs, keyed by expert id — as supplied from in-game data,
+// not estimated. Only experts with data supplied appear here; the Experts
+// calculator shows a plain "no data yet" message for the rest until their
+// numbers are added in the same shape.
+// Each row's giftXP/sigil is the cost to ADVANCE INTO that tier (not
+// cumulative) — matching the numbers tracked in-game exactly.
+export const EXPERT_ADVANCEMENT = {
+  "agnes-expert": [
+    { level:0,   tier:"Unlock",           range:"0",      giftXP:1000,  sigil:0,  defenseBonus:"—",      benefits:"—" },
+    { level:10,  tier:"Stranger",         range:"1-10",   giftXP:2750,  sigil:5,  defenseBonus:"+0.60%", benefits:"Earthbreaker Lv.1 (Talent unlocked)" },
+    { level:20,  tier:"Acquaintance 1",   range:"11-20",  giftXP:5200,  sigil:10, defenseBonus:"+1.20%", benefits:"Earthbreaker Lv.2 + Efficient Recon Lv.1" },
+    { level:30,  tier:"Acquaintance 2",   range:"21-30",  giftXP:7610,  sigil:15, defenseBonus:"+1.80%", benefits:"Earthbreaker Lv.3 + Optimization Lv.1" },
+    { level:40,  tier:"Acquaintance 3",   range:"31-40",  giftXP:10800, sigil:20, defenseBonus:"+2.40%", benefits:"Earthbreaker Lv.4 + Project Manager Lv.1 + Covert Knowledge Lv.3" },
+    { level:50,  tier:"Casual 1",         range:"41-50",  giftXP:15170, sigil:25, defenseBonus:"+3.00%", benefits:"Earthbreaker Lv.5 + Efficient Recon Lv.1 + Covert Knowledge Lv.3" },
+    { level:60,  tier:"Casual 2",         range:"51-60",  giftXP:20700, sigil:30, defenseBonus:"+3.60%", benefits:"Earthbreaker Lv.6 + Efficient Recon Lv.5" },
+    { level:70,  tier:"Casual 3",         range:"61-70",  giftXP:26700, sigil:35, defenseBonus:"+4.20%", benefits:"Earthbreaker Lv.7 + Optimization Lv.5" },
+    { level:80,  tier:"Close 1",          range:"71-80",  giftXP:32700, sigil:40, defenseBonus:"+4.80%", benefits:"Earthbreaker Lv.8" },
+    { level:90,  tier:"Close 2",          range:"81-90",  giftXP:38700, sigil:45, defenseBonus:"+5.40%", benefits:"Earthbreaker Lv.9" },
+    { level:100, tier:"Stranger (final)", range:"91-100", giftXP:44700, sigil:50, defenseBonus:"+6.00%", benefits:"Earthbreaker Lv.10" },
+  ],
+};
+
+// Cumulative Gift XP / Sigils needed from level 0 up through each row.
+export const EXPERT_CUMULATIVE = Object.fromEntries(
+  Object.entries(EXPERT_ADVANCEMENT).map(([id, rows]) => {
+    let giftXP = 0, sigil = 0;
+    const out = {};
+    rows.forEach(row => {
+      giftXP += row.giftXP;
+      sigil  += row.sigil;
+      out[row.level] = { giftXP, sigil };
+    });
+    return [id, out];
+  })
+);
+
+// Gift XP + Sigils needed to go from one relationship level to another
+// (e.g. from 20 to 80). Returns null if this expert has no data yet.
+export function expertNeededBetween(expertId, fromLevel, toLevel) {
+  const cum = EXPERT_CUMULATIVE[expertId];
+  if (!cum) return null;
+  const from = cum[fromLevel] ?? { giftXP:0, sigil:0 };
+  const to   = cum[toLevel]   ?? { giftXP:0, sigil:0 };
+  return {
+    giftXP: Math.max(0, to.giftXP - from.giftXP),
+    sigil:  Math.max(0, to.sigil  - from.sigil),
+  };
+}
+
+// Affinity gift items → Gift XP conversion (Compass/Fiery Heart/Sail of
+// Conquest), for translating a Gift XP requirement into gift counts.
+export const AFFINITY_GIFT_XP = {
+  "compass": 10,
+  "fiery-heart": 100,
+  "sail-of-conquest": 1000,
+};
+
+// Skill cost tables — per-level XP + Books of Knowledge, exactly as
+// tracked in-game. "requirement" is any extra gate beyond the relationship
+// tier already implied by "unlock" (usually a Total Skill Level threshold).
+export const EXPERT_SKILLS = {
+  "agnes-expert": {
+    talent: {
+      name: "Earthbreaker",
+      effect: "+1/2/3/4/5 Seeker Chest every 120m Gathering (max 10/12/14/16/18/20/22/24/26/28/30)",
+    },
+    skills: [
+      {
+        name: "Efficient Recon",
+        effect: "+2/3/4/6/8 extra Intel Missions per day",
+        unlock: "Acquaintance 1",
+        levels: [
+          { level:1, xp:43200,  books:500,  requirement:null },
+          { level:2, xp:86400,  books:1000, requirement:"Acquaintance 3" },
+          { level:3, xp:172800, books:2000, requirement:null },
+          { level:4, xp:345600, books:4000, requirement:"Casual 2" },
+        ],
+        totalXP: 648000, totalBooks: 7500,
+      },
+      {
+        name: "Optimization",
+        effect: "+10/20/30/40/50 Storehouse Chief Stamina gain",
+        unlock: "Acquaintance 2",
+        levels: [
+          { level:1, xp:34200,  books:400,  requirement:null },
+          { level:2, xp:69000,  books:800,  requirement:"Casual 1" },
+          { level:3, xp:138000, books:1600, requirement:null },
+          { level:4, xp:276000, books:3200, requirement:"Casual 3" },
+        ],
+        totalXP: 517200, totalBooks: 6000,
+      },
+      {
+        name: "Project Manager",
+        effect: "-2/-3/-4/-6/-8h Construction Time for new buildings",
+        unlock: "Acquaintance 3",
+        levels: [
+          { level:1, xp:13800,  books:200,  requirement:null },
+          { level:2, xp:27600,  books:400,  requirement:"Total Skills Lv.8" },
+          { level:3, xp:55200,  books:800,  requirement:null },
+          { level:4, xp:110400, books:1600, requirement:"Total Skills Lv.12" },
+        ],
+        totalXP: 207000, totalBooks: 3000,
+      },
+      {
+        name: "Covert Knowledge",
+        effect: "+20/30/40/50/60/70/80/90/100/120 Mystery Badges from Dailies + 1/2/3/4 free Mystery Shop refresh",
+        unlock: "Casual 1",
+        levels: [
+          { level:1, xp:10200, books:100, requirement:null },
+          { level:2, xp:20400, books:200, requirement:null },
+          { level:3, xp:30600, books:300, requirement:null },
+          { level:4, xp:41400, books:400, requirement:"Total Skills Lv.15" },
+          { level:5, xp:51600, books:500, requirement:null },
+          { level:6, xp:61800, books:600, requirement:null },
+          { level:7, xp:72600, books:700, requirement:"Total Skills Lv.20" },
+          { level:8, xp:82800, books:800, requirement:null },
+          { level:9, xp:93000, books:900, requirement:"Total Skills Lv.24" },
+        ],
+        totalXP: 464400, totalBooks: 4500,
+      },
+    ],
+  },
+};

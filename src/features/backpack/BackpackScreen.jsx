@@ -7,10 +7,9 @@ import { useBackpackData }    from "./useBackpackData.js";
 import BackpackSummary        from "./BackpackSummary.jsx";
 import BackpackItems          from "./BackpackItems.jsx";
 import BackpackGoals          from "./BackpackGoals.jsx";
-import BackpackHistory        from "./BackpackHistory.jsx";
 import BackpackSheet          from "./BackpackSheet.jsx";
 import MithrilCalculator      from "./MithrilCalculator.jsx";
-import { calcGrowthInsights, formatCompact } from "./backpackForecast.js";
+import ExpertCalculator       from "./ExpertCalculator.jsx";
 import haptics from "../../utils/haptics.js";
 import { Toast as CelebToast, useCelebration } from "../../components/Celebration.jsx";
 import PinReplacePrompt from "../../components/PinReplacePrompt.jsx";
@@ -23,9 +22,8 @@ function SectionNav({ active, onChange, accent }) {
   const chips = [
     { key: "Items",    label: t("nav.items") },
     { key: "Goals",    label: t("nav.goals") },
-    { key: "History",  label: t("nav.history") },
-    { key: "Insights", label: t("nav.insights") },
     { key: "Mithril",  label: "Mithril" },
+    { key: "Experts",  label: "Experts" },
   ];
   return (
     <div style={{ display:"flex", gap:8, overflowX:"auto", padding:"12px 0 4px",
@@ -55,81 +53,17 @@ function SectionHeading({ kicker, title }) {
   );
 }
 
-// ─── Insights section ─────────────────────────────────────────────────────────
-function InsightsSection({ items, transactions, balances }) {
-  const { t, tItem } = useI18n();
-
-  const resourceItems = items.filter(i =>
-    transactions.some(t => t.itemId === i.id)
-  ).slice(0, 6);
-
-  if (resourceItems.length === 0) return null;
-
-  return (
-    <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-      {resourceItems.map(item => {
-        const txs     = transactions.filter(t => t.itemId === item.id);
-        const gains7d = txs.filter(t => {
-          const d = new Date(); d.setDate(d.getDate()-7);
-          return new Date(t.date) >= d && (t.type==="gain"||t.type==="goal_contribution");
-        }).reduce((s,t) => s+Number(t.amount), 0);
-        const spends7d = txs.filter(t => {
-          const d = new Date(); d.setDate(d.getDate()-7);
-          return new Date(t.date) >= d && t.type==="spend";
-        }).reduce((s,t) => s+Number(t.amount), 0);
-        const bal = balances[item.id] ?? 0;
-        const fmt = v => item.isMinutes ? `${Math.round(v/1440)}d` : formatCompact(v);
-
-        return (
-          <div key={item.id} style={{ background:"rgba(255,255,255,0.82)",
-            border:"1px solid rgba(74,92,80,0.09)",
-            borderRadius:18, padding:"12px 14px" }}>
-            <div style={{ fontSize:14, fontWeight:700, color:"#24312c", marginBottom:6 }}>
-              {tItem(item.id, item.name)}
-            </div>
-            <div style={{ display:"flex", gap:16 }}>
-              <div>
-                <div style={{ fontSize:10, color:"#9aa59e", textTransform:"uppercase",
-                  letterSpacing:"0.1em", marginBottom:2 }}>{t("insights.balance")}</div>
-                <div style={{ fontSize:13, fontWeight:700, color:"#24312c" }}>{fmt(bal)}</div>
-              </div>
-              <div>
-                <div style={{ fontSize:10, color:"#5c7a6e", textTransform:"uppercase",
-                  letterSpacing:"0.1em", marginBottom:2 }}>{t("insights.gain7d")}</div>
-                <div style={{ fontSize:13, fontWeight:700, color:"#5c7a6e" }}>+{fmt(gains7d)}</div>
-              </div>
-              <div>
-                <div style={{ fontSize:10, color:"#a06358", textTransform:"uppercase",
-                  letterSpacing:"0.1em", marginBottom:2 }}>{t("insights.spend7d")}</div>
-                <div style={{ fontSize:13, fontWeight:700, color:"#a06358" }}>−{fmt(spends7d)}</div>
-              </div>
-              <div>
-                <div style={{ fontSize:10, color:"#819286", textTransform:"uppercase",
-                  letterSpacing:"0.1em", marginBottom:2 }}>{t("insights.net")}</div>
-                <div style={{ fontSize:13, fontWeight:700,
-                  color: gains7d-spends7d>=0 ? "#5c7a6e" : "#a06358" }}>
-                  {gains7d-spends7d>=0?"+":""}{fmt(gains7d-spends7d)}
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 // ─── BackpackScreen ───────────────────────────────────────────────────────────
 export default function BackpackScreen({ userId, accent = "#78917f" }) {
   const { t } = useI18n();
   const {
-    items, transactions, projections, snapshots, balances, summary,
+    items, transactions, projections, balances, summary,
     pinnedItems, togglePin,
     addItem, updateItem, deleteItem,
     addTransaction, updateTransaction, deleteTransaction, setTotal,
     addProjection, updateProjection, deleteProjection, clearProjections,
     takeSnapshot,
-    setAverageReset, clearAverageReset,
+    setAverageReset,
     loading: backpackLoading,
   } = useBackpackData({ userId });
 
@@ -167,9 +101,8 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
   const refs = {
     Items:    useRef(null),
     Goals:    useRef(null),
-    History:  useRef(null),
-    Insights: useRef(null),
     Mithril:  useRef(null),
+    Experts:  useRef(null),
   };
 
   const scrollTo = useCallback((section) => {
@@ -329,7 +262,6 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
           onUpdate={item => openSheet("update", { itemId:item.id })}
           onDelete={id => { deleteItem(id); showToast(t("toast.itemDeleted")); haptics.warning(); }}
           onDeleteTransaction={id => { deleteTransaction(id); showToast(t("toast.entryRemoved")); }}
-          onClearAverageReset={id => { clearAverageReset(id); showToast(t("toast.resetUndone")); }}
         />
       </div>
 
@@ -339,30 +271,16 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
         <BackpackGoals items={items} balances={balances} transactions={transactions} />
       </div>
 
-      {/* ── History ── */}
-      <div ref={refs.History} style={{ scrollMarginTop:16, marginTop:32 }}>
-        <SectionHeading kicker={t("nav.history")} title={t("nav.history")} />
-        <BackpackHistory
-          transactions={transactions}
-          snapshots={snapshots}
-          items={items}
-          balances={balances}
-          onEdit={tx => openSheet("transaction", tx)}
-        />
-      </div>
-
-      {/* ── Insights — only shown when there is transaction data ── */}
-      {transactions.length > 0 && (
-        <div ref={refs.Insights} style={{ scrollMarginTop:16, marginTop:32 }}>
-          <SectionHeading kicker={t("nav.insights")} title={t("nav.insights")} />
-          <InsightsSection items={items} transactions={transactions} balances={balances} />
-        </div>
-      )}
-
       {/* ── Mithril calculator ── */}
       <div ref={refs.Mithril} style={{ scrollMarginTop:16, marginTop:32 }}>
         <SectionHeading kicker="Hero Gear" title="Mithril" />
         <MithrilCalculator mithrilBalance={balances["mithril"] ?? 0} />
+      </div>
+
+      {/* ── Dawn Academy Experts calculator ── */}
+      <div ref={refs.Experts} style={{ scrollMarginTop:16, marginTop:32 }}>
+        <SectionHeading kicker="Dawn Academy" title="Experts" />
+        <ExpertCalculator />
       </div>
 
       {/* ── Sheet ── */}
