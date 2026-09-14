@@ -100,23 +100,46 @@ function pruneRemovedPredefinedItems(existingItems) {
 }
 
 // Third piece of the same gap: seeding only helps items that don't exist
-// yet at all. If an app update changes a BEHAVIORAL flag on an item that's
-// already saved (e.g. adding autoTracked to Gift XP, or hasLevel to a
-// Widget), the saved copy never picks it up, since nothing ever re-syncs
-// existing items against the current schema. These three flags are pure
-// internal switches — never exposed in Edit Item Settings — so unlike
-// category/priority/name/notes (which the person CAN deliberately
-// customize there), it's always safe to overwrite them from the schema.
+// yet at all. If an app update changes a field on an item that's already
+// saved (e.g. adding autoTracked to Gift XP, or moving the Chest back into
+// Widgets), the saved copy never picks it up, since nothing ever re-syncs
+// existing items against the current schema.
+//
+// hasLevel/trackLevel/autoTracked/isMinutes are pure internal switches —
+// never exposed in Edit Item Settings — so it's always safe to overwrite
+// them from the schema. category is different: the edit form DOES let
+// someone change it, but nothing in this app actually prompts anyone to
+// recategorize a predefined item, whereas a stale category (an item
+// stuck in whichever section it happened to be seeded under, invisible
+// among items that moved on) is a real, visible bug. So category is
+// synced here too, alongside the internal flags — predefined items'
+// placement always follows the app's current organization; only custom
+// items (which are never touched by this function) are fully yours to
+// arrange freely.
 function syncSchemaFlags(existingItems) {
   const defsById = new Map(PREDEFINED_ITEMS.map(def => [def.id, def]));
   return existingItems.map(item => {
     if (item.isCustom) return item;
     const def = defsById.get(item.id);
     if (!def) return item;
-    if (item.hasLevel === def.hasLevel && item.trackLevel === def.trackLevel && item.autoTracked === def.autoTracked) {
+    const isMinutes = def.isMinutes || false;
+    if (
+      item.hasLevel === def.hasLevel &&
+      item.trackLevel === def.trackLevel &&
+      item.autoTracked === def.autoTracked &&
+      item.category === def.category &&
+      item.isMinutes === isMinutes
+    ) {
       return item;
     }
-    return { ...item, hasLevel: def.hasLevel, trackLevel: def.trackLevel, autoTracked: def.autoTracked };
+    return {
+      ...item,
+      hasLevel: def.hasLevel,
+      trackLevel: def.trackLevel,
+      autoTracked: def.autoTracked,
+      category: def.category,
+      isMinutes,
+    };
   });
 }
 
