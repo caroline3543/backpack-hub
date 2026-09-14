@@ -34,8 +34,8 @@ function SectionNav({ active, onChange, accent }) {
           padding:"7px 16px", borderRadius:99, fontSize:12, fontWeight:700,
           whiteSpace:"nowrap", flexShrink:0,
           background: active === chip.key ? accent : "rgba(255,255,255,0.72)",
-          color: active === chip.key ? "white" : "#6f7a73",
-          border: active === chip.key ? `1px solid ${accent}` : "1px solid rgba(72,94,80,0.14)",
+          color: active === chip.key ? "white" : "var(--bp-muted2, #6f7a73)",
+          border: active === chip.key ? `1px solid ${accent}` : "1px solid var(--bp-border2, rgba(72,94,80,0.14))",
           cursor:"pointer", transition:"all 0.15s",
         }}>{chip.label}</button>
       ))}
@@ -49,7 +49,7 @@ function SectionHeading({ kicker, title }) {
       <div style={{ fontSize:11, fontWeight:700, textTransform:"uppercase",
         letterSpacing:"0.2em", color:"#819286", marginBottom:4 }}>{kicker}</div>
       <div style={{ fontFamily:"'Fraunces',serif", fontSize:24,
-        fontWeight:600, color:"#24312c" }}>{title}</div>
+        fontWeight:600, color:"var(--bp-text, #24312c)" }}>{title}</div>
     </div>
   );
 }
@@ -63,7 +63,6 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
     addItem, updateItem, deleteItem,
     addTransaction, updateTransaction, deleteTransaction, setTotal,
     addProjection, updateProjection, deleteProjection, clearProjections,
-    takeSnapshot,
     setAverageReset,
     loading: backpackLoading,
   } = useBackpackData({ userId });
@@ -148,12 +147,6 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
     haptics.success();
   }, [updateItem, showToast, t]);
 
-  const handleSnapshot = useCallback(() => {
-    takeSnapshot();
-    showToast(t("toast.snapshotSaved"));
-    haptics.success();
-  }, [takeSnapshot, showToast, t]);
-
   const handleNavigateSheet = useCallback((itemId) => {
     setSheet({ mode: "update", initial: { itemId } });
   }, []);
@@ -164,7 +157,7 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
         justifyContent:"center", minHeight:"50vh" }}>
         <div style={{ textAlign:"center" }}>
           <div style={{ fontSize:28, marginBottom:10 }}>🎒</div>
-          <div style={{ fontSize:13, color:"#9aa59e" }}>{t("loading.backpack")}</div>
+          <div style={{ fontSize:13, color:"var(--bp-muted, #9aa59e)" }}>{t("loading.backpack")}</div>
         </div>
       </div>
     );
@@ -179,10 +172,10 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
           {t("hero.kicker")}
         </div>
         <div style={{ fontFamily:"'Fraunces',serif", fontSize:33,
-          fontWeight:600, color:"#24312c", lineHeight:1.1, marginBottom:4 }}>
+          fontWeight:600, color:"var(--bp-text, #24312c)", lineHeight:1.1, marginBottom:4 }}>
           {t("hero.title")}
         </div>
-        <p style={{ fontSize:15, color:"#6f7a73", lineHeight:1.5, maxWidth:260 }}>
+        <p style={{ fontSize:15, color:"var(--bp-muted2, #6f7a73)", lineHeight:1.5, maxWidth:260 }}>
           {t("hero.subtitle")}
         </p>
         <button onClick={() => openSheet("item")} style={{
@@ -207,9 +200,6 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
         transactions={transactions}
         balances={balances}
         pinnedItems={pinnedItems}
-        onGain={() => openSheet("update", {})}
-        onSpend={() => openSheet("update", {})}
-        onSnapshot={handleSnapshot}
         onChooseResources={() => scrollTo("Items")}
       />
 
@@ -243,8 +233,8 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
             <div style={{ display:"flex", gap:6 }}>
               <button onClick={() => setConfirmResetAll(false)} style={{
                 flex:1, height:36, borderRadius:9, fontSize:12, fontWeight:600,
-                background:"rgba(255,255,255,0.8)", color:"#6f7a73",
-                border:"1px solid rgba(72,94,80,0.14)", cursor:"pointer",
+                background:"rgba(255,255,255,0.8)", color:"var(--bp-muted2, #6f7a73)",
+                border:"1px solid var(--bp-border2, rgba(72,94,80,0.14))", cursor:"pointer",
               }}>{t("common.cancel")}</button>
               <button onClick={handleResetAllAverages} style={{
                 flex:1, height:36, borderRadius:9, fontSize:12, fontWeight:700,
@@ -286,7 +276,7 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
         <MithrilCalculator mithrilBalance={balances["mithril"] ?? 0} onSetGoal={handleSetGoal} />
         <div style={{ marginTop:20 }}>
           <div style={{ fontSize:11, fontWeight:700, textTransform:"uppercase",
-            letterSpacing:"0.15em", color:"#9aa59e", marginBottom:8 }}>
+            letterSpacing:"0.15em", color:"var(--bp-muted, #9aa59e)", marginBottom:8 }}>
             Upgrade Priority Guide
           </div>
           <GearPriorityGuide userId={userId} />

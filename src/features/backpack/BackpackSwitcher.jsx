@@ -76,20 +76,20 @@ function ProfileForm({ initial, onSave, onCancel }) {
       border:"1px solid rgba(74,92,80,0.12)", padding:14, marginTop:8,
     }}>
       <label style={{ fontSize:11, fontWeight:700, textTransform:"uppercase",
-        letterSpacing:"0.15em", color:"#9aa59e", display:"block", marginBottom:6 }}>
+        letterSpacing:"0.15em", color:"var(--bp-muted, #9aa59e)", display:"block", marginBottom:6 }}>
         Backpack Name
       </label>
       <input value={name} onChange={e => setName(e.target.value)}
         placeholder="e.g. Main Account"
         style={{
           width:"100%", background:"white", border:"1px solid #e3e8e2",
-          borderRadius:12, padding:"10px 14px", fontSize:14, color:"#24312c",
+          borderRadius:12, padding:"10px 14px", fontSize:14, color:"var(--bp-text, #24312c)",
           outline:"none", fontFamily:"'DM Sans',sans-serif", boxSizing:"border-box",
           marginBottom:12,
         }} />
 
       <label style={{ fontSize:11, fontWeight:700, textTransform:"uppercase",
-        letterSpacing:"0.15em", color:"#9aa59e", display:"block", marginBottom:8 }}>
+        letterSpacing:"0.15em", color:"var(--bp-muted, #9aa59e)", display:"block", marginBottom:8 }}>
         Colour
       </label>
       <ColorSwatchRow value={color} onChange={setColor} />
@@ -97,8 +97,8 @@ function ProfileForm({ initial, onSave, onCancel }) {
       <div style={{ display:"flex", gap:8, marginTop:14 }}>
         <button onClick={onCancel} style={{
           flex:1, height:38, borderRadius:10, fontSize:13, fontWeight:600,
-          background:"rgba(255,255,255,0.8)", color:"#6f7a73",
-          border:"1px solid rgba(72,94,80,0.14)", cursor:"pointer",
+          background:"rgba(255,255,255,0.8)", color:"var(--bp-muted2, #6f7a73)",
+          border:"1px solid var(--bp-border2, rgba(72,94,80,0.14))", cursor:"pointer",
         }}>Cancel</button>
         <button
           onClick={() => name.trim() && onSave({ name: name.trim(), color })}
@@ -133,8 +133,8 @@ export default function BackpackSwitcher({ profiles, activeId, onSwitch, onUpdat
                 display:"flex", alignItems:"center", gap:7,
                 padding:"6px 12px 6px 8px", borderRadius:99,
                 background: isActive ? p.color : "rgba(255,255,255,0.72)",
-                color: isActive ? "white" : "#6f7a73",
-                border: isActive ? `1px solid ${p.color}` : "1px solid rgba(72,94,80,0.14)",
+                color: isActive ? "white" : "var(--bp-muted2, #6f7a73)",
+                border: isActive ? `1px solid ${p.color}` : "1px solid var(--bp-border2, rgba(72,94,80,0.14))",
                 fontSize:12, fontWeight:700, cursor:"pointer",
               }}>
               <span style={{ width:10, height:10, borderRadius:"50%",
@@ -147,7 +147,7 @@ export default function BackpackSwitcher({ profiles, activeId, onSwitch, onUpdat
         {profiles.length < MAX_BACKPACKS && !creating && (
           <button onClick={() => setCreating(true)} style={{
             padding:"6px 12px", borderRadius:99, fontSize:12, fontWeight:700,
-            background:"none", color:"#78917f",
+            background:"none", color:"var(--bp-accent, #78917f)",
             border:"1px dashed rgba(120,145,127,0.4)", cursor:"pointer",
           }}>
             + Add backpack

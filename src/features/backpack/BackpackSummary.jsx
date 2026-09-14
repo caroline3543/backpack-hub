@@ -13,8 +13,8 @@ function StatCard({ label, value, sub, empty, onClick }) {
   const Tag = onClick ? "button" : "div";
   return (
     <Tag onClick={onClick} style={{
-      background:"rgba(255,255,255,0.82)",
-      border:"1px solid rgba(74,92,80,0.09)",
+      background:"var(--bp-card, rgba(255,255,255,0.82))",
+      border:"1px solid var(--bp-border, rgba(74,92,80,0.09))",
       boxShadow:"0 4px 16px rgba(71,86,75,0.07)",
       borderRadius:20, padding:"12px 14px",
       textAlign:"left", width:"100%", font:"inherit",
@@ -29,11 +29,11 @@ function StatCard({ label, value, sub, empty, onClick }) {
       ) : (
         <>
           <div style={{ fontFamily:"'Fraunces',serif", fontSize:18,
-            fontWeight:600, color:"#24312c", lineHeight:1.2 }}>
+            fontWeight:600, color:"var(--bp-text, #24312c)", lineHeight:1.2 }}>
             {value}
           </div>
           {sub && (
-            <div style={{ fontSize:11, color:"#9aa59e", marginTop:3 }}>{sub}</div>
+            <div style={{ fontSize:11, color:"var(--bp-muted, #9aa59e)", marginTop:3 }}>{sub}</div>
           )}
         </>
       )}
@@ -76,8 +76,8 @@ function SvsPrepCard() {
   if (editing) {
     return (
       <div style={{
-        background:"rgba(255,255,255,0.82)",
-        border:"1px solid rgba(74,92,80,0.09)",
+        background:"var(--bp-card, rgba(255,255,255,0.82))",
+        border:"1px solid var(--bp-border, rgba(74,92,80,0.09))",
         boxShadow:"0 4px 16px rgba(71,86,75,0.07)",
         borderRadius:20, padding:"12px 14px",
       }}>
@@ -92,14 +92,14 @@ function SvsPrepCard() {
           onChange={e => setDate(e.target.value)}
           style={{
             width:"100%", border:"1px solid #e3e8e2", borderRadius:10,
-            padding:"6px 8px", fontSize:13, color:"#24312c",
+            padding:"6px 8px", fontSize:13, color:"var(--bp-text, #24312c)",
             fontFamily:"'DM Sans',sans-serif", outline:"none", boxSizing:"border-box",
             marginBottom:8,
           }}
         />
         <button onClick={() => setEditing(false)} style={{
           width:"100%", height:32, borderRadius:10, border:"none",
-          background:"#78917f", color:"white", fontSize:12, fontWeight:700, cursor:"pointer",
+          background:"var(--bp-accent, #78917f)", color:"white", fontSize:12, fontWeight:700, cursor:"pointer",
         }}>
           {t("svsPrep.save")}
         </button>
@@ -111,8 +111,8 @@ function SvsPrepCard() {
     <button
       onClick={() => setEditing(true)}
       style={{
-        textAlign:"left", background:"rgba(255,255,255,0.82)",
-        border:"1px solid rgba(74,92,80,0.09)",
+        textAlign:"left", background:"var(--bp-card, rgba(255,255,255,0.82))",
+        border:"1px solid var(--bp-border, rgba(74,92,80,0.09))",
         boxShadow:"0 4px 16px rgba(71,86,75,0.07)",
         borderRadius:20, padding:"12px 14px", cursor:"pointer",
         font:"inherit",
@@ -122,11 +122,11 @@ function SvsPrepCard() {
         {t("svsPrep.label")}
       </div>
       <div style={{ fontFamily:"'Fraunces',serif", fontSize:18,
-        fontWeight:600, color:"#24312c", lineHeight:1.2 }}>
+        fontWeight:600, color:"var(--bp-text, #24312c)", lineHeight:1.2 }}>
         {value}
       </div>
       {sub && (
-        <div style={{ fontSize:11, color:"#9aa59e", marginTop:3 }}>{sub}</div>
+        <div style={{ fontSize:11, color:"var(--bp-muted, #9aa59e)", marginTop:3 }}>{sub}</div>
       )}
     </button>
   );
@@ -145,7 +145,7 @@ function ItemIconChip({ item, size = 18 }) {
 
 function MiniProgressBar({ pct, color = "#c9962f" }) {
   return (
-    <div style={{ height:5, background:"rgba(72,94,80,0.10)",
+    <div style={{ height:5, background:"var(--bp-border3, rgba(72,94,80,0.10))",
       borderRadius:99, overflow:"hidden", marginTop:5 }}>
       <div style={{ height:"100%", borderRadius:99, width:`${Math.min(100,pct)}%`,
         background: color, transition:"width 0.4s ease" }}/>
@@ -203,7 +203,7 @@ function assignWidgets(pinnedObjs, balances, transactions) {
   return { almostThere, needsAttention, fastestGrowth };
 }
 
-export default function BackpackSummary({ items, transactions, balances, pinnedItems, onGain, onSpend, onSnapshot, onChooseResources }) {
+export default function BackpackSummary({ items, transactions, balances, pinnedItems, onChooseResources }) {
   const { t, tItem } = useI18n();
 
   useMemo(() => calcGrowthInsights(transactions, items), [transactions, items]);
@@ -317,46 +317,6 @@ export default function BackpackSummary({ items, transactions, balances, pinnedI
           📍 {t("summary.chooseResources")}
         </button>
       )}
-
-      {/* ── Quick actions ── */}
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginTop:14 }}>
-        <button onClick={onGain} style={{
-          height:44, borderRadius:14, fontSize:13, fontWeight:700,
-          background:"#edf4ea", color:"#5c7a6e", border:"none", cursor:"pointer",
-          display:"flex", alignItems:"center", justifyContent:"center", gap:5,
-        }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            stroke="#5c7a6e" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="12" y1="5" x2="12" y2="19"/>
-            <line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          {t("summary.gain")}
-        </button>
-        <button onClick={onSpend} style={{
-          height:44, borderRadius:14, fontSize:13, fontWeight:700,
-          background:"#f7edd9", color:"#9a7746", border:"none", cursor:"pointer",
-          display:"flex", alignItems:"center", justifyContent:"center", gap:5,
-        }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            stroke="#9a7746" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          {t("summary.spend")}
-        </button>
-        <button onClick={onSnapshot} style={{
-          height:44, borderRadius:14, fontSize:13, fontWeight:700,
-          background:"#edf2ec", color:"#5c7a6e", border:"none", cursor:"pointer",
-          display:"flex", alignItems:"center", justifyContent:"center", gap:5,
-        }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            stroke="#5c7a6e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          {t("summary.snapshot")}
-        </button>
-      </div>
     </>
   );
 }

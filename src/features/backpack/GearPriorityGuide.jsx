@@ -80,13 +80,13 @@ function PieceRow({ pieceId, done, isNext, onToggle }) {
       border: isNext ? "1px solid rgba(120,145,127,0.4)" : "1px solid transparent",
     }}>
       <div style={{ width:32, height:32, borderRadius:8, flexShrink:0,
-        background:"rgba(255,255,255,0.7)", display:"flex",
+        background:"var(--bp-card-soft, rgba(255,255,255,0.7))", display:"flex",
         alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
         {icon ? <img src={icon} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
               : <span style={{ fontSize:16 }}>🎒</span>}
       </div>
       <span style={{ flex:1, fontSize:13, fontWeight: isNext ? 700 : 500,
-        color: done ? "#9aa59e" : "#24312c",
+        color: done ? "var(--bp-muted, #9aa59e)" : "var(--bp-text, #24312c)",
         textDecoration: done ? "line-through" : "none" }}>
         {name}
       </span>
@@ -108,11 +108,11 @@ function PhaseCard({ phase, progress, onToggle }) {
   const nextPiece = flat.find(p => !progress[p]);
 
   return (
-    <div style={{ background:"rgba(255,255,255,0.82)",
-      border:"1px solid rgba(74,92,80,0.09)",
+    <div style={{ background:"var(--bp-card, rgba(255,255,255,0.82))",
+      border:"1px solid var(--bp-border, rgba(74,92,80,0.09))",
       boxShadow:"0 4px 16px rgba(71,86,75,0.07)",
       borderRadius:20, padding:16, marginBottom:14 }}>
-      <div style={{ fontSize:14, fontWeight:700, color:"#24312c", marginBottom:2 }}>
+      <div style={{ fontSize:14, fontWeight:700, color:"var(--bp-text, #24312c)", marginBottom:2 }}>
         {phase.label}
       </div>
       {nextPiece ? (
@@ -126,7 +126,7 @@ function PhaseCard({ phase, progress, onToggle }) {
       )}
       {phase.groups.map(group => (
         <div key={group.rank} style={{ marginBottom:8 }}>
-          <div style={{ fontSize:10, color:"#9aa59e", fontWeight:700,
+          <div style={{ fontSize:10, color:"var(--bp-muted, #9aa59e)", fontWeight:700,
             textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:4 }}>
             Priority {group.rank}
           </div>
@@ -158,7 +158,7 @@ export default function GearPriorityGuide({ userId }) {
 
   return (
     <div>
-      <div style={{ fontSize:12, color:"#9aa59e", marginBottom:14, lineHeight:1.5 }}>
+      <div style={{ fontSize:12, color:"var(--bp-muted, #9aa59e)", marginBottom:14, lineHeight:1.5 }}>
         Which gear piece to Mithril-upgrade next, in priority order. Tap a
         piece to mark it done — the highlighted row is always what to do next.
       </div>

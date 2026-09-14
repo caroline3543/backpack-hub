@@ -36,15 +36,15 @@ function SnapshotCard({ snapshots, items, balances }) {
 
   return (
     <div style={{
-      background:"rgba(255,255,255,0.82)",
-      border:"1px solid rgba(74,92,80,0.09)",
+      background:"var(--bp-card, rgba(255,255,255,0.82))",
+      border:"1px solid var(--bp-border, rgba(74,92,80,0.09))",
       borderRadius:20, padding:14, marginBottom:14,
     }}>
       <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase",
         letterSpacing:"0.15em", color:"#9a7a62", marginBottom:6 }}>
         {t("history.snapshotComparison")}
       </div>
-      <div style={{ fontSize:12, color:"#9aa59e", marginBottom:10 }}>
+      <div style={{ fontSize:12, color:"var(--bp-muted, #9aa59e)", marginBottom:10 }}>
         {t("history.vs", { time: timeAgo(latest.date, t, dateLocale) })}
       </div>
       <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
@@ -53,7 +53,7 @@ function SnapshotCard({ snapshots, items, balances }) {
             justifyContent:"space-between" }}>
             <span style={{ fontSize:13, color:"#4c5a52" }}>{c.name}</span>
             <span style={{ fontSize:13, fontWeight:700,
-              color: c.delta > 0 ? "#5c7a6e" : c.delta < 0 ? "#a06358" : "#9aa59e" }}>
+              color: c.delta > 0 ? "#5c7a6e" : c.delta < 0 ? "#a06358" : "var(--bp-muted, #9aa59e)" }}>
               {c.delta > 0 ? "+" : ""}{c.fmt(c.delta)}
             </span>
           </div>
@@ -90,14 +90,14 @@ function TxRow({ tx, items, onEdit }) {
 
       {/* Content */}
       <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ fontSize:14, fontWeight:600, color:"#24312c",
+        <div style={{ fontSize:14, fontWeight:600, color:"var(--bp-text, #24312c)",
           overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
           {item ? tItem(item.id, item.name) : t("history.unknownItem")}
         </div>
         <div style={{ display:"flex", gap:8, marginTop:2, flexWrap:"wrap" }}>
-          <span style={{ fontSize:11, color:"#9aa59e" }}>{timeAgo(tx.date, t, dateLocale)}</span>
+          <span style={{ fontSize:11, color:"var(--bp-muted, #9aa59e)" }}>{timeAgo(tx.date, t, dateLocale)}</span>
           {tx.reason && (
-            <span style={{ fontSize:11, color:"#6f7a73" }}>{tx.reason}</span>
+            <span style={{ fontSize:11, color:"var(--bp-muted2, #6f7a73)" }}>{tx.reason}</span>
           )}
         </div>
       </div>
@@ -111,7 +111,7 @@ function TxRow({ tx, items, onEdit }) {
         </span>
         <button onClick={() => onEdit(tx)} style={{
           background:"none", border:"none", cursor:"pointer",
-          fontSize:11, color:"#9aa59e", padding:0 }}>{t("history.edit")}</button>
+          fontSize:11, color:"var(--bp-muted, #9aa59e)", padding:0 }}>{t("history.edit")}</button>
       </div>
     </div>
   );
@@ -137,9 +137,9 @@ export default function BackpackHistory({ transactions, snapshots, items, balanc
         {["all","gain","spend"].map(f => (
           <button key={f} onClick={() => setFilter(f)} style={{
             padding:"6px 14px", borderRadius:99, fontSize:12, fontWeight:600,
-            background: filter === f ? "#78917f" : "rgba(255,255,255,0.7)",
-            color: filter === f ? "white" : "#6f7a73",
-            border: filter === f ? "1px solid #78917f" : "1px solid rgba(72,94,80,0.14)",
+            background: filter === f ? "var(--bp-accent, #78917f)" : "var(--bp-card-soft, rgba(255,255,255,0.7))",
+            color: filter === f ? "white" : "var(--bp-muted2, #6f7a73)",
+            border: filter === f ? "1px solid var(--bp-accent, #78917f)" : "1px solid var(--bp-border2, rgba(72,94,80,0.14))",
             cursor:"pointer",
           }}>{filterLabels[f]}</button>
         ))}
@@ -147,19 +147,19 @@ export default function BackpackHistory({ transactions, snapshots, items, balanc
 
       {/* Transaction list */}
       {filtered.length === 0 ? (
-        <div style={{ background:"rgba(255,255,255,0.82)",
-          border:"1px solid rgba(74,92,80,0.09)",
+        <div style={{ background:"var(--bp-card, rgba(255,255,255,0.82))",
+          border:"1px solid var(--bp-border, rgba(74,92,80,0.09))",
           borderRadius:20, padding:"28px 16px", textAlign:"center" }}>
-          <div style={{ fontSize:14, fontWeight:600, color:"#24312c", marginBottom:4 }}>
+          <div style={{ fontSize:14, fontWeight:600, color:"var(--bp-text, #24312c)", marginBottom:4 }}>
             {t("history.noTransactionsTitle")}
           </div>
-          <div style={{ fontSize:13, color:"#9aa59e" }}>
+          <div style={{ fontSize:13, color:"var(--bp-muted, #9aa59e)" }}>
             {t("history.noTransactionsBody")}
           </div>
         </div>
       ) : (
-        <div style={{ background:"rgba(255,255,255,0.82)",
-          border:"1px solid rgba(74,92,80,0.09)",
+        <div style={{ background:"var(--bp-card, rgba(255,255,255,0.82))",
+          border:"1px solid var(--bp-border, rgba(74,92,80,0.09))",
           borderRadius:20, padding:"0 16px" }}>
           {filtered.map(tx => (
             <TxRow key={tx.id} tx={tx} items={items} onEdit={onEdit} />

@@ -26,7 +26,7 @@ function MiniChart({ transactions, itemId, item }) {
   if (txs.length < 2) {
     return (
       <div style={{ padding:"16px 0", textAlign:"center",
-        fontSize:12, color:"#9aa59e" }}>
+        fontSize:12, color:"var(--bp-muted, #9aa59e)" }}>
         {t("itemsSection.notEnoughHistory")}
       </div>
     );
@@ -91,7 +91,7 @@ function MiniChart({ transactions, itemId, item }) {
 function ProgressBar({ pct }) {
   const c = Math.min(100, Math.max(0, pct));
   return (
-    <div style={{ height:7, background:"rgba(72,94,80,0.10)",
+    <div style={{ height:7, background:"var(--bp-border3, rgba(72,94,80,0.10))",
       borderRadius:99, overflow:"hidden" }}>
       <div style={{
         height:"100%", borderRadius:99, width:`${c}%`,
@@ -149,7 +149,7 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
         {/* Icon + name (left) · pace badge + pin (top-right) */}
         <div style={{ display:"flex", alignItems:"center",
           justifyContent:"space-between", marginBottom:6 }}>
-          <span style={{ fontSize:14, fontWeight:600, color:"#24312c",
+          <span style={{ fontSize:14, fontWeight:600, color:"var(--bp-text, #24312c)",
             flex:1, marginRight:8, lineHeight:1.3,
             display:"flex", alignItems:"center", gap:8 }}>
             {ITEM_ICONS[item.id] ? (
@@ -189,7 +189,7 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
             {pinTip && (
               <div style={{
                 position:"absolute", top:"120%", insetInlineEnd:0,
-                background:"#24312c", color:"#f6f1e8",
+                background:"var(--bp-text, #24312c)", color:"var(--bp-bg, #f6f1e8)",
                 fontSize:10, fontWeight:600, whiteSpace:"nowrap",
                 padding:"4px 9px", borderRadius:8, zIndex:5,
                 animation:"pinTipIn 0.25s ease both",
@@ -205,9 +205,9 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
         <div style={{ display:"flex", alignItems:"baseline",
           gap:8, marginBottom: hasTarget ? 8 : 12 }}>
           <span style={{ fontFamily:"'Fraunces',serif", fontSize:18,
-            fontWeight:600, color:"#24312c" }}>{fmt(balance)}</span>
+            fontWeight:600, color:"var(--bp-text, #24312c)" }}>{fmt(balance)}</span>
           {hasTarget && (
-            <span style={{ fontSize:12, color:"#9aa59e" }}>
+            <span style={{ fontSize:12, color:"var(--bp-muted, #9aa59e)" }}>
               / {fmt(target)} · {Math.round(Math.min(pct,100))}%
             </span>
           )}
@@ -223,7 +223,7 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
         {dailyAvg !== 0 && (
           <div style={{ display:"flex", gap:16, marginBottom:10 }}>
             <div>
-              <div style={{ fontSize:10, color:"#9aa59e", fontWeight:600,
+              <div style={{ fontSize:10, color:"var(--bp-muted, #9aa59e)", fontWeight:600,
                 textTransform:"uppercase", letterSpacing:"0.1em" }}>{t("itemsSection.dailyAvg")}</div>
               <div style={{ display:"flex", alignItems:"baseline", gap:6 }}>
                 <span style={{ fontSize:12, fontWeight:700,
@@ -256,18 +256,18 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
             </div>
             {hasTarget && remaining > 0 && completion && (
               <div>
-                <div style={{ fontSize:10, color:"#9aa59e", fontWeight:600,
+                <div style={{ fontSize:10, color:"var(--bp-muted, #9aa59e)", fontWeight:600,
                   textTransform:"uppercase", letterSpacing:"0.1em" }}>{t("itemsSection.estDone")}</div>
-                <div style={{ fontSize:12, fontWeight:700, color:"#24312c" }}>
+                <div style={{ fontSize:12, fontWeight:700, color:"var(--bp-text, #24312c)" }}>
                   {formatDate(completion, dateLocale)}
                 </div>
               </div>
             )}
             {hasTarget && remaining > 0 && (
               <div>
-                <div style={{ fontSize:10, color:"#9aa59e", fontWeight:600,
+                <div style={{ fontSize:10, color:"var(--bp-muted, #9aa59e)", fontWeight:600,
                   textTransform:"uppercase", letterSpacing:"0.1em" }}>{t("itemsSection.remaining")}</div>
-                <div style={{ fontSize:12, fontWeight:700, color:"#24312c" }}>
+                <div style={{ fontSize:12, fontWeight:700, color:"var(--bp-text, #24312c)" }}>
                   {fmt(remaining)}
                 </div>
               </div>
@@ -279,17 +279,17 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
         <div style={{ display:"flex", gap:6 }}>
           <button onClick={() => { onUpdate(item); haptics.light(); }} style={{
             flex:2, height:44, borderRadius:12, fontSize:13, fontWeight:700,
-            background:"#78917f", color:"white", border:"none", cursor:"pointer",
+            background:"var(--bp-accent, #78917f)", color:"white", border:"none", cursor:"pointer",
           }}>{t("itemsSection.update")}</button>
           <button onClick={() => { onGoal(item); haptics.light(); }} style={{
             flex:1, height:44, borderRadius:12, fontSize:12, fontWeight:700,
-            background:"#edf2ec", color:"#5c7a6e", border:"none", cursor:"pointer",
+            background:"color-mix(in srgb, var(--bp-accent, #78917f) 14%, white)", color:"var(--bp-accent, #5c7a6e)", border:"none", cursor:"pointer",
           }}>{t(hasTarget ? "itemsSection.editGoal" : "itemsSection.addGoal")}</button>
           <button onClick={() => setExpanded(e => !e)} style={{
             width:44, height:44, borderRadius:12, fontSize:12, fontWeight:700,
-            background: expanded ? "#78917f" : "rgba(255,255,255,0.7)",
-            color: expanded ? "white" : "#6f7a73",
-            border:"1px solid rgba(72,94,80,0.14)",
+            background: expanded ? "var(--bp-accent, #78917f)" : "var(--bp-card-soft, rgba(255,255,255,0.7))",
+            color: expanded ? "white" : "var(--bp-muted2, #6f7a73)",
+            border:"1px solid var(--bp-border2, rgba(72,94,80,0.14))",
             cursor:"pointer", flexShrink:0,
             display:"flex", alignItems:"center", justifyContent:"center",
           }}>
@@ -315,25 +315,25 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
               [t("itemsSection.estDone"),    completion ? formatDate(completion, dateLocale) : hasTarget ? t("itemsSection.insufficientData") : "—"],
               [t("itemsSection.remaining"),  hasTarget ? fmt(remaining) : "—"],
             ].map(([label, val]) => (
-              <div key={label} style={{ background:"rgba(255,255,255,0.7)",
+              <div key={label} style={{ background:"var(--bp-card-soft, rgba(255,255,255,0.7))",
                 borderRadius:10, padding:"8px 10px" }}>
-                <div style={{ fontSize:10, color:"#9aa59e", fontWeight:600,
+                <div style={{ fontSize:10, color:"var(--bp-muted, #9aa59e)", fontWeight:600,
                   textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:3 }}>
                   {label}
                 </div>
-                <div style={{ fontSize:13, fontWeight:700, color:"#24312c" }}>{val}</div>
+                <div style={{ fontSize:13, fontWeight:700, color:"var(--bp-text, #24312c)" }}>{val}</div>
               </div>
             ))}
           </div>
 
           {item.targetDate && (
-            <div style={{ fontSize:12, color:"#6f7a73", marginBottom:10 }}>
+            <div style={{ fontSize:12, color:"var(--bp-muted2, #6f7a73)", marginBottom:10 }}>
               {t("itemsSection.targetDeadline", { date: formatDate(item.targetDate, dateLocale) })}
             </div>
           )}
 
           {/* Mini chart */}
-          <div style={{ fontSize:10, color:"#9aa59e", fontWeight:600,
+          <div style={{ fontSize:10, color:"var(--bp-muted, #9aa59e)", fontWeight:600,
             textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:4 }}>
             {t("itemsSection.balanceHistory")}
           </div>
@@ -352,7 +352,7 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
             );
             return (
               <div style={{ marginTop:10 }}>
-                <div style={{ fontSize:10, color:"#9aa59e", fontWeight:700,
+                <div style={{ fontSize:10, color:"var(--bp-muted, #9aa59e)", fontWeight:700,
                   textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:6 }}>
                   {t("itemsSection.recentHistory")}
                 </div>
@@ -381,7 +381,7 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
                           color: isGain ? "#5c7a6e" : "#a06358" }}>
                           {isGain ? "+" : "−"}{fmtAmt}
                         </span>
-                        <span style={{ fontSize:11, color:"#9aa59e", flex:1,
+                        <span style={{ fontSize:11, color:"var(--bp-muted, #9aa59e)", flex:1,
                           overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                           {tx.reason || (tx.autoDetected ? t("itemsSection.totalUpdated") : t("itemsSection.manualEntry"))}
                         </span>
@@ -407,7 +407,7 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
           {/* Edit item link */}
           <button onClick={() => onEdit(item)} style={{
             background:"none", border:"none", cursor:"pointer",
-            fontSize:12, color:"#78917f", fontWeight:600,
+            fontSize:12, color:"var(--bp-accent, #78917f)", fontWeight:600,
             padding:"8px 0 0", display:"block",
           }}>
             {t("itemsSection.editItemSettings")}
@@ -425,8 +425,8 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
                 <div style={{ display:"flex", gap:6 }}>
                   <button onClick={() => setConfirmDelete(false)} style={{
                     flex:1, height:34, borderRadius:8, fontSize:12, fontWeight:600,
-                    background:"rgba(255,255,255,0.8)", color:"#6f7a73",
-                    border:"1px solid rgba(72,94,80,0.14)", cursor:"pointer",
+                    background:"rgba(255,255,255,0.8)", color:"var(--bp-muted2, #6f7a73)",
+                    border:"1px solid var(--bp-border2, rgba(72,94,80,0.14))", cursor:"pointer",
                   }}>{t("common.cancel")}</button>
                   <button onClick={() => { onDelete(item.id); haptics.warning(); }} style={{
                     flex:1, height:34, borderRadius:8, fontSize:12, fontWeight:700,
@@ -462,8 +462,8 @@ function CategoryAccordion({
 
   return (
     <div style={{
-      background:"rgba(255,255,255,0.82)",
-      border:"1px solid rgba(74,92,80,0.09)",
+      background:"var(--bp-card, rgba(255,255,255,0.82))",
+      border:"1px solid var(--bp-border, rgba(74,92,80,0.09))",
       boxShadow:"0 4px 16px rgba(71,86,75,0.07)",
       borderRadius:22, overflow:"hidden", marginBottom:10,
     }}>
@@ -476,14 +476,14 @@ function CategoryAccordion({
         }}>
         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
           <span style={{ fontFamily:"'Fraunces',serif", fontSize:16,
-            fontWeight:600, color:"#24312c" }}>{tCategory(category)}</span>
+            fontWeight:600, color:"var(--bp-text, #24312c)" }}>{tCategory(category)}</span>
           <span style={{ fontSize:11, borderRadius:99, padding:"2px 8px",
             background:"#edf2ec", color:"#5c7a6e", fontWeight:600 }}>
             {items.length}
           </span>
         </div>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="#9aa59e" strokeWidth="2.5" strokeLinecap="round"
+          stroke="var(--bp-muted, #9aa59e)" strokeWidth="2.5" strokeLinecap="round"
           style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
             transition:"transform 0.2s", flexShrink:0 }}>
           <polyline points="6 9 12 15 18 9"/>
@@ -493,7 +493,7 @@ function CategoryAccordion({
       {isOpen && (
         <div style={{ padding:"0 16px 16px" }}>
           {items.length === 0 && !isWidgets && (
-            <div style={{ fontSize:13, color:"#9aa59e",
+            <div style={{ fontSize:13, color:"var(--bp-muted, #9aa59e)",
               textAlign:"center", padding:"16px 0" }}>
               {t("itemsSection.noItemsInCategory")}
             </div>
@@ -516,7 +516,7 @@ function CategoryAccordion({
           {isWidgets && (
             <button onClick={onAddCustom} style={{
               width:"100%", height:44, marginTop:8, borderRadius:12,
-              background:"rgba(255,255,255,0.7)", color:"#78917f",
+              background:"var(--bp-card-soft, rgba(255,255,255,0.7))", color:"var(--bp-accent, #78917f)",
               fontSize:13, fontWeight:600,
               border:"1px dashed rgba(120,145,127,0.4)", cursor:"pointer",
             }}>
@@ -619,7 +619,7 @@ export default function BackpackItems({
       <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:8 }}>
         <button
           onClick={() => setReorderMode(r => !r)}
-          style={{ fontSize:12, fontWeight:700, color: reorderMode ? "#78917f" : "#9aa59e",
+          style={{ fontSize:12, fontWeight:700, color: reorderMode ? "var(--bp-accent, #78917f)" : "var(--bp-muted, #9aa59e)",
             background: reorderMode ? "#edf2ec" : "none",
             border: reorderMode ? "1px solid rgba(92,122,110,0.2)" : "none",
             borderRadius:99, padding:"4px 12px", cursor:"pointer" }}>
@@ -645,8 +645,8 @@ export default function BackpackItems({
               }}>
               <div style={{
                 display:"flex", alignItems:"center", gap:12,
-                background: isTarget ? "rgba(237,244,236,0.95)" : "rgba(255,255,255,0.82)",
-                border:`1px solid ${isTarget ? "rgba(92,122,110,0.3)" : "rgba(74,92,80,0.09)"}`,
+                background: isTarget ? "rgba(237,244,236,0.95)" : "var(--bp-card, rgba(255,255,255,0.82))",
+                border:`1px solid ${isTarget ? "rgba(92,122,110,0.3)" : "var(--bp-border, rgba(74,92,80,0.09))"}`,
                 borderRadius:18, padding:"14px 16px",
                 boxShadow:"0 4px 16px rgba(71,86,75,0.07)",
               }}>
@@ -667,7 +667,7 @@ export default function BackpackItems({
                   </svg>
                 </div>
                 <span style={{ fontFamily:"'Fraunces',serif", fontSize:16,
-                  fontWeight:600, color:"#24312c", flex:1 }}>{tCategory(cat)}</span>
+                  fontWeight:600, color:"var(--bp-text, #24312c)", flex:1 }}>{tCategory(cat)}</span>
                 <span style={{ fontSize:11, borderRadius:99, padding:"2px 8px",
                   background:"#edf2ec", color:"#5c7a6e", fontWeight:600 }}>
                   {catItems.length}
@@ -683,7 +683,7 @@ export default function BackpackItems({
                     disabled={index === 0}
                     style={{ width:30, height:30, borderRadius:8, border:"none",
                       background:"rgba(72,94,80,0.07)", cursor:"pointer",
-                      color: index === 0 ? "#d6ddd6" : "#78917f",
+                      color: index === 0 ? "#d6ddd6" : "var(--bp-accent, #78917f)",
                       fontSize:16, display:"flex", alignItems:"center",
                       justifyContent:"center" }}>↑</button>
                   <button
@@ -696,7 +696,7 @@ export default function BackpackItems({
                     disabled={index === categoryOrder.length-1}
                     style={{ width:30, height:30, borderRadius:8, border:"none",
                       background:"rgba(72,94,80,0.07)", cursor:"pointer",
-                      color: index === categoryOrder.length-1 ? "#d6ddd6" : "#78917f",
+                      color: index === categoryOrder.length-1 ? "#d6ddd6" : "var(--bp-accent, #78917f)",
                       fontSize:16, display:"flex", alignItems:"center",
                       justifyContent:"center" }}>↓</button>
                 </div>

@@ -5,23 +5,24 @@
 
 import { useState } from "react";
 import { useI18n } from "../../i18n/I18nContext.jsx";
+import { useSvsPrepDate } from "./useSvsPrepDate.js";
 import {
   CATEGORIES, PRIORITY_OPTIONS, RESOURCE_UNITS, UNIT_MULTIPLIER,
   WIDGET_LEVEL_TARGETS, WIDGET_GOAL_LEVELS, WIDGET_CURRENT_LEVEL_OPTIONS,
-  formatAmount, formatMinutes,
+  formatAmount, formatMinutes, itemHasLevel, levelOptionsFor,
 } from "./backpackConstants.js";
 
 const inputStyle = {
   width:"100%", background:"white",
   border:"1px solid #e3e8e2", borderRadius:14,
-  padding:"12px 16px", fontSize:15, color:"#24312c",
+  padding:"12px 16px", fontSize:15, color:"var(--bp-text, #24312c)",
   outline:"none", fontFamily:"'DM Sans',sans-serif",
   boxSizing:"border-box",
 };
 
 const labelStyle = {
   fontSize:11, fontWeight:700, textTransform:"uppercase",
-  letterSpacing:"0.15em", color:"#9aa59e", display:"block", marginBottom:6,
+  letterSpacing:"0.15em", color:"var(--bp-muted, #9aa59e)", display:"block", marginBottom:6,
 };
 
 function UnitChips({ value, onChange }) {
@@ -30,9 +31,9 @@ function UnitChips({ value, onChange }) {
       {RESOURCE_UNITS.map(u => (
         <button key={u} onClick={() => onChange(u)} style={{
           padding:"5px 14px", borderRadius:99, fontSize:12, fontWeight:700,
-          background: value === u ? "#78917f" : "rgba(255,255,255,0.7)",
-          color: value === u ? "white" : "#6f7a73",
-          border: value === u ? "1px solid #78917f" : "1px solid rgba(72,94,80,0.14)",
+          background: value === u ? "var(--bp-accent, #78917f)" : "var(--bp-card-soft, rgba(255,255,255,0.7))",
+          color: value === u ? "white" : "var(--bp-muted2, #6f7a73)",
+          border: value === u ? "1px solid var(--bp-accent, #78917f)" : "1px solid var(--bp-border2, rgba(72,94,80,0.14))",
           cursor:"pointer",
         }}>{u}</button>
       ))}
@@ -45,7 +46,6 @@ export function UpdateTotalForm({ item, currentBalance, isFirstEntry, onSubmit }
   const { t, tItem } = useI18n();
   const isResource = item?.category === "Resources";
   const isSpeedup  = item?.isMinutes;
-  const isWidgetItem = item?.category === "Widgets" && item?.trackLevel !== false;
   const unit       = item?.displayUnit || null;
 
   const [rawAmount,   setRawAmount]   = useState("");
@@ -55,11 +55,19 @@ export function UpdateTotalForm({ item, currentBalance, isFirstEntry, onSubmit }
     item?.currentLevel !== null && item?.currentLevel !== undefined ? String(item.currentLevel) : ""
   );
 
-  // A widget item's upgrade level is separate from its raw balance — if it
+  // A level-tracked item's level is separate from its raw balance — if it
   // hasn't been recorded yet, we ask for it right here on first entry
   // instead of only in the (easy to miss) Edit Item Settings screen.
-  const needsLevel = isFirstEntry && isWidgetItem &&
+  const hasLevel = itemHasLevel(item);
+  const needsLevel = isFirstEntry && hasLevel &&
     (item?.currentLevel === null || item?.currentLevel === undefined);
+  const isExpert = item?.category === "Dawn Experts";
+  const levelOptions      = levelOptionsFor(item);
+  const levelLabel        = isExpert ? "Current Level" : t("sheet.currentWidgetLevel");
+  const levelPlaceholder  = isExpert ? "Select your current level" : t("sheet.currentWidgetLevelPlaceholder");
+  const levelHint         = isExpert
+    ? "Relationship Level — updates in steps of 10."
+    : t("sheet.currentWidgetLevelHint");
 
   const parsedAmount = rawAmount === "" ? null : (() => {
     let n = Number(rawAmount);
@@ -84,11 +92,11 @@ export function UpdateTotalForm({ item, currentBalance, isFirstEntry, onSubmit }
       {!isFirstEntry && (
         <div style={{ background:"rgba(237,242,236,0.5)", borderRadius:12,
           padding:"10px 14px" }}>
-          <div style={{ fontSize:12, color:"#6f7a73" }}>
+          <div style={{ fontSize:12, color:"var(--bp-muted2, #6f7a73)" }}>
             {t("sheet.currentlyInBackpack")}
           </div>
           <div style={{ fontFamily:"'Fraunces',serif", fontSize:22,
-            fontWeight:600, color:"#24312c", marginTop:2 }}>
+            fontWeight:600, color:"var(--bp-text, #24312c)", marginTop:2 }}>
             {fmtVal(currentBalance)}
           </div>
         </div>
@@ -99,7 +107,7 @@ export function UpdateTotalForm({ item, currentBalance, isFirstEntry, onSubmit }
           <div style={{ fontSize:13, color:"#5c7a6e", fontWeight:600 }}>
             {t("sheet.firstTimeTracking")}
           </div>
-          <div style={{ fontSize:12, color:"#6f7a73", marginTop:3 }}>
+          <div style={{ fontSize:12, color:"var(--bp-muted2, #6f7a73)", marginTop:3 }}>
             {t("sheet.firstTimeBody")}
           </div>
         </div>
@@ -107,17 +115,17 @@ export function UpdateTotalForm({ item, currentBalance, isFirstEntry, onSubmit }
 
       {needsLevel && (
         <div>
-          <label style={labelStyle}>{t("sheet.currentWidgetLevel")}</label>
+          <label style={labelStyle}>{levelLabel}</label>
           <select style={{ ...inputStyle, appearance:"none", cursor:"pointer" }}
             value={currentLevel}
             onChange={e => setCurrentLevel(e.target.value)}>
-            <option value="">{t("sheet.currentWidgetLevelPlaceholder")}</option>
-            {WIDGET_CURRENT_LEVEL_OPTIONS.map(lvl => (
+            <option value="">{levelPlaceholder}</option>
+            {levelOptions.map(lvl => (
               <option key={lvl} value={lvl}>{lvl}</option>
             ))}
           </select>
-          <div style={{ fontSize:11, color:"#9aa59e", marginTop:4 }}>
-            {t("sheet.currentWidgetLevelHint")}
+          <div style={{ fontSize:11, color:"var(--bp-muted, #9aa59e)", marginTop:4 }}>
+            {levelHint}
           </div>
         </div>
       )}
@@ -149,7 +157,7 @@ export function UpdateTotalForm({ item, currentBalance, isFirstEntry, onSubmit }
           <div style={{ fontSize:12, fontWeight:700, color:"#5c7a6e" }}>
             {t("sheet.startingAmountSaved")}
           </div>
-          <div style={{ fontSize:13, color:"#24312c", marginTop:3 }}>
+          <div style={{ fontSize:13, color:"var(--bp-text, #24312c)", marginTop:3 }}>
             {t("sheet.willBeBaseline", { amount: fmtVal(parsedAmount) })}
           </div>
         </div>
@@ -164,7 +172,7 @@ export function UpdateTotalForm({ item, currentBalance, isFirstEntry, onSubmit }
             color: isGain ? "#5c7a6e" : "#9a7746" }}>
             {isGain ? t("sheet.gainDetected") : t("sheet.spendDetected")}
           </div>
-          <div style={{ fontSize:13, color:"#24312c", marginTop:3 }}>
+          <div style={{ fontSize:13, color:"var(--bp-text, #24312c)", marginTop:3 }}>
             {isGain
               ? t("sheet.addedToBackpack", { amount: fmtVal(delta) })
               : t("sheet.removedFromBackpack", { amount: fmtVal(Math.abs(delta)) })
@@ -175,7 +183,7 @@ export function UpdateTotalForm({ item, currentBalance, isFirstEntry, onSubmit }
       {!isFirstEntry && delta === 0 && rawAmount !== "" && (
         <div style={{ borderRadius:12, padding:"10px 14px",
           background:"rgba(72,94,80,0.06)" }}>
-          <div style={{ fontSize:13, color:"#9aa59e" }}>
+          <div style={{ fontSize:13, color:"var(--bp-muted, #9aa59e)" }}>
             {t("sheet.sameAsCurrent")}
           </div>
         </div>
@@ -194,8 +202,8 @@ export function UpdateTotalForm({ item, currentBalance, isFirstEntry, onSubmit }
           ...(needsLevel ? { currentLevel: Number(currentLevel) } : {}),
         })}
         style={{ width:"100%", height:50, borderRadius:16,
-          background: canSubmit ? "#78917f" : "rgba(72,94,80,0.2)",
-          color: canSubmit ? "white" : "#9aa59e",
+          background: canSubmit ? "var(--bp-accent, #78917f)" : "rgba(72,94,80,0.2)",
+          color: canSubmit ? "white" : "var(--bp-muted, #9aa59e)",
           fontSize:15, fontWeight:600, border:"none",
           cursor: canSubmit ? "pointer" : "default" }}>
         {isFirstEntry ? t("sheet.setStartingAmount") : t("sheet.updateBackpack")}
@@ -217,7 +225,14 @@ function ItemForm({ initial, onSubmit }) {
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
   const isResource = form.category === "Resources";
   const isSpeedup  = form.category === "Speedups";
-  const isWidget   = form.category === "Widgets" && form.trackLevel !== false;
+  const showLevelField = itemHasLevel(form);
+  const isExpert = form.category === "Dawn Experts";
+  const levelOptions     = levelOptionsFor(form);
+  const levelLabel       = isExpert ? "Current Level" : t("sheet.currentWidgetLevel");
+  const levelPlaceholder = isExpert ? "Select your current level" : t("sheet.currentWidgetLevelPlaceholder");
+  const levelHint        = isExpert
+    ? "Relationship Level — updates in steps of 10."
+    : t("sheet.currentWidgetLevelHint");
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
@@ -233,18 +248,18 @@ function ItemForm({ initial, onSubmit }) {
           {CATEGORIES.map(c => <option key={c} value={c}>{tCategory(c)}</option>)}
         </select>
       </div>
-      {isWidget && (
+      {showLevelField && (
         <div>
-          <label style={labelStyle}>{t("sheet.currentWidgetLevel")}</label>
+          <label style={labelStyle}>{levelLabel}</label>
           <select style={{ ...inputStyle, appearance:"none", cursor:"pointer" }}
             value={form.currentLevel ?? ""} onChange={e => setForm(f => ({ ...f, currentLevel: e.target.value === "" ? null : Number(e.target.value) }))}>
-            <option value="">{t("sheet.currentWidgetLevelPlaceholder")}</option>
-            {WIDGET_CURRENT_LEVEL_OPTIONS.map(lvl => (
+            <option value="">{levelPlaceholder}</option>
+            {levelOptions.map(lvl => (
               <option key={lvl} value={lvl}>{lvl}</option>
             ))}
           </select>
-          <div style={{ fontSize:11, color:"#9aa59e", marginTop:4 }}>
-            {t("sheet.currentWidgetLevelHint")}
+          <div style={{ fontSize:11, color:"var(--bp-muted, #9aa59e)", marginTop:4 }}>
+            {levelHint}
           </div>
         </div>
       )}
@@ -258,7 +273,7 @@ function ItemForm({ initial, onSubmit }) {
               onChange={u => setForm(f => ({ ...f, displayUnit: u }))} />
           )}
           {isSpeedup && (
-            <div style={{ fontSize:11, color:"#9aa59e", marginTop:4 }}>{t("sheet.enterInMinutes")}</div>
+            <div style={{ fontSize:11, color:"var(--bp-muted, #9aa59e)", marginTop:4 }}>{t("sheet.enterInMinutes")}</div>
           )}
         </div>
         <div>
@@ -272,7 +287,7 @@ function ItemForm({ initial, onSubmit }) {
         <input style={inputStyle} type="date"
           value={form.targetDate ? form.targetDate.slice(0,10) : ""}
           onChange={e => setForm(f => ({ ...f, targetDate: e.target.value || null }))} />
-        <div style={{ fontSize:11, color:"#9aa59e", marginTop:4 }}>
+        <div style={{ fontSize:11, color:"var(--bp-muted, #9aa59e)", marginTop:4 }}>
           {t("sheet.setDeadlineHint")}
         </div>
       </div>
@@ -284,8 +299,8 @@ function ItemForm({ initial, onSubmit }) {
       </div>
       <button onClick={() => form.name.trim() && onSubmit(form)}
         style={{ width:"100%", height:50, borderRadius:16,
-          background: form.name.trim() ? "#78917f" : "rgba(72,94,80,0.2)",
-          color: form.name.trim() ? "white" : "#9aa59e",
+          background: form.name.trim() ? "var(--bp-accent, #78917f)" : "rgba(72,94,80,0.2)",
+          color: form.name.trim() ? "white" : "var(--bp-muted, #9aa59e)",
           fontSize:15, fontWeight:600, border:"none",
           cursor: form.name.trim() ? "pointer" : "default" }}>
         {t("sheet.saveItem")}
@@ -297,10 +312,16 @@ function ItemForm({ initial, onSubmit }) {
 // ─── Goal form ────────────────────────────────────────────────────────────────
 function GoalForm({ initial, items, onSubmit }) {
   const { t, tItem } = useI18n();
+  const [svsPrepDate] = useSvsPrepDate();
   const [form, setForm] = useState({
     itemId:       initial?.itemId || "",
     targetAmount: initial?.targetAmount || 0,
-    targetDate:   initial?.targetDate ? initial.targetDate.slice(0,10) : "",
+    // Default a brand-new goal's deadline to the SvS prep date, since
+    // that's what most goals are being built toward — an existing goal's
+    // own saved date always wins, and the person can still change it.
+    targetDate:   initial?.targetDate
+      ? initial.targetDate.slice(0,10)
+      : (svsPrepDate ? svsPrepDate.slice(0,10) : ""),
   });
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
@@ -346,13 +367,13 @@ function GoalForm({ initial, items, onSubmit }) {
 
       {isWidget ? (
         availableGoalLevels.length === 0 ? (
-          <div style={{ fontSize:13, color:"#9aa59e" }}>
+          <div style={{ fontSize:13, color:"var(--bp-muted, #9aa59e)" }}>
             {t("sheet.heroGearMaxLevel")}
           </div>
         ) : (
           <div>
             <label style={labelStyle}>{t("sheet.heroGearLevel")}</label>
-            <div style={{ fontSize:12, color:"#9aa59e", marginBottom:6 }}>
+            <div style={{ fontSize:12, color:"var(--bp-muted, #9aa59e)", marginBottom:6 }}>
               {t("sheet.heroGearCurrentLevelNote", { level: baseLevel })}
             </div>
             <select style={{ ...inputStyle, appearance:"none", cursor:"pointer" }}
@@ -363,7 +384,7 @@ function GoalForm({ initial, items, onSubmit }) {
                 </option>
               ))}
             </select>
-            <div style={{ fontSize:11, color:"#9aa59e", marginTop:4 }}>
+            <div style={{ fontSize:11, color:"var(--bp-muted, #9aa59e)", marginTop:4 }}>
               {t("sheet.heroGearLevelHint")}
             </div>
           </div>
@@ -381,7 +402,7 @@ function GoalForm({ initial, items, onSubmit }) {
         <label style={labelStyle}>{t("sheet.byWhenOptional")}</label>
         <input style={inputStyle} type="date"
           value={form.targetDate} onChange={set("targetDate")} />
-        <div style={{ fontSize:11, color:"#9aa59e", marginTop:4 }}>
+        <div style={{ fontSize:11, color:"var(--bp-muted, #9aa59e)", marginTop:4 }}>
           {t("sheet.addDeadlineHint")}
         </div>
       </div>
@@ -392,7 +413,7 @@ function GoalForm({ initial, items, onSubmit }) {
           targetDate: form.targetDate || null,
         })}
         style={{ width:"100%", height:50, borderRadius:16,
-          background:"#78917f", color:"white",
+          background:"var(--bp-accent, #78917f)", color:"white",
           fontSize:15, fontWeight:600, border:"none", cursor:"pointer" }}>
         {t("sheet.saveGoal")}
       </button>
@@ -441,7 +462,7 @@ function EditTransactionForm({ initial, items, onSubmit, onDelete }) {
       <button
         onClick={() => onSubmit({ amount: Number(amount), reason, date: date || initial.date })}
         style={{ width:"100%", height:50, borderRadius:16,
-          background:"#78917f", color:"white",
+          background:"var(--bp-accent, #78917f)", color:"white",
           fontSize:15, fontWeight:600, border:"none", cursor:"pointer" }}>
         {t("common.save")}
       </button>
@@ -455,8 +476,8 @@ function EditTransactionForm({ initial, items, onSubmit, onDelete }) {
           <div style={{ display:"flex", gap:6 }}>
             <button onClick={() => setConfirmDelete(false)} style={{
               flex:1, height:34, borderRadius:8, fontSize:12, fontWeight:600,
-              background:"white", color:"#6f7a73",
-              border:"1px solid rgba(72,94,80,0.14)", cursor:"pointer",
+              background:"white", color:"var(--bp-muted2, #6f7a73)",
+              border:"1px solid var(--bp-border2, rgba(72,94,80,0.14))", cursor:"pointer",
             }}>{t("common.cancel")}</button>
             <button onClick={() => onDelete(initial.id)} style={{
               flex:1, height:34, borderRadius:8, fontSize:12, fontWeight:700,
@@ -504,6 +525,17 @@ export default function BackpackSheet({
   const hasPrev = canBrowse && currentIndex > 0;
   const hasNext = canBrowse && currentIndex < items.length - 1;
 
+  // "Skip category" scans forward for the next item whose category differs
+  // from the current one — items are grouped by category in the list, so
+  // this lands on the first item of the next category.
+  const nextCategoryIndex = canBrowse
+    ? items.findIndex((it, idx) => idx > currentIndex && it.category !== selectedItem.category)
+    : -1;
+  const hasNextCategory = nextCategoryIndex !== -1;
+
+  const skipItem = () => { if (hasNext) onNavigate(items[currentIndex + 1].id); else onClose(); };
+  const skipCategory = () => { if (hasNextCategory) onNavigate(items[nextCategoryIndex].id); else onClose(); };
+
   return (
     <>
       <style>{`
@@ -533,7 +565,7 @@ export default function BackpackSheet({
               opacity: hasPrev ? 1 : 0.4,
             }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-              stroke="#24312c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              stroke="var(--bp-text, #24312c)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6"/>
             </svg>
           </button>
@@ -552,7 +584,7 @@ export default function BackpackSheet({
               opacity: hasNext ? 1 : 0.4,
             }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-              stroke="#24312c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              stroke="var(--bp-text, #24312c)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="9 18 15 12 9 6"/>
             </svg>
           </button>
@@ -563,7 +595,7 @@ export default function BackpackSheet({
         position:"fixed", bottom:0, left:0, right:0,
         margin:"0 auto", width:"100%", maxWidth:480,
         maxHeight:"min(92vh, 92dvh)", overflowY:"auto",
-        background:"#f6f1e8",
+        background:"var(--bp-bg, #f6f1e8)",
         borderRadius:"28px 28px 0 0",
         zIndex:501, WebkitOverflowScrolling:"touch",
       }}>
@@ -572,7 +604,7 @@ export default function BackpackSheet({
             scrolls out of view along with the rest of the sheet's content. */}
         <div style={{
           position:"sticky", top:0, zIndex:2,
-          background:"#f6f1e8",
+          background:"var(--bp-bg, #f6f1e8)",
           padding:"16px 20px 12px",
         }}>
           <div style={{ width:48, height:6, background:"#d6ddd6",
@@ -591,7 +623,7 @@ export default function BackpackSheet({
                 )}
               </div>
               <div style={{ fontFamily:"'Fraunces',serif", fontSize:24,
-                fontWeight:600, color:"#24312c", overflowWrap:"anywhere" }}>
+                fontWeight:600, color:"var(--bp-text, #24312c)", overflowWrap:"anywhere" }}>
                 {selectedItem ? tItem(selectedItem.id, selectedItem.name) : title}
               </div>
             </div>
@@ -601,12 +633,32 @@ export default function BackpackSheet({
               display:"flex", alignItems:"center", justifyContent:"center",
               cursor:"pointer", flexShrink:0 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                stroke="#6f7a73" strokeWidth="2.5" strokeLinecap="round">
+                stroke="var(--bp-muted2, #6f7a73)" strokeWidth="2.5" strokeLinecap="round">
                 <line x1="18" y1="6" x2="6" y2="18"/>
                 <line x1="6" y1="6" x2="18" y2="18"/>
               </svg>
             </button>
           </div>
+          {canBrowse && (
+            <div style={{ display:"flex", gap:8, marginTop:12 }}>
+              <button onClick={skipItem} style={{
+                flex:1, height:34, borderRadius:10, fontSize:12, fontWeight:700,
+                background:"rgba(255,255,255,0.8)", color:"var(--bp-muted2, #6f7a73)",
+                border:"1px solid var(--bp-border2, rgba(72,94,80,0.14))", cursor:"pointer",
+              }}>
+                Skip Item →
+              </button>
+              <button onClick={skipCategory} disabled={!hasNextCategory} style={{
+                flex:1, height:34, borderRadius:10, fontSize:12, fontWeight:700,
+                background:"rgba(255,255,255,0.8)",
+                color: hasNextCategory ? "var(--bp-muted2, #6f7a73)" : "#c3cac3",
+                border:"1px solid var(--bp-border2, rgba(72,94,80,0.14))",
+                cursor: hasNextCategory ? "pointer" : "default",
+              }}>
+                Skip Category ⇥
+              </button>
+            </div>
+          )}
         </div>
 
         <div style={{ padding:"0 20px 56px" }}>

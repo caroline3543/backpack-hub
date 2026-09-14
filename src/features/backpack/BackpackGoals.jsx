@@ -32,15 +32,15 @@ function GoalCard({ item, balance, transactions }) {
 
   return (
     <div style={{
-      background:"rgba(255,255,255,0.82)",
-      border:"1px solid rgba(74,92,80,0.09)",
+      background:"var(--bp-card, rgba(255,255,255,0.82))",
+      border:"1px solid var(--bp-border, rgba(74,92,80,0.09))",
       boxShadow:"0 4px 16px rgba(71,86,75,0.07)",
       borderRadius:20, padding:16, marginBottom:10,
     }}>
       {/* Header */}
       <div style={{ display:"flex", alignItems:"flex-start",
         justifyContent:"space-between", marginBottom:8 }}>
-        <span style={{ fontSize:15, fontWeight:700, color:"#24312c",
+        <span style={{ fontSize:15, fontWeight:700, color:"var(--bp-text, #24312c)",
           flex:1, marginRight:8, lineHeight:1.3 }}>{tItem(item.id, item.name)}</span>
         <span style={{ fontSize:10, fontWeight:700, borderRadius:99,
           padding:"3px 10px", flexShrink:0,
@@ -50,10 +50,10 @@ function GoalCard({ item, balance, transactions }) {
       </div>
 
       {/* Progress */}
-      <div style={{ fontSize:13, color:"#6f7a73", marginBottom:8 }}>
+      <div style={{ fontSize:13, color:"var(--bp-muted2, #6f7a73)", marginBottom:8 }}>
         {fmt(balance)} / {fmt(target)}
       </div>
-      <div style={{ height:8, background:"rgba(72,94,80,0.10)",
+      <div style={{ height:8, background:"var(--bp-border3, rgba(72,94,80,0.10))",
         borderRadius:99, overflow:"hidden", marginBottom:12 }}>
         <div style={{ height:"100%", borderRadius:99, width:`${pct}%`,
           background: pct >= 100 ? "#5c7a6e"
@@ -71,11 +71,11 @@ function GoalCard({ item, balance, transactions }) {
         ].map(([label, val]) => (
           <div key={label} style={{ background:"rgba(237,242,236,0.4)",
             borderRadius:10, padding:"8px 10px" }}>
-            <div style={{ fontSize:10, color:"#9aa59e", fontWeight:600,
+            <div style={{ fontSize:10, color:"var(--bp-muted, #9aa59e)", fontWeight:600,
               textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:2 }}>
               {label}
             </div>
-            <div style={{ fontSize:12, fontWeight:700, color:"#24312c" }}>{val}</div>
+            <div style={{ fontSize:12, fontWeight:700, color:"var(--bp-text, #24312c)" }}>{val}</div>
           </div>
         ))}
       </div>
@@ -85,11 +85,11 @@ function GoalCard({ item, balance, transactions }) {
         <div style={{ marginTop:10, padding:"8px 10px",
           background: paceStatus === "behind" ? "rgba(245,227,223,0.4)" : "rgba(237,242,236,0.4)",
           borderRadius:10 }}>
-          <div style={{ fontSize:12, color:"#6f7a73" }}>
+          <div style={{ fontSize:12, color:"var(--bp-muted2, #6f7a73)" }}>
             {t("goals.deadline")}: <strong>{formatDate(item.targetDate, dateLocale)}</strong>
           </div>
           {reqDaily && reqDaily > 0 && (
-            <div style={{ fontSize:12, color:"#6f7a73", marginTop:3 }}>
+            <div style={{ fontSize:12, color:"var(--bp-muted2, #6f7a73)", marginTop:3 }}>
               {t("goals.needPerDay", { amount: fmt(Math.ceil(reqDaily)) })}
               {dailyAvg > 0 && (
                 <span style={{ color: dailyAvg >= reqDaily ? "#5c7a6e" : "#a06358" }}>
@@ -117,14 +117,14 @@ export default function BackpackGoals({ items, balances, transactions }) {
 
   if (goalItems.length === 0) {
     return (
-      <div style={{ background:"rgba(255,255,255,0.82)",
-        border:"1px solid rgba(74,92,80,0.09)",
+      <div style={{ background:"var(--bp-card, rgba(255,255,255,0.82))",
+        border:"1px solid var(--bp-border, rgba(74,92,80,0.09))",
         borderRadius:20, padding:"32px 16px", textAlign:"center" }}>
         <div style={{ fontSize:32, marginBottom:12 }}>🎯</div>
-        <div style={{ fontSize:16, fontWeight:700, color:"#24312c", marginBottom:6 }}>
+        <div style={{ fontSize:16, fontWeight:700, color:"var(--bp-text, #24312c)", marginBottom:6 }}>
           {t("goals.noGoalsTitle")}
         </div>
-        <div style={{ fontSize:13, color:"#9aa59e", lineHeight:1.6, maxWidth:240, margin:"0 auto" }}>
+        <div style={{ fontSize:13, color:"var(--bp-muted, #9aa59e)", lineHeight:1.6, maxWidth:240, margin:"0 auto" }}>
           {t("goals.noGoalsBody")}
         </div>
       </div>
@@ -133,7 +133,7 @@ export default function BackpackGoals({ items, balances, transactions }) {
 
   return (
     <div>
-      <div style={{ fontSize:12, color:"#9aa59e", marginBottom:14, lineHeight:1.5 }}>
+      <div style={{ fontSize:12, color:"var(--bp-muted, #9aa59e)", marginBottom:14, lineHeight:1.5 }}>
         {t(goalItems.length === 1 ? "goals.goalsTracked" : "goals.goalsTrackedPlural", { count: goalItems.length })}
       </div>
       {goalItems.map(item => (

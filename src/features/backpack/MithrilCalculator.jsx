@@ -16,36 +16,36 @@ const CURRENT_LEVEL_OPTIONS = [0, 20, 40, 60, 80];
 const selectStyle = {
   width:"100%", background:"white", appearance:"none", cursor:"pointer",
   border:"1px solid #e3e8e2", borderRadius:14,
-  padding:"12px 16px", fontSize:15, color:"#24312c",
+  padding:"12px 16px", fontSize:15, color:"var(--bp-text, #24312c)",
   outline:"none", fontFamily:"'DM Sans',sans-serif", boxSizing:"border-box",
 };
 
 const inputStyle = {
   width:"100%", background:"white",
   border:"1px solid #e3e8e2", borderRadius:14,
-  padding:"12px 16px", fontSize:15, color:"#24312c",
+  padding:"12px 16px", fontSize:15, color:"var(--bp-text, #24312c)",
   outline:"none", fontFamily:"'DM Sans',sans-serif", boxSizing:"border-box",
 };
 
 const labelStyle = {
   fontSize:11, fontWeight:700, textTransform:"uppercase",
-  letterSpacing:"0.15em", color:"#9aa59e", display:"block", marginBottom:6,
+  letterSpacing:"0.15em", color:"var(--bp-muted, #9aa59e)", display:"block", marginBottom:6,
 };
 
 function StatCard({ label, value, sub, accent }) {
   return (
-    <div style={{ background:"rgba(255,255,255,0.82)",
-      border:"1px solid rgba(74,92,80,0.09)", borderRadius:16,
+    <div style={{ background:"var(--bp-card, rgba(255,255,255,0.82))",
+      border:"1px solid var(--bp-border, rgba(74,92,80,0.09))", borderRadius:16,
       padding:"12px 14px" }}>
-      <div style={{ fontSize:10, color:"#9aa59e", fontWeight:600,
+      <div style={{ fontSize:10, color:"var(--bp-muted, #9aa59e)", fontWeight:600,
         textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:4 }}>
         {label}
       </div>
       <div style={{ fontFamily:"'Fraunces',serif", fontSize:20, fontWeight:600,
-        color: accent || "#24312c" }}>
+        color: accent || "var(--bp-text, #24312c)" }}>
         {value}
       </div>
-      {sub && <div style={{ fontSize:11, color:"#9aa59e", marginTop:3 }}>{sub}</div>}
+      {sub && <div style={{ fontSize:11, color:"var(--bp-muted, #9aa59e)", marginTop:3 }}>{sub}</div>}
     </div>
   );
 }
@@ -81,14 +81,14 @@ export default function MithrilCalculator({ mithrilBalance = 0, onSetGoal }) {
 
   return (
     <div>
-      <div style={{ fontSize:12, color:"#9aa59e", marginBottom:14, lineHeight:1.5 }}>
+      <div style={{ fontSize:12, color:"var(--bp-muted, #9aa59e)", marginBottom:14, lineHeight:1.5 }}>
         Plan Mithril for Legendary Hero Gear empowerment. Milestones unlock
         at levels 20, 40, 60, 80, and 100 — each one costs Mithril and
         Mythic Gear on top of the last.
       </div>
 
-      <div style={{ background:"rgba(255,255,255,0.82)",
-        border:"1px solid rgba(74,92,80,0.09)",
+      <div style={{ background:"var(--bp-card, rgba(255,255,255,0.82))",
+        border:"1px solid var(--bp-border, rgba(74,92,80,0.09))",
         boxShadow:"0 4px 16px rgba(71,86,75,0.07)",
         borderRadius:20, padding:16, marginBottom:14 }}>
 
@@ -131,7 +131,7 @@ export default function MithrilCalculator({ mithrilBalance = 0, onSetGoal }) {
         {usedTracked === false && mithrilBalance !== undefined && (
           <button onClick={() => { setUsedTracked(true); setHaveMithril(String(mithrilBalance || 0)); }}
             style={{ background:"none", border:"none", cursor:"pointer",
-              fontSize:11, color:"#78917f", fontWeight:600, padding:0, marginTop:6 }}>
+              fontSize:11, color:"var(--bp-accent, #78917f)", fontWeight:600, padding:0, marginTop:6 }}>
             Use tracked balance ({mithrilBalance || 0})
           </button>
         )}
@@ -158,7 +158,7 @@ export default function MithrilCalculator({ mithrilBalance = 0, onSetGoal }) {
       {onSetGoal && totalMithrilNeeded > 0 && (
         <button onClick={() => onSetGoal("mithril", totalMithrilNeeded)} style={{
           width:"100%", height:40, borderRadius:12, fontSize:13, fontWeight:700,
-          background:"#edf2ec", color:"#5c7a6e", border:"none", cursor:"pointer",
+          background:"color-mix(in srgb, var(--bp-accent, #78917f) 14%, white)", color:"var(--bp-accent, #5c7a6e)", border:"none", cursor:"pointer",
           marginTop:10,
         }}>
           Update Mithril Goal to {totalMithrilNeeded.toLocaleString()}
