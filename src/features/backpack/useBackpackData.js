@@ -99,6 +99,27 @@ function pruneRemovedPredefinedItems(existingItems) {
   return existingItems.filter(item => item.isCustom || currentIds.has(item.id));
 }
 
+// Third piece of the same gap: seeding only helps items that don't exist
+// yet at all. If an app update changes a BEHAVIORAL flag on an item that's
+// already saved (e.g. adding autoTracked to Gift XP, or hasLevel to a
+// Widget), the saved copy never picks it up, since nothing ever re-syncs
+// existing items against the current schema. These three flags are pure
+// internal switches — never exposed in Edit Item Settings — so unlike
+// category/priority/name/notes (which the person CAN deliberately
+// customize there), it's always safe to overwrite them from the schema.
+function syncSchemaFlags(existingItems) {
+  const defsById = new Map(PREDEFINED_ITEMS.map(def => [def.id, def]));
+  return existingItems.map(item => {
+    if (item.isCustom) return item;
+    const def = defsById.get(item.id);
+    if (!def) return item;
+    if (item.hasLevel === def.hasLevel && item.trackLevel === def.trackLevel && item.autoTracked === def.autoTracked) {
+      return item;
+    }
+    return { ...item, hasLevel: def.hasLevel, trackLevel: def.trackLevel, autoTracked: def.autoTracked };
+  });
+}
+
 export function useBackpackData({ userId } = {}) {
   const [items,        setItems]        = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -116,18 +137,24 @@ export function useBackpackData({ userId } = {}) {
     const state = loadState(userId);
     const prunedItems = pruneRemovedPredefinedItems(state.items);
     const seededItems = seedPredefinedItems(prunedItems, state.deletedIds);
+    const syncedItems = syncSchemaFlags(seededItems);
     const removedIds = new Set(state.items.filter(i => !prunedItems.includes(i)).map(i => i.id));
     const cleanedTransactions = removedIds.size
       ? state.transactions.filter(t => !removedIds.has(t.itemId))
       : state.transactions;
-    setItems(seededItems);
+    // syncSchemaFlags only creates a new object reference for items whose
+    // flags actually changed, so a reference diff against the pre-sync
+    // array catches in-place field updates that a length check would miss.
+    const itemsChanged = syncedItems.length !== state.items.length
+      || syncedItems.some((it, idx) => it !== seededItems[idx]);
+    setItems(syncedItems);
     setTransactions(cleanedTransactions);
     setProjections(state.projections);
     setSnapshots(state.snapshots);
     setPinnedItems(state.pinnedItems);
     setDeletedIds(state.deletedIds);
-    if (seededItems.length !== state.items.length || cleanedTransactions.length !== state.transactions.length) {
-      persist(userId, { ...state, items: seededItems, transactions: cleanedTransactions });
+    if (itemsChanged || cleanedTransactions.length !== state.transactions.length) {
+      persist(userId, { ...state, items: syncedItems, transactions: cleanedTransactions });
     }
     hydrated.current = true;
     setLoading(false);
