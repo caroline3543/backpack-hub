@@ -143,6 +143,27 @@ function syncSchemaFlags(existingItems) {
   });
 }
 
+// Fourth piece of the same gap: within a category, item order on screen
+// follows this array's order — but a predefined item's position here is
+// only ever set once, at the moment it's first seeded into someone's data.
+// Every reorder made to PREDEFINED_ITEMS since then (like the Widget
+// sequence becoming Hector/Norah/Gwen/Chest) is invisible to anyone who
+// already had those items — they stay wherever they first landed. Custom
+// items have no place in this schema at all, so they're left exactly
+// where they were, keeping their position relative to each other (the
+// sort below is stable) — only predefined items get reordered.
+function reorderToSchema(existingItems) {
+  const orderIndex = new Map(PREDEFINED_ITEMS.map((def, idx) => [def.id, idx]));
+  return existingItems
+    .map((item, originalIndex) => ({ item, originalIndex }))
+    .sort((a, b) => {
+      const ai = orderIndex.has(a.item.id) ? orderIndex.get(a.item.id) : Infinity;
+      const bi = orderIndex.has(b.item.id) ? orderIndex.get(b.item.id) : Infinity;
+      return ai !== bi ? ai - bi : a.originalIndex - b.originalIndex;
+    })
+    .map(({ item }) => item);
+}
+
 export function useBackpackData({ userId } = {}) {
   const [items,        setItems]        = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -161,23 +182,29 @@ export function useBackpackData({ userId } = {}) {
     const prunedItems = pruneRemovedPredefinedItems(state.items);
     const seededItems = seedPredefinedItems(prunedItems, state.deletedIds);
     const syncedItems = syncSchemaFlags(seededItems);
+    const orderedItems = reorderToSchema(syncedItems);
     const removedIds = new Set(state.items.filter(i => !prunedItems.includes(i)).map(i => i.id));
     const cleanedTransactions = removedIds.size
       ? state.transactions.filter(t => !removedIds.has(t.itemId))
       : state.transactions;
     // syncSchemaFlags only creates a new object reference for items whose
-    // flags actually changed, so a reference diff against the pre-sync
-    // array catches in-place field updates that a length check would miss.
-    const itemsChanged = syncedItems.length !== state.items.length
+    // flags actually changed, and reorderToSchema can shuffle positions
+    // without changing any reference — so compare both reference identity
+    // (for field syncs) and id sequence (for reordering) against the
+    // original to know whether anything actually needs re-saving.
+    const fieldsChanged = syncedItems.length !== state.items.length
       || syncedItems.some((it, idx) => it !== seededItems[idx]);
-    setItems(syncedItems);
+    const orderChanged = orderedItems.length !== state.items.length
+      || orderedItems.some((it, idx) => it.id !== state.items[idx]?.id);
+    const itemsChanged = fieldsChanged || orderChanged;
+    setItems(orderedItems);
     setTransactions(cleanedTransactions);
     setProjections(state.projections);
     setSnapshots(state.snapshots);
     setPinnedItems(state.pinnedItems);
     setDeletedIds(state.deletedIds);
     if (itemsChanged || cleanedTransactions.length !== state.transactions.length) {
-      persist(userId, { ...state, items: syncedItems, transactions: cleanedTransactions });
+      persist(userId, { ...state, items: orderedItems, transactions: cleanedTransactions });
     }
     hydrated.current = true;
     setLoading(false);

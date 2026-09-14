@@ -6,6 +6,7 @@
 import advancedWild        from "../../assets/icons/advanced-wild.webp";
 import agnesExpert         from "../../assets/icons/agnes-expert.png";
 import arenaTokens         from "../../assets/icons/arena-tokens.png";
+import baldurExpert        from "../../assets/icons/baldur-expert.png";
 import booksKnowledge      from "../../assets/icons/books-knowledge.webp";
 import charmDesigns        from "../../assets/icons/charm-designs.webp";
 import charmGuides         from "../../assets/icons/charm-guides.webp";
@@ -62,6 +63,7 @@ export const ITEM_ICONS = {
   "advanced-wild":        advancedWild,
   "agnes-expert":         agnesExpert,
   "arena-tokens":         arenaTokens,
+  "baldur-expert":        baldurExpert,
   "books-knowledge":      booksKnowledge,
   "charm-designs":        charmDesigns,
   "charm-guides":         charmGuides,
