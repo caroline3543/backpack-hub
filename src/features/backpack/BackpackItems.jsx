@@ -294,13 +294,23 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
             {giftComponents.map(src => (
               <div key={src.id} style={{ display:"flex", alignItems:"center",
                 justifyContent:"space-between", padding:"4px 0", gap:10 }}>
-                <span style={{ fontSize:12, color:"var(--bp-text, #24312c)" }}>
-                  {src.name} <span style={{ color:"var(--bp-muted, #9aa59e)" }}>(×{src.xpEach} XP)</span>
-                </span>
+                <div style={{ display:"flex", alignItems:"center", gap:8, minWidth:0 }}>
+                  <div style={{ width:26, height:26, borderRadius:7, flexShrink:0,
+                    background:"white", overflow:"hidden",
+                    display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    {ITEM_ICONS[src.id]
+                      ? <img src={ITEM_ICONS[src.id]} alt=""
+                          style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                      : <span style={{ fontSize:13 }}>🎒</span>}
+                  </div>
+                  <span style={{ fontSize:12, color:"var(--bp-text, #24312c)" }}>
+                    {src.name} <span style={{ color:"var(--bp-muted, #9aa59e)" }}>(×{src.xpEach} XP)</span>
+                  </span>
+                </div>
                 <input type="number" min="0" value={src.count}
                   onChange={e => setGiftComponent(src.id, e.target.value === "" ? 0 : Number(e.target.value))}
                   style={{
-                    width:64, height:32, borderRadius:8, textAlign:"center",
+                    width:64, height:32, borderRadius:8, textAlign:"center", flexShrink:0,
                     border:"1px solid var(--bp-border2, rgba(72,94,80,0.14))",
                     background:"white", fontSize:13, color:"var(--bp-text, #24312c)",
                     outline:"none", fontFamily:"'DM Sans',sans-serif",

@@ -11,6 +11,7 @@ import charmDesigns        from "../../assets/icons/charm-designs.webp";
 import charmGuides         from "../../assets/icons/charm-guides.webp";
 import coal                from "../../assets/icons/coal.webp";
 import commonWild          from "../../assets/icons/common-wild.webp";
+import compass             from "../../assets/icons/compass.png";
 import customChest         from "../../assets/icons/custom-chest.webp";
 import cyrilleExpert       from "../../assets/icons/cyrille-expert.png";
 import designPlans         from "../../assets/icons/design-plans.webp";
@@ -18,6 +19,7 @@ import energisingPot       from "../../assets/icons/energising-pot.webp";
 import essenceStones       from "../../assets/icons/essence-stones.webp";
 import expertSigils        from "../../assets/icons/expert-sigils.png";
 import fabianExpert        from "../../assets/icons/fabian-expert.png";
+import fieryHeart          from "../../assets/icons/fiery-heart.png";
 import fireCrystals        from "../../assets/icons/fire-crystals.webp";
 import fireCrystalShards   from "../../assets/icons/fire-crystal-shard.png";
 import garethExpert        from "../../assets/icons/gareth-expert.png";
@@ -41,6 +43,7 @@ import polishingSol        from "../../assets/icons/polishing-sol.webp";
 import refinedFire         from "../../assets/icons/refined-fire.webp";
 import romulusExpert       from "../../assets/icons/romulus-expert.png";
 import ronneExpert         from "../../assets/icons/ronne-expert.png";
+import sailOfConquest      from "../../assets/icons/sail-of-conquest.png";
 import speedupConstruction from "../../assets/icons/speedup-construction.png";
 import speedupGeneral      from "../../assets/icons/speedup-general.png";
 import speedupHealing      from "../../assets/icons/speedup-healing.png";
@@ -63,6 +66,7 @@ export const ITEM_ICONS = {
   "charm-designs":        charmDesigns,
   "charm-guides":         charmGuides,
   "coal":                 coal,
+  "compass":              compass,
   "common-wild":          commonWild,
   "custom-chest":         customChest,
   "cyrille-expert":       cyrilleExpert,
@@ -71,6 +75,7 @@ export const ITEM_ICONS = {
   "essence-stones":       essenceStones,
   "expert-sigils":        expertSigils,
   "fabian-expert":        fabianExpert,
+  "fiery-heart":          fieryHeart,
   "fire-crystals":        fireCrystals,
   "fire-crystal-shards":  fireCrystalShards,
   "gareth-expert":        garethExpert,
@@ -94,6 +99,7 @@ export const ITEM_ICONS = {
   "refined-fire":         refinedFire,
   "romulus-expert":       romulusExpert,
   "ronne-expert":         ronneExpert,
+  "sail-of-conquest":     sailOfConquest,
   "speedup-construction": speedupConstruction,
   "speedup-general":      speedupGeneral,
   "speedup-healing":      speedupHealing,
