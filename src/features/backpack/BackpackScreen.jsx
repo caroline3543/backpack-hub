@@ -9,6 +9,7 @@ import BackpackItems          from "./BackpackItems.jsx";
 import BackpackGoals          from "./BackpackGoals.jsx";
 import BackpackSheet          from "./BackpackSheet.jsx";
 import MithrilCalculator      from "./MithrilCalculator.jsx";
+import GearPriorityGuide      from "./GearPriorityGuide.jsx";
 import ExpertCalculator       from "./ExpertCalculator.jsx";
 import haptics from "../../utils/haptics.js";
 import { Toast as CelebToast, useCelebration } from "../../components/Celebration.jsx";
@@ -283,6 +284,13 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
       <div ref={refs.Mithril} style={{ scrollMarginTop:16, marginTop:32 }}>
         <SectionHeading kicker="Hero Gear" title="Mithril" />
         <MithrilCalculator mithrilBalance={balances["mithril"] ?? 0} onSetGoal={handleSetGoal} />
+        <div style={{ marginTop:20 }}>
+          <div style={{ fontSize:11, fontWeight:700, textTransform:"uppercase",
+            letterSpacing:"0.15em", color:"#9aa59e", marginBottom:8 }}>
+            Upgrade Priority Guide
+          </div>
+          <GearPriorityGuide userId={userId} />
+        </div>
       </div>
 
       {/* ── Dawn Academy Experts calculator ── */}

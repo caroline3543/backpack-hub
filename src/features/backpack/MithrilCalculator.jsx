@@ -118,7 +118,7 @@ export default function MithrilCalculator({ mithrilBalance = 0, onSetGoal }) {
             <label style={labelStyle}>Gear Pieces</label>
             <select style={selectStyle} value={pieceCount}
               onChange={e => setPieceCount(Number(e.target.value))}>
-              {[1,2,3,4].map(n => <option key={n} value={n}>{n}</option>)}
+              {[0,1,2,3,4].map(n => <option key={n} value={n}>{n}</option>)}
             </select>
           </div>
           <div>

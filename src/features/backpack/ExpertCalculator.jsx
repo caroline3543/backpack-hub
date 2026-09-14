@@ -161,12 +161,18 @@ function PlanSummary({ items, onUpdateSigilGoal, onUpdateBooksGoal }) {
 }
 
 function SkillRow({ expertId, skill, index, item, onSetSkillLevel, onSetSkillTarget }) {
-  const maxLevel = skill.levels.length;
+  // Every skill must be selectable up to level 10 even where the cost data
+  // we have stops earlier (e.g. a skill with only 4 documented levels still
+  // needs Level 10 to be pickable) — costs beyond the documented range just
+  // can't be computed exactly yet, which the UI notes rather than hides.
+  const dataMaxLevel = skill.levels.length;
+  const maxLevel = Math.max(dataMaxLevel, 10);
   const levelOptions = Array.from({ length: maxLevel + 1 }, (_, i) => i);
   const current = (item.skillLevels || {})[skill.name] ?? 0;
   const hasTarget = item.skillTargets && item.skillTargets[skill.name] !== undefined && item.skillTargets[skill.name] !== null;
   const target = hasTarget ? item.skillTargets[skill.name] : current;
   const need = hasTarget && target > current ? skillNeededBetween(expertId, skill.name, current, target) : null;
+  const beyondData = hasTarget && target > dataMaxLevel;
 
   return (
     <div style={{ background:"rgba(255,255,255,0.82)",
@@ -200,6 +206,11 @@ function SkillRow({ expertId, skill, index, item, onSetSkillLevel, onSetSkillTar
       {need && (
         <div style={{ fontSize:12, color:"#5c7a6e", fontWeight:700, marginTop:8 }}>
           Needs {need.xp.toLocaleString()} Skill XP + {need.books.toLocaleString()} Books
+          {beyondData && (
+            <span style={{ display:"block", fontWeight:400, color:"#a06358", marginTop:2 }}>
+              (cost data only goes up to Level {dataMaxLevel} — totals above are a partial count)
+            </span>
+          )}
         </div>
       )}
     </div>
@@ -216,7 +227,10 @@ export default function ExpertCalculator({ items, updateItem, onSetGoal }) {
   const currentLevel = item.currentLevel ?? 0;
   const targetLevel = item.targetLevel ?? null;
   const targetOptions = levels.filter(l => l > currentLevel);
-  const effectiveTarget = targetOptions.includes(targetLevel) ? targetLevel : targetOptions[0];
+  // Only trust a target that's actually still valid for the current level —
+  // no silent fallback to "first available level" here, or picking "Not
+  // planning" would immediately get overwritten by a number on re-render.
+  const effectiveTarget = (targetLevel !== null && targetOptions.includes(targetLevel)) ? targetLevel : null;
 
   const need = useMemo(
     () => (rows && effectiveTarget) ? expertNeededBetween(expertId, currentLevel, effectiveTarget) : null,
