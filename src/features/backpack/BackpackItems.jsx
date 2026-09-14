@@ -277,10 +277,19 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
 
         {/* Action buttons */}
         <div style={{ display:"flex", gap:6 }}>
-          <button onClick={() => { onUpdate(item); haptics.light(); }} style={{
-            flex:2, height:44, borderRadius:12, fontSize:13, fontWeight:700,
-            background:"var(--bp-accent, #78917f)", color:"white", border:"none", cursor:"pointer",
-          }}>{t("itemsSection.update")}</button>
+          {item.autoTracked ? (
+            <div style={{ flex:2, height:44, borderRadius:12, fontSize:11,
+              display:"flex", alignItems:"center", justifyContent:"center", textAlign:"center",
+              background:"var(--bp-card-soft, rgba(255,255,255,0.7))",
+              color:"var(--bp-muted2, #6f7a73)", padding:"0 8px" }}>
+              Auto-tracked from Compass / Fiery Heart / Sail of Conquest spends
+            </div>
+          ) : (
+            <button onClick={() => { onUpdate(item); haptics.light(); }} style={{
+              flex:2, height:44, borderRadius:12, fontSize:13, fontWeight:700,
+              background:"var(--bp-accent, #78917f)", color:"white", border:"none", cursor:"pointer",
+            }}>{t("itemsSection.update")}</button>
+          )}
           <button onClick={() => { onGoal(item); haptics.light(); }} style={{
             flex:1, height:44, borderRadius:12, fontSize:12, fontWeight:700,
             background:"color-mix(in srgb, var(--bp-accent, #78917f) 14%, white)", color:"var(--bp-accent, #5c7a6e)", border:"none", cursor:"pointer",

@@ -126,6 +126,23 @@ export function useBackpackData({ userId } = {}) {
         .reduce((s, t) => s + Number(t.amount), 0);
       map[item.id] = Number(item.currentAmount) + gains - spends;
     });
+
+    // Gift XP isn't tracked directly — Compass / Fiery Heart / Sail of
+    // Conquest ARE the XP. Spending one of those on an Expert is what
+    // actually uses the XP, so Gift XP progress is derived automatically
+    // from those spends rather than entered by hand.
+    if (map["gift-xp"] !== undefined) {
+      const xpPerItem = { "compass": 10, "fiery-heart": 100, "sail-of-conquest": 1000 };
+      let giftXPSpent = 0;
+      Object.entries(xpPerItem).forEach(([giftId, xpValue]) => {
+        const spent = transactions
+          .filter(t => t.itemId === giftId && t.type === "spend")
+          .reduce((s, t) => s + Number(t.amount), 0);
+        giftXPSpent += spent * xpValue;
+      });
+      map["gift-xp"] = giftXPSpent;
+    }
+
     return map;
   }, [items, transactions]);
 

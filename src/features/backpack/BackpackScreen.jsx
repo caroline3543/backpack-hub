@@ -6,7 +6,6 @@ import { useI18n }            from "../../i18n/I18nContext.jsx";
 import { useBackpackData }    from "./useBackpackData.js";
 import BackpackSummary        from "./BackpackSummary.jsx";
 import BackpackItems          from "./BackpackItems.jsx";
-import BackpackGoals          from "./BackpackGoals.jsx";
 import BackpackSheet          from "./BackpackSheet.jsx";
 import MithrilCalculator      from "./MithrilCalculator.jsx";
 import GearPriorityGuide      from "./GearPriorityGuide.jsx";
@@ -22,7 +21,6 @@ function SectionNav({ active, onChange, accent }) {
   const { t } = useI18n();
   const chips = [
     { key: "Items",    label: t("nav.items") },
-    { key: "Goals",    label: t("nav.goals") },
     { key: "Mithril",  label: "Mithril" },
     { key: "Experts",  label: "Experts" },
   ];
@@ -100,7 +98,6 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
 
   const refs = {
     Items:    useRef(null),
-    Goals:    useRef(null),
     Mithril:  useRef(null),
     Experts:  useRef(null),
   };
@@ -262,12 +259,6 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
           onDelete={id => { deleteItem(id); showToast(t("toast.itemDeleted")); haptics.warning(); }}
           onDeleteTransaction={id => { deleteTransaction(id); showToast(t("toast.entryRemoved")); }}
         />
-      </div>
-
-      {/* ── Goals ── */}
-      <div ref={refs.Goals} style={{ scrollMarginTop:16, marginTop:32 }}>
-        <SectionHeading kicker={t("sheet.goalsKicker")} title={t("nav.goals")} />
-        <BackpackGoals items={items} balances={balances} transactions={transactions} />
       </div>
 
       {/* ── Mithril calculator ── */}

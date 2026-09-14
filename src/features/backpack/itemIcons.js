@@ -16,7 +16,6 @@ import cyrilleExpert       from "../../assets/icons/cyrille-expert.png";
 import designPlans         from "../../assets/icons/design-plans.webp";
 import energisingPot       from "../../assets/icons/energising-pot.webp";
 import essenceStones       from "../../assets/icons/essence-stones.webp";
-import expertSigils        from "../../assets/icons/expert-sigils.webp";
 import fabianExpert        from "../../assets/icons/fabian-expert.png";
 import fireCrystals        from "../../assets/icons/fire-crystals.webp";
 import fireCrystalShards   from "../../assets/icons/fire-crystal-shard.png";
@@ -57,7 +56,7 @@ import wood                from "../../assets/icons/wood.webp";
 // Keyed by the predefined item id (see PREDEFINED_ITEMS in backpackConstants.js).
 export const ITEM_ICONS = {
   "advanced-wild":        advancedWild,
-  "agnes-expert":         agnesExpert,
+  "agnes-sigils":         agnesExpert,
   "arena-tokens":         arenaTokens,
   "books-knowledge":      booksKnowledge,
   "charm-designs":        charmDesigns,
@@ -65,25 +64,24 @@ export const ITEM_ICONS = {
   "coal":                 coal,
   "common-wild":          commonWild,
   "custom-chest":         customChest,
-  "cyrille-expert":       cyrilleExpert,
+  "cyrille-sigils":       cyrilleExpert,
   "design-plans":         designPlans,
   "energising-pot":       energisingPot,
   "essence-stones":       essenceStones,
-  "expert-sigils":        expertSigils,
-  "fabian-expert":        fabianExpert,
+  "fabian-sigils":        fabianExpert,
   "fire-crystals":        fireCrystals,
   "fire-crystal-shards":  fireCrystalShards,
-  "gareth-expert":        garethExpert,
+  "gareth-sigils":        garethExpert,
   "gems":                 gems,
   "general-shards":       generalShards,
-  "gen5-widget-chest":    gen5WidgetChest,
+  "gen5-chest":            gen5WidgetChest,
   "gwen-widget":          gwenWidget,
   "hardened-alloy":       hardenedAlloy,
   "hector-widget":        hectorWidget,
-  "holger-expert":        holgerExpert,
+  "holger-sigils":        holgerExpert,
   "iron":                 iron,
   "jewel-secrets":        jewelSecrets,
-  "kathy-expert":         kathyExpert,
+  "kathy-sigils":         kathyExpert,
   "lunar-amber":          lunarAmber,
   "meat":                 meat,
   "mithril":              mithril,
@@ -92,8 +90,8 @@ export const ITEM_ICONS = {
   "pet-food":             petFood,
   "polishing-sol":        polishingSol,
   "refined-fire":         refinedFire,
-  "romulus-expert":       romulusExpert,
-  "ronne-expert":         ronneExpert,
+  "romulus-sigils":       romulusExpert,
+  "ronne-sigils":         ronneExpert,
   "speedup-construction": speedupConstruction,
   "speedup-general":      speedupGeneral,
   "speedup-healing":      speedupHealing,
@@ -104,6 +102,6 @@ export const ITEM_ICONS = {
   "steel":                steel,
   "strength-serum":       strengthSerum,
   "taming-manual":        tamingManual,
-  "valeria-expert":       valeriaExpert,
+  "valeria-sigils":       valeriaExpert,
   "wood":                 wood,
 };

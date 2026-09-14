@@ -6,6 +6,7 @@
 import { useState } from "react";
 import { useI18n } from "../../i18n/I18nContext.jsx";
 import { useSvsPrepDate } from "./useSvsPrepDate.js";
+import { ITEM_ICONS } from "./itemIcons.js";
 import {
   CATEGORIES, PRIORITY_OPTIONS, RESOURCE_UNITS, UNIT_MULTIPLIER,
   WIDGET_LEVEL_TARGETS, WIDGET_GOAL_LEVELS, WIDGET_CURRENT_LEVEL_OPTIONS,
@@ -611,6 +612,17 @@ export default function BackpackSheet({
             borderRadius:99, margin:"0 auto 16px" }} />
           <div style={{ display:"flex", alignItems:"flex-start",
             justifyContent:"space-between", gap:12 }}>
+            {selectedItem && (
+              <div style={{ width:44, height:44, borderRadius:12, flexShrink:0,
+                background:"var(--bp-card-soft, rgba(255,255,255,0.7))",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                overflow:"hidden" }}>
+                {ITEM_ICONS[selectedItem.id]
+                  ? <img src={ITEM_ICONS[selectedItem.id]} alt=""
+                      style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                  : <span style={{ fontSize:20 }}>🎒</span>}
+              </div>
+            )}
             <div style={{ minWidth:0, flex:1 }}>
               <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
                 <span style={{ fontSize:11, fontWeight:700, textTransform:"uppercase",

@@ -74,6 +74,7 @@ export const PREDEFINED_ITEMS = [
   { id:"fire-crystals",       name:"Fire Crystals",          category:"General",      priority:"High",   defaultUnit:null },
   { id:"fire-crystal-shards", name:"Fire Crystal Shards",    category:"General",      priority:"Medium", defaultUnit:null },
   { id:"refined-fire",        name:"Refined Fire Crystals",  category:"General",      priority:"Urgent", defaultUnit:null },
+  { id:"gen5-chest",          name:"Generation 5 Chest",     category:"General",      priority:"Medium", defaultUnit:null },
 
   // Resources
   { id:"meat",            name:"Meat",                   category:"Resources",    priority:"Medium", defaultUnit:"B" },
@@ -96,7 +97,6 @@ export const PREDEFINED_ITEMS = [
   { id:"hector-widget",     name:"Hector Widget",              category:"Widgets", priority:"High",   defaultUnit:null, currentLevel:null },
   { id:"norah-widget",      name:"Norah Widget",              category:"Widgets", priority:"High",   defaultUnit:null, currentLevel:null },
   { id:"gwen-widget",       name:"Gwen Widget",                category:"Widgets", priority:"High",   defaultUnit:null, currentLevel:null },
-  { id:"gen5-widget-chest", name:"Generation 5 Widget Chest",  category:"Widgets", priority:"Medium", defaultUnit:null, trackLevel:false },
 
   // Speedups (stored in minutes)
   { id:"speedup-general",    name:"General Speed Ups",        category:"Speedups",     priority:"High",   defaultUnit:null, isMinutes:true },
@@ -123,7 +123,18 @@ export const PREDEFINED_ITEMS = [
   { id:"lunar-amber",     name:"Lunar Amber",            category:"Chief Gear",   priority:"Urgent", defaultUnit:null },
 
   // Dawn Experts
-  { id:"expert-sigils",   name:"Expert Sigils",          category:"Dawn Experts", priority:"High",   defaultUnit:null },
+  // Sigils are expert-specific in-game, not a shared pool — one tracked
+  // item per Expert, named to match (e.g. "Cyrille Sigils").
+  { id:"cyrille-sigils",  name:"Cyrille Sigils",         category:"Dawn Experts", priority:"High",   defaultUnit:null },
+  { id:"agnes-sigils",    name:"Agnes Sigils",           category:"Dawn Experts", priority:"High",   defaultUnit:null },
+  { id:"holger-sigils",   name:"Holger Sigils",          category:"Dawn Experts", priority:"High",   defaultUnit:null },
+  { id:"romulus-sigils",  name:"Romulus Sigils",         category:"Dawn Experts", priority:"High",   defaultUnit:null },
+  { id:"baldur-sigils",   name:"Baldur Sigils",          category:"Dawn Experts", priority:"High",   defaultUnit:null },
+  { id:"fabian-sigils",   name:"Fabian Sigils",          category:"Dawn Experts", priority:"High",   defaultUnit:null },
+  { id:"valeria-sigils",  name:"Valeria Sigils",         category:"Dawn Experts", priority:"High",   defaultUnit:null },
+  { id:"ronne-sigils",    name:"Ronne Sigils",           category:"Dawn Experts", priority:"High",   defaultUnit:null },
+  { id:"kathy-sigils",    name:"Kathy Sigils",           category:"Dawn Experts", priority:"High",   defaultUnit:null },
+  { id:"gareth-sigils",   name:"Gareth Sigils",          category:"Dawn Experts", priority:"High",   defaultUnit:null },
   { id:"books-knowledge", name:"Books of Knowledge",     category:"Dawn Experts", priority:"Medium", defaultUnit:null },
 
   // Affinity gifts — raise an Expert's Relationship Level. Compass = 10
@@ -134,7 +145,7 @@ export const PREDEFINED_ITEMS = [
 
   // XP totals — trackable so the "Update Goal" buttons in the Experts
   // calculator can save the XP side of a plan alongside Sigils/Books.
-  { id:"gift-xp",         name:"Gift XP",                category:"Dawn Experts", priority:"Medium", defaultUnit:"K" },
+  { id:"gift-xp",         name:"Gift XP",                category:"Dawn Experts", priority:"Medium", defaultUnit:"K", autoTracked:true },
   { id:"skill-xp",        name:"Skill XP",               category:"Dawn Experts", priority:"Medium", defaultUnit:"K" },
 
   // The 10 named Experts themselves — tracked by Relationship Level
