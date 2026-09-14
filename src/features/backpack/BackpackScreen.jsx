@@ -288,6 +288,7 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
         initial={sheet?.initial || {}}
         items={items}
         onSave={handleSave}
+        onDeleteItem={id => { deleteItem(id); showToast(t("toast.itemDeleted")); haptics.warning(); closeSheet(); }}
         onDeleteTransaction={id => { deleteTransaction(id); showToast(t("toast.entryRemoved")); }}
         onNavigate={handleNavigateSheet}
         currentBalance={

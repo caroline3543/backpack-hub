@@ -46,12 +46,13 @@ function loadState(userId) {
         projections:  Array.isArray(parsed.projections) ? parsed.projections : [],
         snapshots:    Array.isArray(parsed.snapshots) ? parsed.snapshots : [],
         pinnedItems:  Array.isArray(parsed.pinnedItems) ? parsed.pinnedItems : [],
+        deletedIds:   Array.isArray(parsed.deletedIds) ? parsed.deletedIds : [],
       };
     }
   } catch (e) {
     console.error("Backpack: failed to read local storage:", e.message);
   }
-  return { items: [], transactions: [], projections: [], snapshots: [], pinnedItems: [] };
+  return { items: [], transactions: [], projections: [], snapshots: [], pinnedItems: [], deletedIds: [] };
 }
 
 function persist(userId, state) {
@@ -62,9 +63,15 @@ function persist(userId, state) {
   }
 }
 
-function seedPredefinedItems(existingItems) {
+// Predefined items are normally kept in sync automatically (new ones added
+// in an app update get seeded in) — but if the person explicitly deleted
+// one, it should stay gone, not silently reappear on next load.
+function seedPredefinedItems(existingItems, deletedIds = []) {
   const existingIds = new Set(existingItems.map(i => i.id));
-  const missing = PREDEFINED_ITEMS.filter(def => !existingIds.has(def.id)).map(def => ({
+  const deletedSet = new Set(deletedIds);
+  const missing = PREDEFINED_ITEMS
+    .filter(def => !existingIds.has(def.id) && !deletedSet.has(def.id))
+    .map(def => ({
     id:             def.id,
     name:           def.name,
     category:       def.category,
@@ -88,6 +95,7 @@ export function useBackpackData({ userId } = {}) {
   const [projections,  setProjections]  = useState([]);
   const [snapshots,    setSnapshots]    = useState([]);
   const [pinnedItems,  setPinnedItems]  = useState([]);
+  const [deletedIds,   setDeletedIds]   = useState([]);
   const [loading,      setLoading]      = useState(true);
 
   // Keep the persisted blob in sync any time the pieces change (skipped on
@@ -96,12 +104,13 @@ export function useBackpackData({ userId } = {}) {
 
   useEffect(() => {
     const state = loadState(userId);
-    const seededItems = seedPredefinedItems(state.items);
+    const seededItems = seedPredefinedItems(state.items, state.deletedIds);
     setItems(seededItems);
     setTransactions(state.transactions);
     setProjections(state.projections);
     setSnapshots(state.snapshots);
     setPinnedItems(state.pinnedItems);
+    setDeletedIds(state.deletedIds);
     if (seededItems.length !== state.items.length) {
       persist(userId, { ...state, items: seededItems });
     }
@@ -111,8 +120,8 @@ export function useBackpackData({ userId } = {}) {
 
   useEffect(() => {
     if (!hydrated.current) return;
-    persist(userId, { items, transactions, projections, snapshots, pinnedItems });
-  }, [userId, items, transactions, projections, snapshots, pinnedItems]);
+    persist(userId, { items, transactions, projections, snapshots, pinnedItems, deletedIds });
+  }, [userId, items, transactions, projections, snapshots, pinnedItems, deletedIds]);
 
   // ── Derived: computed balance per item ───────────────────────────────────
   const balances = useMemo(() => {
@@ -159,7 +168,15 @@ export function useBackpackData({ userId } = {}) {
   }, []);
 
   const deleteItem = useCallback(async (id) => {
-    setItems(prev => prev.filter(i => i.id !== id));
+    setItems(prev => {
+      const target = prev.find(i => i.id === id);
+      // Only predefined items need remembering — custom items were never
+      // seeded in the first place, so there's nothing to prevent reappearing.
+      if (target && !target.isCustom) {
+        setDeletedIds(ids => ids.includes(id) ? ids : [...ids, id]);
+      }
+      return prev.filter(i => i.id !== id);
+    });
     setTransactions(prev => prev.filter(t => t.itemId !== id));
     setProjections(prev => prev.filter(p => p.itemId !== id));
   }, []);

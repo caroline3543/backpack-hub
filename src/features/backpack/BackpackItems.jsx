@@ -422,36 +422,33 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
             {t("itemsSection.editItemSettings")}
           </button>
 
-          {/* Delete item — only for user-created (custom / Widgets) items;
-              predefined items can't be removed. */}
-          {item.isCustom && (
-            confirmDelete ? (
-              <div style={{ marginTop:10, background:"rgba(160,99,88,0.06)", borderRadius:10,
-                padding:"10px 12px", border:"1px solid rgba(160,99,88,0.2)" }}>
-                <div style={{ fontSize:12, color:"#a06358", lineHeight:1.5, marginBottom:8 }}>
-                  {t("itemsSection.deleteConfirmText")}
-                </div>
-                <div style={{ display:"flex", gap:6 }}>
-                  <button onClick={() => setConfirmDelete(false)} style={{
-                    flex:1, height:34, borderRadius:8, fontSize:12, fontWeight:600,
-                    background:"rgba(255,255,255,0.8)", color:"var(--bp-muted2, #6f7a73)",
-                    border:"1px solid var(--bp-border2, rgba(72,94,80,0.14))", cursor:"pointer",
-                  }}>{t("common.cancel")}</button>
-                  <button onClick={() => { onDelete(item.id); haptics.warning(); }} style={{
-                    flex:1, height:34, borderRadius:8, fontSize:12, fontWeight:700,
-                    background:"#a06358", color:"white", border:"none", cursor:"pointer",
-                  }}>{t("itemsSection.deleteNow")}</button>
-                </div>
+          {/* Delete item — allowed for every item, predefined or custom. */}
+          {confirmDelete ? (
+            <div style={{ marginTop:10, background:"rgba(160,99,88,0.06)", borderRadius:10,
+              padding:"10px 12px", border:"1px solid rgba(160,99,88,0.2)" }}>
+              <div style={{ fontSize:12, color:"#a06358", lineHeight:1.5, marginBottom:8 }}>
+                {t("itemsSection.deleteConfirmText")}
               </div>
-            ) : (
-              <button onClick={() => setConfirmDelete(true)} style={{
-                background:"none", border:"none", cursor:"pointer",
-                fontSize:12, color:"#a06358", fontWeight:600,
-                padding:"8px 0 0", display:"block",
-              }}>
-                {t("itemsSection.deleteItem")}
-              </button>
-            )
+              <div style={{ display:"flex", gap:6 }}>
+                <button onClick={() => setConfirmDelete(false)} style={{
+                  flex:1, height:34, borderRadius:8, fontSize:12, fontWeight:600,
+                  background:"rgba(255,255,255,0.8)", color:"var(--bp-muted2, #6f7a73)",
+                  border:"1px solid var(--bp-border2, rgba(72,94,80,0.14))", cursor:"pointer",
+                }}>{t("common.cancel")}</button>
+                <button onClick={() => { onDelete(item.id); haptics.warning(); }} style={{
+                  flex:1, height:34, borderRadius:8, fontSize:12, fontWeight:700,
+                  background:"#a06358", color:"white", border:"none", cursor:"pointer",
+                }}>{t("itemsSection.deleteNow")}</button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => setConfirmDelete(true)} style={{
+              background:"none", border:"none", cursor:"pointer",
+              fontSize:12, color:"#a06358", fontWeight:600,
+              padding:"8px 0 0", display:"block",
+            }}>
+              {t("itemsSection.deleteItem")}
+            </button>
           )}
         </div>
       )}

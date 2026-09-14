@@ -214,8 +214,9 @@ export function UpdateTotalForm({ item, currentBalance, isFirstEntry, onSubmit }
 }
 
 // ─── Item form ────────────────────────────────────────────────────────────────
-function ItemForm({ initial, onSubmit }) {
+function ItemForm({ initial, onSubmit, onDelete }) {
   const { t, tCategory } = useI18n();
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [form, setForm] = useState({
     name:"", category:"Widgets", priority:"Medium",
     currentAmount:0, targetAmount:0, displayUnit:null, notes:"",
@@ -306,6 +307,35 @@ function ItemForm({ initial, onSubmit }) {
           cursor: form.name.trim() ? "pointer" : "default" }}>
         {t("sheet.saveItem")}
       </button>
+
+      {onDelete && (
+        confirmDelete ? (
+          <div style={{ background:"rgba(160,99,88,0.06)", borderRadius:12,
+            padding:"12px 14px", border:"1px solid rgba(160,99,88,0.2)" }}>
+            <div style={{ fontSize:12, color:"#a06358", lineHeight:1.5, marginBottom:10 }}>
+              {t("itemsSection.deleteConfirmText")}
+            </div>
+            <div style={{ display:"flex", gap:8 }}>
+              <button onClick={() => setConfirmDelete(false)} style={{
+                flex:1, height:38, borderRadius:10, fontSize:13, fontWeight:600,
+                background:"rgba(255,255,255,0.8)", color:"var(--bp-muted2, #6f7a73)",
+                border:"1px solid var(--bp-border2, rgba(72,94,80,0.14))", cursor:"pointer",
+              }}>{t("common.cancel")}</button>
+              <button onClick={onDelete} style={{
+                flex:1, height:38, borderRadius:10, fontSize:13, fontWeight:700,
+                background:"#a06358", color:"white", border:"none", cursor:"pointer",
+              }}>{t("itemsSection.deleteNow")}</button>
+            </div>
+          </div>
+        ) : (
+          <button onClick={() => setConfirmDelete(true)} style={{
+            width:"100%", background:"none", border:"none", cursor:"pointer",
+            fontSize:13, color:"#a06358", fontWeight:600, padding:"4px 0",
+          }}>
+            {t("itemsSection.deleteItem")}
+          </button>
+        )
+      )}
     </div>
   );
 }
@@ -501,7 +531,7 @@ function EditTransactionForm({ initial, items, onSubmit, onDelete }) {
 // ─── BackpackSheet ────────────────────────────────────────────────────────────
 export default function BackpackSheet({
   open, onClose, mode, initial, items,
-  onSave, onDeleteTransaction, onNavigate, currentBalance, hasTransactions,
+  onSave, onDeleteItem, onDeleteTransaction, onNavigate, currentBalance, hasTransactions,
 }) {
   const { t, tItem } = useI18n();
   if (!open) return null;
@@ -689,7 +719,8 @@ export default function BackpackSheet({
         )}
         {mode === "item" && (
           <ItemForm initial={initial}
-            onSubmit={data => { onSave(data); onClose(); }} />
+            onSubmit={data => { onSave(data); onClose(); }}
+            onDelete={initial?.id ? () => onDeleteItem(initial.id) : null} />
         )}
         {mode === "goal" && (
           <GoalForm initial={initial} items={items}
