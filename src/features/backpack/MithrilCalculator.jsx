@@ -50,7 +50,7 @@ function StatCard({ label, value, sub, accent }) {
   );
 }
 
-export default function MithrilCalculator({ mithrilBalance = 0 }) {
+export default function MithrilCalculator({ mithrilBalance = 0, onSetGoal }) {
   const { t } = useI18n();
   const [currentLevel, setCurrentLevel] = useState(0);
   const [targetLevel,  setTargetLevel]  = useState(20);
@@ -154,6 +154,16 @@ export default function MithrilCalculator({ mithrilBalance = 0 }) {
           : `You have ${have.toLocaleString()} of ${totalMithrilNeeded.toLocaleString()} needed.`}
         accent={hasEnough ? "#5c7a6e" : "#a06358"}
       />
+
+      {onSetGoal && totalMithrilNeeded > 0 && (
+        <button onClick={() => onSetGoal("mithril", totalMithrilNeeded)} style={{
+          width:"100%", height:40, borderRadius:12, fontSize:13, fontWeight:700,
+          background:"#edf2ec", color:"#5c7a6e", border:"none", cursor:"pointer",
+          marginTop:10,
+        }}>
+          Update Mithril Goal to {totalMithrilNeeded.toLocaleString()}
+        </button>
+      )}
     </div>
   );
 }

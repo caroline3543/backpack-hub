@@ -395,6 +395,19 @@ export const AFFINITY_GIFT_XP = {
   "sail-of-conquest": 1000,
 };
 
+// Skill XP + Books of Knowledge needed to take one specific skill from one
+// level to another (e.g. Baldur's "Dawn Hymn" from level 1 to level 4).
+// Returns {xp:0, books:0} if the expert or skill has no data yet.
+export function skillNeededBetween(expertId, skillName, fromLevel, toLevel) {
+  const skill = EXPERT_SKILLS[expertId]?.skills.find(s => s.name === skillName);
+  if (!skill) return { xp: 0, books: 0 };
+  let xp = 0, books = 0;
+  skill.levels.forEach(lv => {
+    if (lv.level > fromLevel && lv.level <= toLevel) { xp += lv.xp; books += lv.books; }
+  });
+  return { xp, books };
+}
+
 // Skill cost tables — per-level XP + Books of Knowledge, exactly as
 // tracked in-game. "requirement" is any extra gate beyond the relationship
 // tier already implied by "unlock" (usually a Total Skill Level threshold).

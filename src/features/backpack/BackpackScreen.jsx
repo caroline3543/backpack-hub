@@ -139,6 +139,14 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
     }
   }, [sheet, addItem, updateItem, setTotal, updateTransaction, showToast, celebrate, t]);
 
+  // Used by the Mithril / Expert calculators' "Update Goal" buttons — sets
+  // a tracked item's target amount directly, no sheet needed.
+  const handleSetGoal = useCallback((itemId, targetAmount) => {
+    updateItem(itemId, { targetAmount });
+    showToast(t("toast.goalSet"));
+    haptics.success();
+  }, [updateItem, showToast, t]);
+
   const handleSnapshot = useCallback(() => {
     takeSnapshot();
     showToast(t("toast.snapshotSaved"));
@@ -274,13 +282,13 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
       {/* ── Mithril calculator ── */}
       <div ref={refs.Mithril} style={{ scrollMarginTop:16, marginTop:32 }}>
         <SectionHeading kicker="Hero Gear" title="Mithril" />
-        <MithrilCalculator mithrilBalance={balances["mithril"] ?? 0} />
+        <MithrilCalculator mithrilBalance={balances["mithril"] ?? 0} onSetGoal={handleSetGoal} />
       </div>
 
       {/* ── Dawn Academy Experts calculator ── */}
       <div ref={refs.Experts} style={{ scrollMarginTop:16, marginTop:32 }}>
         <SectionHeading kicker="Dawn Academy" title="Experts" />
-        <ExpertCalculator />
+        <ExpertCalculator items={items} updateItem={updateItem} onSetGoal={handleSetGoal} />
       </div>
 
       {/* ── Sheet ── */}

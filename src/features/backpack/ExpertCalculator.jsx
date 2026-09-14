@@ -1,13 +1,19 @@
 // ─── ExpertCalculator.jsx ───────────────────────────────────────────────────────
-// Dawn Academy Expert planner. Pick an Expert, pick a current and target
-// Relationship Level, see the real Gift XP + Expert Sigils needed for that
-// jump, plus a reference of each skill's exact per-level XP/Books costs.
-// Only Experts with data supplied show real numbers — others say so.
+// Dawn Academy Expert planner. Two parts:
+//  1. Relationship Advancement — current/target Relationship Level → Gift XP
+//     + Sigils needed (persisted per expert).
+//  2. Skill Plan — every skill's current level is recorded per expert, and
+//     any number of skills (on any number of experts) can be marked as
+//     "being worked toward" with a target level. A summary at the top adds
+//     it all up across every expert so multi-expert leveling has one total.
+// "Update Goal" buttons push the computed totals onto the corresponding
+// tracked items (Expert Sigils, Books of Knowledge) as a target amount —
+// recomputed fresh each click, not incremented, so clicking twice is safe.
 
 import { useState, useMemo } from "react";
 import {
   PREDEFINED_ITEMS, EXPERT_ADVANCEMENT, EXPERT_SKILLS,
-  expertNeededBetween, AFFINITY_GIFT_XP,
+  expertNeededBetween, skillNeededBetween, AFFINITY_GIFT_XP,
 } from "./backpackConstants.js";
 
 const EXPERTS = PREDEFINED_ITEMS.filter(i => i.category === "Dawn Experts" && i.hasLevel);
@@ -18,6 +24,8 @@ const selectStyle = {
   padding:"12px 16px", fontSize:15, color:"#24312c",
   outline:"none", fontFamily:"'DM Sans',sans-serif", boxSizing:"border-box",
 };
+
+const smallSelectStyle = { ...selectStyle, padding:"8px 10px", fontSize:13, borderRadius:10 };
 
 const labelStyle = {
   fontSize:11, fontWeight:700, textTransform:"uppercase",
@@ -42,91 +50,198 @@ function StatCard({ label, value, sub, accent }) {
   );
 }
 
-function SkillCard({ skill }) {
-  const [open, setOpen] = useState(false);
+function GoalButton({ onClick, label }) {
+  return (
+    <button onClick={onClick} style={{
+      width:"100%", height:40, borderRadius:12, fontSize:13, fontWeight:700,
+      background:"#edf2ec", color:"#5c7a6e", border:"none", cursor:"pointer",
+      marginTop:4,
+    }}>
+      {label}
+    </button>
+  );
+}
+
+// Sum every expert's active relationship target + skill targets into one
+// cross-expert total. This is what powers both the summary card and the
+// "Update Goal" buttons.
+function computePlan(items) {
+  const lines = [];
+  let totalSigil = 0, totalGiftXP = 0, totalBooks = 0, totalSkillXP = 0;
+
+  EXPERTS.forEach(def => {
+    const item = items.find(i => i.id === def.id);
+    if (!item) return;
+
+    const cur = item.currentLevel ?? 0;
+    const tgt = item.targetLevel;
+    if (tgt !== undefined && tgt !== null && tgt > cur) {
+      const need = expertNeededBetween(def.id, cur, tgt);
+      if (need) {
+        totalSigil += need.sigil;
+        totalGiftXP += need.giftXP;
+        lines.push({ expert: def.name, kind: "Relationship", detail: `Lv.${cur} → Lv.${tgt}`, sigil: need.sigil, books: 0 });
+      }
+    }
+
+    const skillsDef = EXPERT_SKILLS[def.id]?.skills || [];
+    const targets = item.skillTargets || {};
+    skillsDef.forEach((skill, idx) => {
+      const skillTgt = targets[skill.name];
+      if (skillTgt === undefined || skillTgt === null) return;
+      const skillCur = (item.skillLevels || {})[skill.name] ?? 0;
+      if (skillTgt <= skillCur) return;
+      const need = skillNeededBetween(def.id, skill.name, skillCur, skillTgt);
+      totalBooks += need.books;
+      totalSkillXP += need.xp;
+      lines.push({
+        expert: def.name, kind: `Skill ${idx + 1}`, detail: `${skill.name} Lv.${skillCur} → Lv.${skillTgt}`,
+        sigil: 0, books: need.books,
+      });
+    });
+  });
+
+  return { lines, totalSigil, totalGiftXP, totalBooks, totalSkillXP };
+}
+
+function PlanSummary({ items, onUpdateSigilGoal, onUpdateBooksGoal }) {
+  const plan = useMemo(() => computePlan(items), [items]);
+  if (plan.lines.length === 0) return null;
+
+  const byExpert = {};
+  plan.lines.forEach(l => {
+    if (!byExpert[l.expert]) byExpert[l.expert] = [];
+    byExpert[l.expert].push(l);
+  });
+
+  return (
+    <div style={{ background:"rgba(255,255,255,0.82)",
+      border:"1px solid rgba(74,92,80,0.09)",
+      boxShadow:"0 4px 16px rgba(71,86,75,0.07)",
+      borderRadius:20, padding:16, marginBottom:20 }}>
+      <div style={{ fontSize:11, fontWeight:700, textTransform:"uppercase",
+        letterSpacing:"0.15em", color:"#9a7a62", marginBottom:10 }}>
+        Currently Upgrading
+      </div>
+      {Object.entries(byExpert).map(([expert, lines]) => (
+        <div key={expert} style={{ marginBottom:8 }}>
+          <div style={{ fontSize:13, fontWeight:700, color:"#24312c" }}>{expert}</div>
+          {lines.map((l, i) => (
+            <div key={i} style={{ fontSize:12, color:"#6f7a73", marginLeft:8 }}>
+              {l.kind}: {l.detail}
+            </div>
+          ))}
+        </div>
+      ))}
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginTop:12 }}>
+        <StatCard label="Total Sigils" value={plan.totalSigil.toLocaleString()} />
+        <StatCard label="Total Books" value={plan.totalBooks.toLocaleString()} />
+      </div>
+      <div style={{ display:"flex", gap:8, marginTop:8 }}>
+        {plan.totalSigil > 0 && (
+          <button onClick={() => onUpdateSigilGoal(plan.totalSigil)} style={{
+            flex:1, height:38, borderRadius:10, fontSize:12, fontWeight:700,
+            background:"#edf2ec", color:"#5c7a6e", border:"none", cursor:"pointer",
+          }}>Update Sigil Goal</button>
+        )}
+        {plan.totalBooks > 0 && (
+          <button onClick={() => onUpdateBooksGoal(plan.totalBooks)} style={{
+            flex:1, height:38, borderRadius:10, fontSize:12, fontWeight:700,
+            background:"#edf2ec", color:"#5c7a6e", border:"none", cursor:"pointer",
+          }}>Update Books Goal</button>
+        )}
+      </div>
+      <div style={{ fontSize:10, color:"#9aa59e", marginTop:8 }}>
+        Sets the Expert Sigils / Books of Knowledge item's goal to this total —
+        recalculated fresh each time, so it's always safe to click again after
+        changing a plan.
+      </div>
+    </div>
+  );
+}
+
+function SkillRow({ expertId, skill, index, item, onSetSkillLevel, onSetSkillTarget }) {
+  const maxLevel = skill.levels.length;
+  const levelOptions = Array.from({ length: maxLevel + 1 }, (_, i) => i);
+  const current = (item.skillLevels || {})[skill.name] ?? 0;
+  const hasTarget = item.skillTargets && item.skillTargets[skill.name] !== undefined && item.skillTargets[skill.name] !== null;
+  const target = hasTarget ? item.skillTargets[skill.name] : current;
+  const need = hasTarget && target > current ? skillNeededBetween(expertId, skill.name, current, target) : null;
+
   return (
     <div style={{ background:"rgba(255,255,255,0.82)",
       border:"1px solid rgba(74,92,80,0.09)", borderRadius:16,
       padding:"12px 14px", marginBottom:8 }}>
-      <button onClick={() => setOpen(o => !o)} style={{
-        width:"100%", background:"none", border:"none", cursor:"pointer",
-        display:"flex", alignItems:"center", justifyContent:"space-between",
-        padding:0, textAlign:"left" }}>
+      <div style={{ fontSize:13, fontWeight:700, color:"#24312c" }}>
+        Skill {index + 1} — {skill.name}
+      </div>
+      <div style={{ fontSize:11, color:"#9aa59e", margin:"2px 0 10px" }}>{skill.effect}</div>
+
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
         <div>
-          <div style={{ fontSize:14, fontWeight:700, color:"#24312c" }}>{skill.name}</div>
-          <div style={{ fontSize:11, color:"#9aa59e", marginTop:2 }}>{skill.effect}</div>
+          <label style={{ ...labelStyle, fontSize:10, marginBottom:4 }}>Current Level</label>
+          <select style={smallSelectStyle} value={current}
+            onChange={e => onSetSkillLevel(skill.name, Number(e.target.value))}>
+            {levelOptions.map(l => <option key={l} value={l}>{l}</option>)}
+          </select>
         </div>
-        <span style={{ fontSize:12, color:"#9aa59e", flexShrink:0, marginLeft:8 }}>
-          {open ? "▲" : "▼"}
-        </span>
-      </button>
-      {open && (
-        <div style={{ marginTop:10, paddingTop:10, borderTop:"1px solid rgba(72,94,80,0.08)" }}>
-          <div style={{ fontSize:11, color:"#9a7746", marginBottom:8 }}>
-            Unlocks at: {skill.unlock}
-          </div>
-          {skill.note && (
-            <div style={{ fontSize:11, color:"#a06358", marginBottom:8,
-              background:"rgba(160,99,88,0.08)", borderRadius:8, padding:"6px 8px" }}>
-              {skill.note}
-            </div>
-          )}
-          {skill.levels.map(lv => (
-            <div key={lv.level} style={{ display:"flex", justifyContent:"space-between",
-              fontSize:12, color:"#4c5a52", padding:"4px 0" }}>
-              <span>Level {lv.level}{lv.requirement ? ` (needs ${lv.requirement})` : ""}</span>
-              <span style={{ fontWeight:700, color:"#24312c" }}>
-                {lv.xp.toLocaleString()} XP + {lv.books.toLocaleString()} Books
-              </span>
-            </div>
-          ))}
-          <div style={{ display:"flex", justifyContent:"space-between",
-            fontSize:12, fontWeight:700, color:"#5c7a6e", marginTop:6,
-            paddingTop:6, borderTop:"1px solid rgba(72,94,80,0.08)" }}>
-            <span>Total</span>
-            <span>{skill.totalXP.toLocaleString()} XP + {skill.totalBooks.toLocaleString()} Books</span>
-          </div>
+        <div>
+          <label style={{ ...labelStyle, fontSize:10, marginBottom:4 }}>
+            Target <span style={{ fontWeight:400, textTransform:"none", letterSpacing:0 }}>(optional)</span>
+          </label>
+          <select style={smallSelectStyle} value={hasTarget ? target : ""}
+            onChange={e => onSetSkillTarget(skill.name, e.target.value === "" ? null : Number(e.target.value))}>
+            <option value="">Not planning</option>
+            {levelOptions.filter(l => l > current).map(l => <option key={l} value={l}>{l}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {need && (
+        <div style={{ fontSize:12, color:"#5c7a6e", fontWeight:700, marginTop:8 }}>
+          Needs {need.xp.toLocaleString()} Skill XP + {need.books.toLocaleString()} Books
         </div>
       )}
     </div>
   );
 }
 
-export default function ExpertCalculator() {
+export default function ExpertCalculator({ items, updateItem, onSetGoal }) {
   const [expertId, setExpertId] = useState(EXPERTS[0]?.id);
+  const item = items.find(i => i.id === expertId) || {};
   const rows = EXPERT_ADVANCEMENT[expertId];
   const skillData = EXPERT_SKILLS[expertId];
 
   const levels = rows ? rows.map(r => r.level) : [];
-  const [currentLevel, setCurrentLevel] = useState(0);
-  const [targetLevel,  setTargetLevel]  = useState(levels[1] ?? 10);
-
+  const currentLevel = item.currentLevel ?? 0;
+  const targetLevel = item.targetLevel ?? null;
   const targetOptions = levels.filter(l => l > currentLevel);
   const effectiveTarget = targetOptions.includes(targetLevel) ? targetLevel : targetOptions[0];
 
   const need = useMemo(
-    () => rows ? expertNeededBetween(expertId, currentLevel, effectiveTarget) : null,
+    () => (rows && effectiveTarget) ? expertNeededBetween(expertId, currentLevel, effectiveTarget) : null,
     [expertId, currentLevel, effectiveTarget, rows]
   );
 
   const crossedTiers = rows
-    ? rows.filter(r => r.level > currentLevel && r.level <= effectiveTarget)
+    ? rows.filter(r => r.level > currentLevel && r.level <= (effectiveTarget ?? 0))
     : [];
+
+  const updateSigilGoal = (total) => onSetGoal("expert-sigils", total);
+  const updateBooksGoal = (total) => onSetGoal("books-knowledge", total);
 
   return (
     <div>
       <div style={{ fontSize:12, color:"#9aa59e", marginBottom:14, lineHeight:1.5 }}>
-        Plan Relationship Level advancement for your Dawn Academy Experts —
-        Gift XP and Expert Sigils needed for the jump you pick.
+        Plan Relationship Level and skill leveling for your Dawn Academy Experts.
       </div>
+
+      <PlanSummary items={items} onUpdateSigilGoal={updateSigilGoal} onUpdateBooksGoal={updateBooksGoal} />
 
       <div style={{ marginBottom:14 }}>
         <label style={labelStyle}>Expert</label>
         <select style={selectStyle} value={expertId}
-          onChange={e => {
-            setExpertId(e.target.value);
-            setCurrentLevel(0);
-          }}>
+          onChange={e => setExpertId(e.target.value)}>
           {EXPERTS.map(ex => <option key={ex.id} value={ex.id}>{ex.name}</option>)}
         </select>
       </div>
@@ -140,11 +255,15 @@ export default function ExpertCalculator() {
           </div>
           <div style={{ fontSize:13, color:"#9aa59e", lineHeight:1.5 }}>
             Send over the same Relationship Advancement + Skill breakdown you
-            gave for Agnes and it'll get wired in here the same way.
+            gave for the others and it'll get wired in here the same way.
           </div>
         </div>
       ) : (
         <>
+          <div style={{ fontSize:11, fontWeight:700, textTransform:"uppercase",
+            letterSpacing:"0.15em", color:"#9aa59e", marginBottom:8 }}>
+            Relationship Advancement
+          </div>
           <div style={{ background:"rgba(255,255,255,0.82)",
             border:"1px solid rgba(74,92,80,0.09)",
             boxShadow:"0 4px 16px rgba(71,86,75,0.07)",
@@ -153,7 +272,7 @@ export default function ExpertCalculator() {
               <div>
                 <label style={labelStyle}>Current Level</label>
                 <select style={selectStyle} value={currentLevel}
-                  onChange={e => setCurrentLevel(Number(e.target.value))}>
+                  onChange={e => updateItem(expertId, { currentLevel: Number(e.target.value) })}>
                   {levels.filter(l => l < levels[levels.length - 1]).map(l => (
                     <option key={l} value={l}>{l === 0 ? "Not unlocked yet" : l}</option>
                   ))}
@@ -161,23 +280,28 @@ export default function ExpertCalculator() {
               </div>
               <div>
                 <label style={labelStyle}>Target Level</label>
-                <select style={selectStyle} value={effectiveTarget}
-                  onChange={e => setTargetLevel(Number(e.target.value))}>
+                <select style={selectStyle} value={effectiveTarget ?? ""}
+                  onChange={e => updateItem(expertId, { targetLevel: e.target.value === "" ? null : Number(e.target.value) })}>
+                  <option value="">Not planning</option>
                   {targetOptions.map(l => <option key={l} value={l}>{l}</option>)}
                 </select>
               </div>
             </div>
           </div>
 
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 }}>
-            <StatCard label="Gift XP Needed" value={need.giftXP.toLocaleString()} />
-            <StatCard label="Expert Sigils Needed" value={need.sigil.toLocaleString()} />
-          </div>
-
-          <div style={{ fontSize:11, color:"#9aa59e", marginBottom:16, lineHeight:1.5 }}>
-            Affinity gifts: Compass = {AFFINITY_GIFT_XP.compass} XP · Fiery Heart = {AFFINITY_GIFT_XP["fiery-heart"]} XP
-            {" · "}Sail of Conquest = {AFFINITY_GIFT_XP["sail-of-conquest"]} XP
-          </div>
+          {need && (
+            <>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 }}>
+                <StatCard label="Gift XP Needed" value={need.giftXP.toLocaleString()} />
+                <StatCard label="Expert Sigils Needed" value={need.sigil.toLocaleString()} />
+              </div>
+              <GoalButton onClick={() => updateSigilGoal(need.sigil)} label="Update Sigil Goal (this expert only)" />
+              <div style={{ fontSize:11, color:"#9aa59e", margin:"10px 0 16px", lineHeight:1.5 }}>
+                Affinity gifts: Compass = {AFFINITY_GIFT_XP.compass} XP · Fiery Heart = {AFFINITY_GIFT_XP["fiery-heart"]} XP
+                {" · "}Sail of Conquest = {AFFINITY_GIFT_XP["sail-of-conquest"]} XP
+              </div>
+            </>
+          )}
 
           {crossedTiers.length > 0 && (
             <div style={{ marginBottom:20 }}>
@@ -219,10 +343,25 @@ export default function ExpertCalculator() {
 
               <div style={{ fontSize:11, fontWeight:700, textTransform:"uppercase",
                 letterSpacing:"0.15em", color:"#9aa59e", marginBottom:8 }}>
-                Skills
+                Skills — record your level, optionally set a target
               </div>
-              {skillData.skills.map(skill => (
-                <SkillCard key={skill.name} skill={skill} />
+              {skillData.skills.map((skill, idx) => (
+                <SkillRow
+                  key={skill.name}
+                  expertId={expertId}
+                  skill={skill}
+                  index={idx}
+                  item={item}
+                  onSetSkillLevel={(name, level) => updateItem(expertId, {
+                    skillLevels: { ...(item.skillLevels || {}), [name]: level },
+                  })}
+                  onSetSkillTarget={(name, target) => {
+                    const nextTargets = { ...(item.skillTargets || {}) };
+                    if (target === null) delete nextTargets[name];
+                    else nextTargets[name] = target;
+                    updateItem(expertId, { skillTargets: nextTargets });
+                  }}
+                />
               ))}
             </>
           )}
