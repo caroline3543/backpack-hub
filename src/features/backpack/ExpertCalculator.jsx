@@ -18,10 +18,6 @@ import {
 
 const EXPERTS = PREDEFINED_ITEMS.filter(i => i.category === "Dawn Experts" && i.hasLevel);
 
-// Sigils are per-expert items now (e.g. "cyrille-sigils"), not one shared
-// pool — derive the matching sigil item id from an expert's own id.
-const sigilItemId = (expertDefId) => expertDefId.replace("-expert", "-sigils");
-
 const selectStyle = {
   width:"100%", background:"white", appearance:"none", cursor:"pointer",
   border:"1px solid #e3e8e2", borderRadius:14,
@@ -71,7 +67,6 @@ function GoalButton({ onClick, label }) {
 // "Update Goal" buttons.
 function computePlan(items) {
   const lines = [];
-  const sigilByExpert = {};
   let totalSigil = 0, totalGiftXP = 0, totalBooks = 0, totalSkillXP = 0;
 
   EXPERTS.forEach(def => {
@@ -106,11 +101,10 @@ function computePlan(items) {
       if (need) {
         totalSigil += need.sigil;
         totalGiftXP += need.giftXP;
-        sigilByExpert[def.id] = (sigilByExpert[def.id] || 0) + need.sigil;
         const drivenByUnlock = requiredByUnlock > (explicitTarget ?? 0);
         lines.push({
           expert: def.name, kind: "Relationship",
-          detail: `Lv.${cur} → Lv.${effectiveTarget}${drivenByUnlock ? " (needed to unlock planned skills)" : ""}`,
+          detail: `Lv.${cur} → Lv.${effectiveTarget}${drivenByUnlock ? " (needed to unlock planned skills)" : ""} — ${need.sigil.toLocaleString()} Sigils for ${def.name}`,
           sigil: need.sigil, books: 0,
         });
       }
@@ -131,7 +125,7 @@ function computePlan(items) {
     });
   });
 
-  return { lines, sigilByExpert, totalSigil, totalGiftXP, totalBooks, totalSkillXP };
+  return { lines, totalSigil, totalGiftXP, totalBooks, totalSkillXP };
 }
 
 function PlanSummary({ items, onUpdateSigilGoal, onUpdateBooksGoal }) {
@@ -169,7 +163,7 @@ function PlanSummary({ items, onUpdateSigilGoal, onUpdateBooksGoal }) {
       </div>
       <div style={{ display:"flex", gap:8, marginTop:8 }}>
         {plan.totalSigil > 0 && (
-          <button onClick={() => onUpdateSigilGoal(plan.sigilByExpert, plan.totalGiftXP)} style={{
+          <button onClick={() => onUpdateSigilGoal(plan.totalSigil, plan.totalGiftXP)} style={{
             flex:1, height:38, borderRadius:10, fontSize:12, fontWeight:700,
             background:"color-mix(in srgb, var(--bp-accent, #78917f) 14%, white)", color:"var(--bp-accent, #5c7a6e)", border:"none", cursor:"pointer",
           }}>Update Sigil + XP Goal</button>
@@ -279,10 +273,8 @@ export default function ExpertCalculator({ items, updateItem, onSetGoal }) {
     ? rows.filter(r => r.level > currentLevel && r.level <= (effectiveTarget ?? 0))
     : [];
 
-  const updateSigilGoal = (sigilByExpert, giftXPTotal = 0) => {
-    Object.entries(sigilByExpert).forEach(([expertDefId, amount]) => {
-      onSetGoal(sigilItemId(expertDefId), amount);
-    });
+  const updateSigilGoal = (sigilTotal, giftXPTotal = 0) => {
+    onSetGoal("expert-sigils", sigilTotal);
     onSetGoal("gift-xp", giftXPTotal);
   };
   const updateBooksGoal = (booksTotal, skillXPTotal = 0) => {
@@ -353,9 +345,9 @@ export default function ExpertCalculator({ items, updateItem, onSetGoal }) {
             <>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 }}>
                 <StatCard label="Gift XP Needed" value={need.giftXP.toLocaleString()} />
-                <StatCard label="Expert Sigils Needed" value={need.sigil.toLocaleString()} />
+                <StatCard label={`Sigils Needed for ${item.name}`} value={need.sigil.toLocaleString()} />
               </div>
-              <GoalButton onClick={() => updateSigilGoal({ [expertId]: need.sigil }, need.giftXP)} label="Update Sigil + XP Goal (this expert only)" />
+              <GoalButton onClick={() => updateSigilGoal(need.sigil, need.giftXP)} label="Update Sigil + XP Goal (this expert only)" />
               <div style={{ fontSize:11, color:"var(--bp-muted, #9aa59e)", margin:"10px 0 16px", lineHeight:1.5 }}>
                 Affinity gifts: Compass = {AFFINITY_GIFT_XP.compass} XP · Fiery Heart = {AFFINITY_GIFT_XP["fiery-heart"]} XP
                 {" · "}Sail of Conquest = {AFFINITY_GIFT_XP["sail-of-conquest"]} XP
