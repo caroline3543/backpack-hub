@@ -169,16 +169,16 @@ function PlanSummary({ items, onUpdateSigilGoal, onUpdateBooksGoal }) {
           }}>Update Sigil + XP Goal</button>
         )}
         {plan.totalBooks > 0 && (
-          <button onClick={() => onUpdateBooksGoal(plan.totalBooks, plan.totalSkillXP)} style={{
+          <button onClick={() => onUpdateBooksGoal(plan.totalBooks)} style={{
             flex:1, height:38, borderRadius:10, fontSize:12, fontWeight:700,
             background:"color-mix(in srgb, var(--bp-accent, #78917f) 14%, white)", color:"var(--bp-accent, #5c7a6e)", border:"none", cursor:"pointer",
           }}>Update Books + XP Goal</button>
         )}
       </div>
       <div style={{ fontSize:10, color:"var(--bp-muted, #9aa59e)", marginTop:8 }}>
-        Sets each expert's own Sigils item + Gift XP, and Books of Knowledge +
-        Skill XP, to these totals — recalculated fresh each time, so it's
-        always safe to click again after changing a plan.
+        Sets the Expert Sigils and Gift XP goals, and the Books of Knowledge
+        goal, to these totals — recalculated fresh each time, so it's always
+        safe to click again after changing a plan.
       </div>
     </div>
   );
@@ -277,9 +277,8 @@ export default function ExpertCalculator({ items, updateItem, onSetGoal }) {
     onSetGoal("expert-sigils", sigilTotal);
     onSetGoal("gift-xp", giftXPTotal);
   };
-  const updateBooksGoal = (booksTotal, skillXPTotal = 0) => {
+  const updateBooksGoal = (booksTotal) => {
     onSetGoal("books-knowledge", booksTotal);
-    onSetGoal("skill-xp", skillXPTotal);
   };
 
   return (

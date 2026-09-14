@@ -135,7 +135,6 @@ export const PREDEFINED_ITEMS = [
   // XP totals — trackable so the "Update Goal" buttons in the Experts
   // calculator can save the XP side of a plan alongside Sigils/Books.
   { id:"gift-xp",         name:"Gift XP",                category:"Dawn Experts", priority:"Medium", defaultUnit:"K", autoTracked:true },
-  { id:"skill-xp",        name:"Skill XP",               category:"Dawn Experts", priority:"Medium", defaultUnit:"K" },
 
   // The 10 named Experts themselves — tracked by Relationship Level
   // (0–100, in steps of 10), the same way Hero Gear Widgets are tracked by

@@ -16,6 +16,7 @@ import cyrilleExpert       from "../../assets/icons/cyrille-expert.png";
 import designPlans         from "../../assets/icons/design-plans.webp";
 import energisingPot       from "../../assets/icons/energising-pot.webp";
 import essenceStones       from "../../assets/icons/essence-stones.webp";
+import expertSigils        from "../../assets/icons/expert-sigils.png";
 import fabianExpert        from "../../assets/icons/fabian-expert.png";
 import fireCrystals        from "../../assets/icons/fire-crystals.webp";
 import fireCrystalShards   from "../../assets/icons/fire-crystal-shard.png";
@@ -68,6 +69,7 @@ export const ITEM_ICONS = {
   "design-plans":         designPlans,
   "energising-pot":       energisingPot,
   "essence-stones":       essenceStones,
+  "expert-sigils":        expertSigils,
   "fabian-expert":        fabianExpert,
   "fire-crystals":        fireCrystals,
   "fire-crystal-shards":  fireCrystalShards,

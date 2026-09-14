@@ -107,7 +107,6 @@ function ProgressBar({ pct }) {
 function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, onEdit, onUpdate, onDelete, onDeleteTransaction }) {
   const { t, tItem, dateLocale } = useI18n();
   const [expanded, setExpanded] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [pinTip, setPinTip] = useState(null); // null | "pinned" | "unpinned"
   const pinTipTimer = useRef(null);
 
@@ -128,6 +127,20 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
   const resetAt    = item.averageResetAt || null;
 
   const fmt = v => isMins ? formatMinutes(v) : formatAmount(v, unit);
+
+  // Gift XP's balance is derived from spending these 3 affinity gifts —
+  // break it down by source so it's clear what's filling the goal.
+  const GIFT_XP_SOURCES = [
+    { id:"compass",          name:"Compass",          xpEach:10 },
+    { id:"fiery-heart",      name:"Fiery Heart",      xpEach:100 },
+    { id:"sail-of-conquest", name:"Sail of Conquest", xpEach:1000 },
+  ];
+  const giftBreakdown = item.autoTracked ? GIFT_XP_SOURCES.map(src => {
+    const spent = transactions
+      .filter(t => t.itemId === src.id && t.type === "spend")
+      .reduce((s, t) => s + Number(t.amount), 0);
+    return { ...src, spent, xp: spent * src.xpEach };
+  }) : null;
 
   const dailyAvg   = useMemo(() => calcDailyAverage(transactions, item.id, 30, resetAt), [transactions, item.id, resetAt]);
   const weeklyAvg  = useMemo(() => calcWeeklyAverage(transactions, item.id, 30, resetAt), [transactions, item.id, resetAt]);
@@ -272,6 +285,27 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {giftBreakdown && (
+          <div style={{ marginBottom:10, background:"var(--bp-card-soft, rgba(255,255,255,0.7))",
+            borderRadius:12, padding:"10px 12px" }}>
+            <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase",
+              letterSpacing:"0.1em", color:"var(--bp-muted, #9aa59e)", marginBottom:6 }}>
+              Filled by
+            </div>
+            {giftBreakdown.map(src => (
+              <div key={src.id} style={{ display:"flex", justifyContent:"space-between",
+                fontSize:12, padding:"3px 0" }}>
+                <span style={{ color:"var(--bp-text, #24312c)" }}>
+                  {src.name} <span style={{ color:"var(--bp-muted, #9aa59e)" }}>({src.spent} spent × {src.xpEach})</span>
+                </span>
+                <span style={{ fontWeight:700, color:"var(--bp-muted2, #6f7a73)" }}>
+                  +{src.xp.toLocaleString()} XP
+                </span>
+              </div>
+            ))}
           </div>
         )}
 
@@ -421,35 +455,6 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
           }}>
             {t("itemsSection.editItemSettings")}
           </button>
-
-          {/* Delete item — allowed for every item, predefined or custom. */}
-          {confirmDelete ? (
-            <div style={{ marginTop:10, background:"rgba(160,99,88,0.06)", borderRadius:10,
-              padding:"10px 12px", border:"1px solid rgba(160,99,88,0.2)" }}>
-              <div style={{ fontSize:12, color:"#a06358", lineHeight:1.5, marginBottom:8 }}>
-                {t("itemsSection.deleteConfirmText")}
-              </div>
-              <div style={{ display:"flex", gap:6 }}>
-                <button onClick={() => setConfirmDelete(false)} style={{
-                  flex:1, height:34, borderRadius:8, fontSize:12, fontWeight:600,
-                  background:"rgba(255,255,255,0.8)", color:"var(--bp-muted2, #6f7a73)",
-                  border:"1px solid var(--bp-border2, rgba(72,94,80,0.14))", cursor:"pointer",
-                }}>{t("common.cancel")}</button>
-                <button onClick={() => { onDelete(item.id); haptics.warning(); }} style={{
-                  flex:1, height:34, borderRadius:8, fontSize:12, fontWeight:700,
-                  background:"#a06358", color:"white", border:"none", cursor:"pointer",
-                }}>{t("itemsSection.deleteNow")}</button>
-              </div>
-            </div>
-          ) : (
-            <button onClick={() => setConfirmDelete(true)} style={{
-              background:"none", border:"none", cursor:"pointer",
-              fontSize:12, color:"#a06358", fontWeight:600,
-              padding:"8px 0 0", display:"block",
-            }}>
-              {t("itemsSection.deleteItem")}
-            </button>
-          )}
         </div>
       )}
     </div>
@@ -557,12 +562,21 @@ export default function BackpackItems({
   onGoal, onEdit, onAddItem, onDelete, onTogglePin,
   onUpdate, onDeleteTransaction,
 }) {
-  const { t, tCategory } = useI18n();
+  const { t, tCategory, tItem } = useI18n();
   const [openCategory,   setOpenCategory]   = useState("General");
   const [categoryOrder,  setCategoryOrder]  = useState(loadCategoryOrder);
   const [dragging,       setDragging]       = useState(null);
   const [dragOver,       setDragOver]       = useState(null);
   const [reorderMode,    setReorderMode]    = useState(false);
+  const [search,         setSearch]         = useState("");
+
+  const searchQuery = search.trim().toLowerCase();
+  const searchResults = searchQuery
+    ? items.filter(item =>
+        tItem(item.id, item.name).toLowerCase().includes(searchQuery) ||
+        item.name.toLowerCase().includes(searchQuery)
+      )
+    : null;
 
   const toggle = cat => {
     if (reorderMode) return;
@@ -621,6 +635,57 @@ export default function BackpackItems({
           to   { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
       `}</style>
+      {/* Search */}
+      <div style={{ position:"relative", marginBottom:12 }}>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+          stroke="var(--bp-muted, #9aa59e)" strokeWidth="2.2" strokeLinecap="round"
+          style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)" }}>
+          <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="Search items…"
+          style={{
+            width:"100%", height:40, borderRadius:14, boxSizing:"border-box",
+            padding:"0 14px 0 38px", fontSize:14, color:"var(--bp-text, #24312c)",
+            background:"var(--bp-card, rgba(255,255,255,0.82))",
+            border:"1px solid var(--bp-border2, rgba(72,94,80,0.14))",
+            outline:"none", fontFamily:"'DM Sans',sans-serif",
+          }} />
+        {search && (
+          <button onClick={() => setSearch("")} aria-label="Clear search" style={{
+            position:"absolute", right:8, top:"50%", transform:"translateY(-50%)",
+            width:24, height:24, borderRadius:"50%", border:"none", cursor:"pointer",
+            background:"var(--bp-border2, rgba(72,94,80,0.14))",
+            color:"var(--bp-muted2, #6f7a73)", fontSize:13, lineHeight:1,
+          }}>×</button>
+        )}
+      </div>
+
+      {searchResults ? (
+        <div>
+          {searchResults.length === 0 ? (
+            <div style={{ fontSize:13, color:"var(--bp-muted, #9aa59e)",
+              textAlign:"center", padding:"24px 0" }}>
+              No items match "{search}"
+            </div>
+          ) : searchResults.map(item => (
+            <ItemRow
+              key={item.id}
+              item={item}
+              balance={balances[item.id] ?? 0}
+              transactions={transactions}
+              isPinned={pinnedItems.includes(item.id)}
+              onTogglePin={onTogglePin}
+              onGoal={onGoal}
+              onEdit={onEdit}
+              onUpdate={onUpdate}
+              onDelete={onDelete}
+              onDeleteTransaction={onDeleteTransaction}
+            />
+          ))}
+        </div>
+      ) : (
+        <>
       {/* Reorder toggle */}
       <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:8 }}>
         <button
@@ -731,6 +796,8 @@ export default function BackpackItems({
           />
         );
       })}
+        </>
+      )}
     </div>
   );
 }
