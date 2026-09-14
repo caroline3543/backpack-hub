@@ -5,7 +5,7 @@
 
 import { useState, useMemo, useRef } from "react";
 import { useI18n } from "../../i18n/I18nContext.jsx";
-import { CATEGORIES, formatAmount, formatMinutes, itemHasLevel } from "./backpackConstants.js";
+import { CATEGORIES, formatAmount, formatMinutes, itemHasLevel, GIFT_XP_COMPONENTS } from "./backpackConstants.js";
 import { ITEM_ICONS } from "./itemIcons.js";
 import PinIcon from "../../components/PinIcon.jsx";
 import haptics from "../../utils/haptics.js";
@@ -104,7 +104,7 @@ function ProgressBar({ pct }) {
 }
 
 // ─── Item row ─────────────────────────────────────────────────────────────────
-function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, onEdit, onUpdate, onDelete, onDeleteTransaction }) {
+function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, onEdit, onUpdate, onUpdateItem, onDelete, onDeleteTransaction }) {
   const { t, tItem, dateLocale } = useI18n();
   const [expanded, setExpanded] = useState(false);
   const [pinTip, setPinTip] = useState(null); // null | "pinned" | "unpinned"
@@ -128,19 +128,15 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
 
   const fmt = v => isMins ? formatMinutes(v) : formatAmount(v, unit);
 
-  // Gift XP's balance is derived from spending these 3 affinity gifts —
-  // break it down by source so it's clear what's filling the goal.
-  const GIFT_XP_SOURCES = [
-    { id:"compass",          name:"Compass",          xpEach:10 },
-    { id:"fiery-heart",      name:"Fiery Heart",      xpEach:100 },
-    { id:"sail-of-conquest", name:"Sail of Conquest", xpEach:1000 },
-  ];
-  const giftBreakdown = item.autoTracked ? GIFT_XP_SOURCES.map(src => {
-    const spent = transactions
-      .filter(t => t.itemId === src.id && t.type === "spend")
-      .reduce((s, t) => s + Number(t.amount), 0);
-    return { ...src, spent, xp: spent * src.xpEach };
-  }) : null;
+  // Gift XP's balance comes from these components living inside the item
+  // itself — the person types in how many of each they have.
+  const giftComponents = item.autoTracked ? GIFT_XP_COMPONENTS.map(src => ({
+    ...src,
+    count: (item.giftComponents || {})[src.id] ?? 0,
+  })) : null;
+  const setGiftComponent = (srcId, count) => onUpdateItem(item.id, {
+    giftComponents: { ...(item.giftComponents || {}), [srcId]: Math.max(0, count) },
+  });
 
   const dailyAvg   = useMemo(() => calcDailyAverage(transactions, item.id, 30, resetAt), [transactions, item.id, resetAt]);
   const weeklyAvg  = useMemo(() => calcWeeklyAverage(transactions, item.id, 30, resetAt), [transactions, item.id, resetAt]);
@@ -288,24 +284,35 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
           </div>
         )}
 
-        {giftBreakdown && (
+        {giftComponents && (
           <div style={{ marginBottom:10, background:"var(--bp-card-soft, rgba(255,255,255,0.7))",
             borderRadius:12, padding:"10px 12px" }}>
             <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase",
-              letterSpacing:"0.1em", color:"var(--bp-muted, #9aa59e)", marginBottom:6 }}>
-              Filled by
+              letterSpacing:"0.1em", color:"var(--bp-muted, #9aa59e)", marginBottom:8 }}>
+              How many of each do you have?
             </div>
-            {giftBreakdown.map(src => (
-              <div key={src.id} style={{ display:"flex", justifyContent:"space-between",
-                fontSize:12, padding:"3px 0" }}>
-                <span style={{ color:"var(--bp-text, #24312c)" }}>
-                  {src.name} <span style={{ color:"var(--bp-muted, #9aa59e)" }}>({src.spent} spent × {src.xpEach})</span>
+            {giftComponents.map(src => (
+              <div key={src.id} style={{ display:"flex", alignItems:"center",
+                justifyContent:"space-between", padding:"4px 0", gap:10 }}>
+                <span style={{ fontSize:12, color:"var(--bp-text, #24312c)" }}>
+                  {src.name} <span style={{ color:"var(--bp-muted, #9aa59e)" }}>(×{src.xpEach} XP)</span>
                 </span>
-                <span style={{ fontWeight:700, color:"var(--bp-muted2, #6f7a73)" }}>
-                  +{src.xp.toLocaleString()} XP
-                </span>
+                <input type="number" min="0" value={src.count}
+                  onChange={e => setGiftComponent(src.id, e.target.value === "" ? 0 : Number(e.target.value))}
+                  style={{
+                    width:64, height:32, borderRadius:8, textAlign:"center",
+                    border:"1px solid var(--bp-border2, rgba(72,94,80,0.14))",
+                    background:"white", fontSize:13, color:"var(--bp-text, #24312c)",
+                    outline:"none", fontFamily:"'DM Sans',sans-serif",
+                  }} />
               </div>
             ))}
+            <div style={{ display:"flex", justifyContent:"space-between",
+              fontSize:12, fontWeight:700, marginTop:8, paddingTop:8,
+              borderTop:"1px solid var(--bp-border, rgba(74,92,80,0.09))" }}>
+              <span style={{ color:"var(--bp-muted2, #6f7a73)" }}>Total</span>
+              <span style={{ color:"var(--bp-text, #24312c)" }}>{balance.toLocaleString()} XP</span>
+            </div>
           </div>
         )}
 
@@ -316,7 +323,7 @@ function ItemRow({ item, balance, transactions, isPinned, onTogglePin, onGoal, o
               display:"flex", alignItems:"center", justifyContent:"center", textAlign:"center",
               background:"var(--bp-card-soft, rgba(255,255,255,0.7))",
               color:"var(--bp-muted2, #6f7a73)", padding:"0 8px" }}>
-              Auto-tracked from Compass / Fiery Heart / Sail of Conquest spends
+              Calculated automatically from the components above
             </div>
           ) : (
             <button onClick={() => { onUpdate(item); haptics.light(); }} style={{
@@ -466,7 +473,7 @@ function CategoryAccordion({
   category, items, transactions, balances, pinnedItems,
   isOpen, onToggle,
   onGoal, onEdit, onAddCustom, onDelete, onTogglePin,
-  onUpdate, onDeleteTransaction,
+  onUpdate, onUpdateItem, onDeleteTransaction,
 }) {
   const { t, tCategory } = useI18n();
   const isWidgets = category === "Widgets";
@@ -520,6 +527,7 @@ function CategoryAccordion({
               onGoal={onGoal}
               onEdit={onEdit}
               onUpdate={onUpdate}
+              onUpdateItem={onUpdateItem}
               onDelete={onDelete}
               onDeleteTransaction={onDeleteTransaction}
             />
@@ -560,7 +568,7 @@ function saveCategoryOrder(order) {
 export default function BackpackItems({
   items, balances, transactions, pinnedItems,
   onGoal, onEdit, onAddItem, onDelete, onTogglePin,
-  onUpdate, onDeleteTransaction,
+  onUpdate, onUpdateItem, onDeleteTransaction,
 }) {
   const { t, tCategory, tItem } = useI18n();
   const [openCategory,   setOpenCategory]   = useState("General");
@@ -679,6 +687,7 @@ export default function BackpackItems({
               onGoal={onGoal}
               onEdit={onEdit}
               onUpdate={onUpdate}
+              onUpdateItem={onUpdateItem}
               onDelete={onDelete}
               onDeleteTransaction={onDeleteTransaction}
             />
@@ -792,6 +801,7 @@ export default function BackpackItems({
             onDelete={onDelete}
             onTogglePin={onTogglePin}
             onUpdate={onUpdate}
+            onUpdateItem={onUpdateItem}
             onDeleteTransaction={onDeleteTransaction}
           />
         );

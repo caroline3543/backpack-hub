@@ -256,6 +256,7 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
           onEdit={item  => openSheet("item", item)}
           onAddItem={cat => openSheet("item", { category:cat })}
           onUpdate={item => openSheet("update", { itemId:item.id })}
+          onUpdateItem={updateItem}
           onDelete={id => { deleteItem(id); showToast(t("toast.itemDeleted")); haptics.warning(); }}
           onDeleteTransaction={id => { deleteTransaction(id); showToast(t("toast.entryRemoved")); }}
         />

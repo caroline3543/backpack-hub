@@ -6,7 +6,7 @@
 // don't need to change.
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { PREDEFINED_ITEMS } from "./backpackConstants.js";
+import { PREDEFINED_ITEMS, giftXPFromComponents } from "./backpackConstants.js";
 
 // Pre-multi-backpack versions of this app stored everything under this one
 // fixed key, regardless of who was using it. Keep the name as the prefix so
@@ -136,20 +136,13 @@ export function useBackpackData({ userId } = {}) {
       map[item.id] = Number(item.currentAmount) + gains - spends;
     });
 
-    // Gift XP isn't tracked directly — Compass / Fiery Heart / Sail of
-    // Conquest ARE the XP. Spending one of those on an Expert is what
-    // actually uses the XP, so Gift XP progress is derived automatically
-    // from those spends rather than entered by hand.
+    // Gift XP isn't a plain tracked amount — Compass / Fiery Heart / Sail
+    // of Conquest are components living inside this one item. The person
+    // types in how many of each they have (item.giftComponents), and the
+    // balance is the weighted sum of those counts.
     if (map["gift-xp"] !== undefined) {
-      const xpPerItem = { "compass": 10, "fiery-heart": 100, "sail-of-conquest": 1000 };
-      let giftXPSpent = 0;
-      Object.entries(xpPerItem).forEach(([giftId, xpValue]) => {
-        const spent = transactions
-          .filter(t => t.itemId === giftId && t.type === "spend")
-          .reduce((s, t) => s + Number(t.amount), 0);
-        giftXPSpent += spent * xpValue;
-      });
-      map["gift-xp"] = giftXPSpent;
+      const giftItem = items.find(i => i.id === "gift-xp");
+      map["gift-xp"] = giftXPFromComponents(giftItem?.giftComponents);
     }
 
     return map;

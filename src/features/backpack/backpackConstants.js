@@ -126,14 +126,11 @@ export const PREDEFINED_ITEMS = [
   { id:"expert-sigils",   name:"Expert Sigils",          category:"Dawn Experts", priority:"High",   defaultUnit:null },
   { id:"books-knowledge", name:"Books of Knowledge",     category:"Dawn Experts", priority:"Medium", defaultUnit:null },
 
-  // Affinity gifts — raise an Expert's Relationship Level. Compass = 10
-  // affinity, Fiery Heart = 100 affinity, Sail of Conquest = 1000 affinity.
-  { id:"compass",         name:"Compass",                category:"Dawn Experts", priority:"Medium", defaultUnit:null },
-  { id:"fiery-heart",     name:"Fiery Heart",            category:"Dawn Experts", priority:"Medium", defaultUnit:null },
-  { id:"sail-of-conquest",name:"Sail of Conquest",       category:"Dawn Experts", priority:"Medium", defaultUnit:null },
-
-  // XP totals — trackable so the "Update Goal" buttons in the Experts
-  // calculator can save the XP side of a plan alongside Sigils/Books.
+  // Gift XP — not a plain trackable amount. Compass / Fiery Heart / Sail of
+  // Conquest are components living inside this one item (see
+  // GIFT_XP_COMPONENTS below); the person types in how many of each they
+  // have, and this item's balance is the weighted sum, computed in
+  // useBackpackData.js.
   { id:"gift-xp",         name:"Gift XP",                category:"Dawn Experts", priority:"Medium", defaultUnit:"K", autoTracked:true },
 
   // The 10 named Experts themselves — tracked by Relationship Level
@@ -391,13 +388,31 @@ export function expertNeededBetween(expertId, fromLevel, toLevel) {
   };
 }
 
-// Affinity gift items → Gift XP conversion (Compass/Fiery Heart/Sail of
-// Conquest), for translating a Gift XP requirement into gift counts.
-export const AFFINITY_GIFT_XP = {
-  "compass": 10,
-  "fiery-heart": 100,
-  "sail-of-conquest": 1000,
-};
+// Gift XP's components — Compass / Fiery Heart / Sail of Conquest live
+// inside the Gift XP item rather than as separate tracked items. The
+// person types in how many of each they have; Gift XP's balance is the
+// weighted sum (see useBackpackData.js). Single source of truth for the
+// name + XP-per-unit used by the Items list, and for the Mithril/Expert
+// calculators' informational footnotes.
+export const GIFT_XP_COMPONENTS = [
+  { id:"compass",          name:"Compass",          xpEach:10 },
+  { id:"fiery-heart",      name:"Fiery Heart",      xpEach:100 },
+  { id:"sail-of-conquest", name:"Sail of Conquest", xpEach:1000 },
+];
+
+// Kept for any code still expecting the old flat lookup shape.
+export const AFFINITY_GIFT_XP = Object.fromEntries(
+  GIFT_XP_COMPONENTS.map(c => [c.id, c.xpEach])
+);
+
+// Gift XP total for a given set of component counts, e.g. an item's
+// giftComponents field: { compass: 3, "fiery-heart": 1, ... }.
+export function giftXPFromComponents(components = {}) {
+  return GIFT_XP_COMPONENTS.reduce(
+    (sum, c) => sum + (Number(components[c.id]) || 0) * c.xpEach,
+    0
+  );
+}
 
 // Resolve a Relationship Advancement tier name (e.g. "Acquaintance 1") to
 // its numeric level for a given expert, using that expert's own table —
