@@ -89,6 +89,16 @@ function seedPredefinedItems(existingItems, deletedIds = []) {
   return missing.length ? [...existingItems, ...missing] : existingItems;
 }
 
+// The reverse case: when an app update removes a predefined item from the
+// schema entirely (like folding Compass/Fiery Heart/Sail of Conquest into
+// Gift XP), anyone who already had that item saved keeps it forever unless
+// something prunes it — seeding above only ever adds, never removes. Only
+// touches non-custom items; anything the person added themselves is safe.
+function pruneRemovedPredefinedItems(existingItems) {
+  const currentIds = new Set(PREDEFINED_ITEMS.map(def => def.id));
+  return existingItems.filter(item => item.isCustom || currentIds.has(item.id));
+}
+
 export function useBackpackData({ userId } = {}) {
   const [items,        setItems]        = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -104,15 +114,20 @@ export function useBackpackData({ userId } = {}) {
 
   useEffect(() => {
     const state = loadState(userId);
-    const seededItems = seedPredefinedItems(state.items, state.deletedIds);
+    const prunedItems = pruneRemovedPredefinedItems(state.items);
+    const seededItems = seedPredefinedItems(prunedItems, state.deletedIds);
+    const removedIds = new Set(state.items.filter(i => !prunedItems.includes(i)).map(i => i.id));
+    const cleanedTransactions = removedIds.size
+      ? state.transactions.filter(t => !removedIds.has(t.itemId))
+      : state.transactions;
     setItems(seededItems);
-    setTransactions(state.transactions);
+    setTransactions(cleanedTransactions);
     setProjections(state.projections);
     setSnapshots(state.snapshots);
     setPinnedItems(state.pinnedItems);
     setDeletedIds(state.deletedIds);
-    if (seededItems.length !== state.items.length) {
-      persist(userId, { ...state, items: seededItems });
+    if (seededItems.length !== state.items.length || cleanedTransactions.length !== state.transactions.length) {
+      persist(userId, { ...state, items: seededItems, transactions: cleanedTransactions });
     }
     hydrated.current = true;
     setLoading(false);
