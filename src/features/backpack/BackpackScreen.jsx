@@ -22,16 +22,16 @@ function SectionNav({ active, onChange, accent }) {
   const { t } = useI18n();
   const chips = [
     { key: "Items",    label: t("nav.items") },
-    { key: "Mithril",  label: "Mithril" },
     { key: "Calculator",  label: "Calculator" },
+    { key: "Mithril",  label: "Mithril" },
     { key: "Experts",  label: "Experts" },
   ];
   return (
-    <div style={{ display:"flex", gap:8, overflowX:"auto", padding:"12px 0 4px",
+    <div role="tablist" aria-label="Backpack sections" style={{ display:"flex", gap:8, overflowX:"auto", padding:"12px 0 8px",
       scrollbarWidth:"none" }}>
       {chips.map(chip => (
-        <button key={chip.key} onClick={() => onChange(chip.key)} style={{
-          padding:"7px 16px", borderRadius:99, fontSize:12, fontWeight:700,
+        <button key={chip.key} role="tab" aria-selected={active===chip.key} onClick={() => onChange(chip.key)} style={{
+          minHeight:44, padding:"10px 16px", borderRadius:99, fontSize:13, fontWeight:700,
           whiteSpace:"nowrap", flexShrink:0,
           background: active === chip.key ? accent : "rgba(255,255,255,0.72)",
           color: active === chip.key ? "white" : "var(--bp-muted2, #6f7a73)",
@@ -204,7 +204,7 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
       />}
 
       {/* ── Section nav ── */}
-      <SectionNav active={activeSection} onChange={scrollTo} accent={accent} />
+      <SectionNav active={activeSection} onChange={setActiveSection} accent={accent} />
 
       {/* ── Items ── */}
       {activeSection==="Items"&&<div ref={refs.Items} style={{ scrollMarginTop:16, marginTop:8 }}>
