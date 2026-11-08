@@ -71,6 +71,8 @@ export const PREDEFINED_ITEMS = [
   // General
   { id:"gems",                name:"Gems",                  category:"General",      priority:"High",   defaultUnit:null },
   { id:"stamina-cans",        name:"Stamina Cans",           category:"General",      priority:"Medium", defaultUnit:null },
+  { id:"chief-stamina",       name:"Chief Stamina",          category:"General",      priority:"Medium", defaultUnit:null },
+  { id:"hero-xp",             name:"Hero XP",                category:"Power Boost",  priority:"Medium", defaultUnit:null },
   { id:"fire-crystals",       name:"Fire Crystals",          category:"General",      priority:"High",   defaultUnit:null },
   { id:"fire-crystal-shards", name:"Fire Crystal Shards",    category:"General",      priority:"Medium", defaultUnit:null },
   { id:"refined-fire",        name:"Refined Fire Crystals",  category:"General",      priority:"Urgent", defaultUnit:null },
