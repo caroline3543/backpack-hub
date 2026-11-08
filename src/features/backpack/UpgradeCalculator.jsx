@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { GAME_COSTS } from "./preloadedGameCosts.js";
 import { formatAmount } from "./backpackConstants.js";
 
@@ -87,7 +87,13 @@ function SelectField({title,value,onChange,options}){
 }
 const asOptions=rows=>rows.map(x=>({value:String(x.value),label:x.label}));
 const FCName=value=>String(value).replace(/^FC\s*/,"FC");
-export default function UpgradeCalculator({items,balances,onUpdateResource}){
+const goalStorageKey=userId=>"backpack-hub-calculator-goals-v1:"+(userId||"local-user");
+function loadGoals(userId){try{const v=JSON.parse(localStorage.getItem(goalStorageKey(userId))||"[]");return Array.isArray(v)?v:[];}catch{return [];}}
+export default function UpgradeCalculator({userId,items,balances,onUpdateResource}){
+ const [goals,setGoals]=useState(()=>loadGoals(userId));
+ const [goalFeedback,setGoalFeedback]=useState("");
+ const [showSaved,setShowSaved]=useState(false);
+ useEffect(()=>{try{localStorage.setItem(goalStorageKey(userId),JSON.stringify(goals));}catch{}},[goals,userId]);
  const [category,setCategory]=useState("buildings");
  const [building,setBuilding]=useState("furnace");
  const [pet,setPet]=useState(GAME_COSTS.pets[0]?.id||"");
@@ -120,7 +126,20 @@ export default function UpgradeCalculator({items,balances,onUpdateResource}){
  const isIncomplete=calculated.prerequisites?.length>0;
  const [showBudget,setShowBudget]=useState(true);
  const totalMissing=requirements.filter(([id,required])=>(balances[id]||0)<required*((category==="gear"||category==="charms")?(Number(gearSlot)||1):1)).length;
- const switchCat=c=>{setCategory(c);setStart("");setTarget("");};
+ const switchCat=c=>{setCategory(c);setStart("");setTarget("");setGoalFeedback("");};
+ const saveGoal=()=>{
+   if(!calculated.valid){setGoalFeedback("Choose a valid upgrade before saving.");return;}
+   const id="calc-"+Date.now()+"-"+Math.random().toString(36).slice(2,7);
+   const selectorName=active?.name||(category==="gear"?"Chief Gear":category==="charms"?"Chief Charms":category==="heroes"?"Hero Shards":category);
+   const title=selectorName+" · "+(category==="troops"?"T"+to+" × "+quantity:category==="gear"||category==="charms"?from+" → "+to+" ("+gearSlot+" pieces)":from+" → "+to);
+   setGoals(previous=>[{id,title,category,building,pet,troop,start:from,target:to,quantity,gearSlot},...previous]);
+   setGoalFeedback("Upgrade goal saved in this backpack profile.");
+ };
+ const restoreGoal=g=>{
+   setCategory(g.category);setBuilding(g.building||"furnace");setPet(g.pet||GAME_COSTS.pets[0].id);setTroop(g.troop||"infantry");
+   setStart(g.start||"");setTarget(g.target||"");setQuantity(g.quantity||10000);setGearSlot(g.gearSlot||"1");
+   setGoalFeedback("");setShowSaved(false);
+ };
 
  return <div style={{display:"grid",gap:15}}>
   <div style={{...CARD,padding:16}}>
@@ -128,6 +147,14 @@ export default function UpgradeCalculator({items,balances,onUpdateResource}){
     <h2 style={{fontFamily:"Fraunces,serif",fontSize:25,margin:"7px 0",color:"var(--bp-text)"}}>Upgrade Calculator</h2>
     <p style={{fontSize:13,color:"var(--bp-muted2)",lineHeight:1.5,margin:"0 0 13px"}}>Choose an upgrade. Materials are filled in automatically and compared with your backpack. Costs come from a community-maintained dataset and may differ from your game.</p>
     <SelectField title="Calculator" value={category} onChange={switchCat} options={CATEGORY.map(([value,label,emoji])=>({value,label:emoji+" "+label}))}/>
+    <details open={showSaved} onToggle={e=>setShowSaved(e.currentTarget.open)} style={{marginTop:12}}>
+      <summary style={{fontSize:13,fontWeight:750,color:"var(--bp-text)",cursor:"pointer",padding:"10px 0"}}>Saved upgrade goals ({goals.length})</summary>
+      {goals.length===0?<p style={{fontSize:12,color:"var(--bp-muted2)"}}>No saved goals. Select an upgrade and tap Save goal.</p>:goals.map(g=><div key={g.id} style={{display:"flex",alignItems:"center",gap:8,borderTop:"1px solid var(--bp-border)",padding:"9px 0"}}>
+        <button onClick={()=>restoreGoal(g)} style={{...BUTTON,flex:1,textAlign:"start",minHeight:44,height:"auto"}}>{g.title}</button>
+        <button aria-label={"Delete "+g.title} style={{...BUTTON,color:"#a06358",flexShrink:0}} onClick={()=>setGoals(gs=>gs.filter(x=>x.id!==g.id))}>Delete</button>
+      </div>)}
+      <p style={{fontSize:11,color:"var(--bp-muted2)"}}>Goals are saved on this device and are separate for each backpack.</p>
+    </details>
     {(category==="buildings"||category==="pets"||category==="troops")&&
       <div style={{marginTop:12}}><SelectField title={category==="buildings"?"Building":category==="pets"?"Pet":"Troop type"} value={selector} onChange={v=>{if(category==="buildings")setBuilding(v);else if(category==="pets")setPet(v);else setTroop(v);setStart("");setTarget("");}}
       options={selectorData.map(x=>({value:x.id,label:x.name}))}/></div>}
@@ -157,6 +184,10 @@ export default function UpgradeCalculator({items,balances,onUpdateResource}){
      <strong style={{color:"var(--bp-text)"}}>{fmt(calculated.referenceShards||0)} hero shards</strong>
      <p style={{fontSize:12,color:"var(--bp-muted2)",lineHeight:1.45,margin:"6px 0 0"}}>Full-star milestone estimate only. Check the hero's generation, unlock costs and partial stars. Hero-specific shards cannot always be substituted with general shards.</p>
    </div>}
+   {calculated.valid&&<div style={{display:"flex",gap:8,alignItems:"center",margin:"12px 0"}}>
+     <button style={{...BUTTON,flex:1,background:"var(--bp-accent,#78917f)",color:"white"}} onClick={saveGoal}>Save upgrade goal</button>
+   </div>}
+   {goalFeedback&&<p role="status" style={{fontSize:12,color:"var(--bp-muted2)"}}>{goalFeedback}</p>}
    {calculated.valid&&(category==="gear"||category==="charms")&&<p style={{fontSize:12,color:"var(--bp-muted2)"}}>Totals below are for {Number(gearSlot)||1} matching pieces.</p>}
    {calculated.valid&&requirements.length===0&&category!=="heroes"&&<p style={{fontSize:13,color:"var(--bp-muted2)"}}>This step has no resource costs recorded in the dataset.</p>}
    {calculated.valid&&requirements.length>0&&<>
