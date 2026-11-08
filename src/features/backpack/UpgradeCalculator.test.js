@@ -1,4 +1,4 @@
-import { calculatePreloadedCosts } from "./UpgradeCalculator.jsx";
+import { calculatePreloadedCosts, getBuildingLevelOptions } from "./UpgradeCalculator.jsx";
 import { GAME_COSTS } from "./preloadedGameCosts.js";
 
 test("Furnace FC10 is in preloaded building progression",()=>{
@@ -57,4 +57,28 @@ test("Public WoS Tools T11 Flame Squad table sums shards and steel correctly",()
 test("Research cannot skip backwards or exceed the published levels",()=>{
  expect(calculatePreloadedCosts({category:"helios",selected:"flame-squad",from:"4",to:"2"}).valid).toBe(false);
  expect(calculatePreloadedCosts({category:"helios",selected:"flame-squad",from:"0",to:"6"}).valid).toBe(false);
+});
+
+
+test("Generation 6 Furnace picker starts at FC5 but retains FC10 and sublevels",()=>{
+ const furnace=GAME_COSTS.buildings.find(b=>b.id==="furnace");
+ const levels=getBuildingLevelOptions(furnace);
+ expect(levels[0].label).toBe("FC 5");
+ expect(levels.at(-1).label).toBe("FC 10");
+ expect(levels.some(level=>level.label==="FC 4")).toBe(false);
+ expect(levels.some(level=>level.label==="FC 5-1")).toBe(true);
+});
+
+test("FC5 -> FC10 includes intermediate upgrade rows without charging FC5 itself",()=>{
+ const furnace=GAME_COSTS.buildings.find(b=>b.id==="furnace");
+ const levels=getBuildingLevelOptions(furnace);
+ const result=calculatePreloadedCosts({category:"buildings",selected:"furnace",from:"FC 5",to:"FC 10"});
+ expect(result.valid).toBe(true);
+ expect(result.steps.length).toBe(levels.length-1);
+ expect(result.steps).not.toContain("FC 5");
+});
+
+test("Other building level options remain unchanged",()=>{
+ const embassy=GAME_COSTS.buildings.find(b=>b.id==="embassy");
+ expect(getBuildingLevelOptions(embassy).length).toBe(embassy.levels.length);
 });
