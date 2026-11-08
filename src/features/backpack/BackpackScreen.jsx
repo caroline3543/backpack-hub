@@ -267,7 +267,7 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
 
       {/* ── Standalone calculator with built-in game costs ── */}
       {activeSection==="Calculator"&&<div ref={refs.Calculator} style={{ scrollMarginTop:16, marginTop:14 }}>
-        <UpgradeCalculator items={items} balances={balances} onUpdateResource={handleNavigateSheet} />
+        <UpgradeCalculator userId={userId} items={items} balances={balances} onUpdateResource={handleNavigateSheet} />
       </div>}
 
       {/* ── Mithril calculator ── */}
