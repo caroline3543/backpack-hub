@@ -9,8 +9,8 @@ export const SCAN_LABELS=[
  {id:"coal",name:"Coal",patterns:[/\bcoal\b/i]},
  {id:"iron",name:"Iron",patterns:[/\biron\b/i]},
  {id:"steel",name:"Steel",patterns:[/\bsteel\b/i]},
- {id:"chief-stamina",name:"Chief Stamina",patterns:[/\\bchief\\s*stamina\\b/i]},
- {id:"hero-xp",name:"Hero XP",patterns:[/\\bhero\\s*xp\\b/i]},
+ {id:"chief-stamina",name:"Chief Stamina",patterns:[/\bchief\s*stamina\b/i]},
+ {id:"hero-xp",name:"Hero XP",patterns:[/\bhero\s*xp\b/i]},
  {id:"pet-food",name:"Pet Food",patterns:[/\bpet\s*food\b/i]},
  {id:"speedup-general",name:"General Speedup",patterns:[/\bgeneral\s*speed\s*ups?\b/i]},
  {id:"speedup-troop",name:"Troop Training Speedup",patterns:[/\btroop\s*training\b/i]},
@@ -37,8 +37,8 @@ export function parseSpeedupMinutes(value){
  while((match=pattern.exec(text))){
    const raw=match[0].toLowerCase();
    const n=Number(match[1]);found=true;
-   if(/day|\bd\b/.test(raw))total+=n*1440;
-   else if(/hour|hr|\bh\b/.test(raw))total+=n*60;
+   if(/day|\d\s*d$/.test(raw))total+=n*1440;
+   else if(/hour|hr|\d\s*h$/.test(raw))total+=n*60;
    else total+=n;
  }
  return found?total:null;
