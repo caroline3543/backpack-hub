@@ -1,0 +1,22 @@
+name: Backpack Hub build
+on:
+  pull_request:
+  push:
+    branches:
+      - feat/furnace-goal-tracker
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Build app
+        env:
+          CI: 'true'
+        run: npm run build
