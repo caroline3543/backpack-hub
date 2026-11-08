@@ -14,6 +14,8 @@ const TYPES = [
   {id:"research",name:"Research / War Academy",emoji:"📚",levels:[],resources:["fire-crystal-shards","refined-fire","fire-crystals","meat","wood","coal","iron","steel","speedup-research"],hint:"Research trees must be totalled across all required prerequisite nodes."}
 ];
 const allowed = new Set(TYPES.map(x=>x.id));
+const HERO_SHARD_CUMULATIVE = [0,10,50,165,465,1065];
+const starIndex = value => {const m=String(value||"").match(/^([0-5])★$/);return m?Number(m[1]):-1;};
 const parseNumber = value => {
   const text=String(value ?? "").replace(/,/g,"").replace(/\s/g,"").trim();
   if(!text)return null;
@@ -104,6 +106,12 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
         </label>)}
       </div>
       <p style={{fontSize:12,lineHeight:1.5,color:"var(--bp-muted2)"}}>{type.hint}</p>
+      {chosen.type==="heroes"&&starIndex(chosen.current)>=0&&starIndex(chosen.target)>=0&&
+        <div style={{...card,marginTop:10,background:"var(--bp-bg)",color:"var(--bp-text)"}}>
+          <strong style={{fontSize:14}}>Calculated ascension shards: {Math.max(0,HERO_SHARD_CUMULATIVE[starIndex(chosen.target)]-HERO_SHARD_CUMULATIVE[starIndex(chosen.current)]).toLocaleString()}</strong>
+          <p style={{fontSize:12,lineHeight:1.5,color:"var(--bp-muted2)",margin:"6px 0 0"}}>This covers completed star milestones only. Hero-unlock costs and partial star tiers aren't included. Assign the number to the correct hero-specific shard item, or to General Hero Shards only if they are eligible.</p>
+        </div>
+      }
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginTop:12}}>
         <strong style={{fontSize:14,color:"var(--bp-text)"}}>Required resources</strong>
         <button style={btn} onClick={()=>setEditCosts(v=>!v)}>{editCosts?"Done":"Edit amounts"}</button>
