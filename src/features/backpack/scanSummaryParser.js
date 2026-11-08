@@ -9,6 +9,8 @@ export const SCAN_LABELS=[
  {id:"coal",name:"Coal",patterns:[/\bcoal\b/i]},
  {id:"iron",name:"Iron",patterns:[/\biron\b/i]},
  {id:"steel",name:"Steel",patterns:[/\bsteel\b/i]},
+ {id:"chief-stamina",name:"Chief Stamina",patterns:[/\\bchief\\s*stamina\\b/i]},
+ {id:"hero-xp",name:"Hero XP",patterns:[/\\bhero\\s*xp\\b/i]},
  {id:"pet-food",name:"Pet Food",patterns:[/\bpet\s*food\b/i]},
  {id:"speedup-general",name:"General Speedup",patterns:[/\bgeneral\s*speed\s*ups?\b/i]},
  {id:"speedup-troop",name:"Troop Training Speedup",patterns:[/\btroop\s*training\b/i]},
