@@ -39,13 +39,15 @@ export default function BackpackScanner({items,balances,onApply}){
  const [error,setError]=useState("");
  const [rows,setRows]=useState([]);
  const [originals,setOriginals]=useState([]);
+ const originalsRef=useRef([]);
  const [rawText,setRawText]=useState("");
  const [manualText,setManualText]=useState("");
  const [selected,setSelected]=useState({});
  const [drafts,setDrafts]=useState({});
  const [confirm,setConfirm]=useState(false);
  const [complete,setComplete]=useState("");
- useEffect(()=>()=>{originals.forEach(x=>URL.revokeObjectURL(x.url));},[originals]);
+ useEffect(()=>{originalsRef.current=originals;},[originals]);
+ useEffect(()=>()=>{originalsRef.current.forEach(x=>URL.revokeObjectURL(x.url));},[]);
  const addRows=found=>{
    setRows(previous=>{
      const merged=mergeScanRows(previous,found);
@@ -74,11 +76,10 @@ export default function BackpackScanner({items,balances,onApply}){
        const canvas=await uploadImage(file);
        const result=await worker.recognize(canvas,{}, {tsv:true});
        const txt=result?.data?.text||"";
-       const found=mergeScanRows(parseSummaryTsv(result?.data?.tsv||"",canvas.width,canvas.height),parseSummaryText(txt));
-       // Prefer position-aware numbers. Text-only OCR may confuse the "Total Items"
-       // column; never auto-check text-only resource results without confirmation.
-       const byId=new Map(found.map(r=>[r.id,r]));
-       addRows([...byId.values()]);
+       const positioned=parseSummaryTsv(result?.data?.tsv||"",canvas.width,canvas.height);
+       const fallback=parseSummaryText(txt).filter(r=>!positioned.some(p=>p.id===r.id));
+       // Spatially anchored values win over text-only guesses.
+       addRows([...positioned,...fallback]);
        setRawText(previous=>[previous,txt].filter(Boolean).join("\n\n--- Screenshot "+(i+1)+" ---\n"));
        setOriginals(previous=>[...previous,{name:file.name,url:URL.createObjectURL(file)}]);
      }
@@ -128,7 +129,7 @@ export default function BackpackScanner({items,balances,onApply}){
    {!!rows.length&&<div style={panel}>
      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
        <h3 style={{fontSize:19,color:"var(--bp-text)",margin:0}}>Review detected totals</h3>
-       <button style={{...button,minHeight:36,padding:"6px 10px"}} onClick={()=>{setRows([]);setDrafts({});setSelected({});setConfirm(false);setComplete("");setOriginals([]);}}>Clear</button>
+       <button style={{...button,minHeight:36,padding:"6px 10px"}} onClick={()=>{setRows([]);setDrafts({});setSelected({});setConfirm(false);setComplete("");originals.forEach(x=>URL.revokeObjectURL(x.url));setOriginals([]);}}>Clear</button>
      </div>
      <p style={{fontSize:12,color:"var(--bp-muted2)",lineHeight:1.55}}>OCR can misread K, M, B and numbers. Check every field. Only checked values will replace current balances.</p>
      {rows.map(row=>{
