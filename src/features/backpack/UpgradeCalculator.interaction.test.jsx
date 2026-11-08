@@ -1,5 +1,5 @@
 import React from "react";
-import { render,screen,fireEvent,within,cleanup } from "@testing-library/react";
+import { render,screen,fireEvent,cleanup } from "@testing-library/react";
 import UpgradeCalculator from "./UpgradeCalculator.jsx";
 import { GAME_COSTS } from "./preloadedGameCosts.js";
 
@@ -54,7 +54,7 @@ test("simulated player can save and reopen Furnace upgrade",()=>{
  mounted.unmount();
  openCalculator("qa-save-goal");
  fireEvent.click(screen.getByText(/Saved upgrade goals \(1\)/));
- const saved=screen.getByRole("button",{name:/Furnace.*FC 5.*FC 6/i});
+ const saved=screen.getByRole("button",{name:/^Furnace.*FC 5.*FC 6$/i});
  fireEvent.click(saved);
  expect(screen.getByRole("combobox",{name:"Current level"}).value).toBe("FC 5");
  expect(screen.getByRole("combobox",{name:"Target level"}).value).toBe("FC 6");
