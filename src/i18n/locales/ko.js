@@ -302,6 +302,18 @@ export default {
 
   loading: { backpack: "배낭을 불러오는 중…" },
   upgradePlanner: {
+    "filter": "목표 필터",
+    "allCategories": "모든 종류",
+    "noCategoryGoals": "이 종류의 목표가 없습니다.",
+    "levelError": "현재보다 높은 목표 레벨을 선택하세요.",
+    "updateInventory": "가방 업데이트",
+    "balance": "보유",
+    "need": "필요",
+    "inputHint": "예: 1.2M",
+    "sourceHint": "게임 내 수치 또는 계산기",
+    "notesHint": "필요 건물 레벨, 영웅, 병종…",
+    "start": "시작",
+    "targetShort": "목표",
     types: {
       "furnace": {
         "name": "용광로 (FC1–FC10)",
