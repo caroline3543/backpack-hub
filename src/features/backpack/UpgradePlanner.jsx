@@ -5,7 +5,7 @@ import { useI18n } from "../../i18n/I18nContext.jsx";
 // Resource keys are the existing Backpack item IDs. Never store separate balances.
 const TYPES = [
   {id:"furnace",name:"Furnace / FC1–FC10",emoji:"🔥",levels:["30",...Array.from({length:10},(_,i)=>"FC"+(i+1))],resources:["meat","wood","coal","iron","fire-crystals","refined-fire","speedup-construction"],hint:"Enter the cumulative cost of the entire furnace path plus required buildings."},
-  {id:"buildings",name:"Building upgrades",emoji:"🏰",levels:["1",...Array.from({length:30},(_,i)=>String(i+2)),...Array.from({length:10},(_,i)=>"FC"+(i+1))],resources:["meat","wood","coal","iron","fire-crystals","refined-fire","speedup-construction"],hint:"Track each building separately, including prerequisite levels."},
+  {id:"buildings",name:"Building upgrades",emoji:"🏰",levels:[...Array.from({length:30},(_,i)=>String(i+1)),...Array.from({length:10},(_,i)=>"FC"+(i+1))],resources:["meat","wood","coal","iron","fire-crystals","refined-fire","speedup-construction"],hint:"Track each building separately, including prerequisite levels."},
   {id:"heroes",name:"Hero shards & skills",emoji:"⭐",levels:["0★","1★","2★","3★","4★","5★"],resources:["general-shards","essence-stones"],hint:"Hero-specific shards may differ from General Hero Shards. Create a custom Backpack item for each hero's shards to prevent incorrect totals."},
   {id:"helios",name:"Helios / T11 & T12 troops",emoji:"⚔️",levels:["T9","T10","T11","T12"],resources:["fire-crystal-shards","refined-fire","fire-crystals","meat","wood","coal","iron","speedup-research","speedup-troop"],hint:"Set troop type in the goal name. Research unlock costs and troop training costs are different; include both only when applicable."},
   {id:"chief-gear",name:"Chief Gear",emoji:"🛡️",levels:[],resources:["design-plans","polishing-sol","hardened-alloy","lunar-amber"],hint:"Plan each of the six gear pieces separately, or enter totals for a whole set."},
@@ -29,8 +29,8 @@ const keyFor = userId=>"backpack-hub-upgrade-plans-v1:"+(userId||"local-user");
 const read = userId => {
   try {const v=JSON.parse(localStorage.getItem(keyFor(userId))||"[]");return Array.isArray(v)?v.filter(x=>allowed.has(x.type)):[];}catch{return [];}
 };
-const input={width:"100%",minWidth:0,boxSizing:"border-box",height:43,borderRadius:12,padding:"8px 11px",fontSize:14,background:"var(--bp-card)",color:"var(--bp-text)",border:"1px solid var(--bp-border2)"};
-const btn={minHeight:43,padding:"9px 12px",borderRadius:12,fontWeight:700,fontSize:13,border:"1px solid var(--bp-border2)",background:"var(--bp-card)",color:"var(--bp-text)",cursor:"pointer"};
+const input={width:"100%",minWidth:0,boxSizing:"border-box",height:48,borderRadius:12,padding:"8px 11px",fontSize:14,background:"var(--bp-card)",color:"var(--bp-text)",border:"1px solid var(--bp-border2)"};
+const btn={minHeight:44,padding:"9px 12px",borderRadius:12,fontWeight:700,fontSize:13,border:"1px solid var(--bp-border2)",background:"var(--bp-card)",color:"var(--bp-text)",cursor:"pointer"};
 const card={border:"1px solid var(--bp-border)",borderRadius:18,padding:14,background:"var(--bp-card)"};
 const trim=(s,max=140)=>String(s??"").slice(0,max);
 const newPlan=type=>({id:"plan-"+Date.now()+"-"+Math.random().toString(36).slice(2,7),type,name:TYPES.find(t=>t.id===type)?.name||"Upgrade",current:"",target:"",requirements:{},notes:"",source:"",createdAt:new Date().toISOString()});
@@ -45,6 +45,7 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
   const [info,setInfo]=useState("");
   const [editCosts,setEditCosts]=useState(false);
   const [confirmDelete,setConfirmDelete]=useState(false);
+  const [filterType,setFilterType]=useState("all");
   useEffect(()=>{try{localStorage.setItem(keyFor(userId),JSON.stringify(plans));}catch{}},[userId,plans]);
   const chosen=plans.find(p=>p.id===active);
   const type=TYPES.find(t=>t.id===(chosen?.type||category));
@@ -71,7 +72,7 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
     }));
     return Object.entries(totals).map(([id,total])=>({id,total,have:Math.max(0,Number(balances[id]||0)),shortage:Math.max(0,total-Math.max(0,Number(balances[id]||0)))})).filter(row=>duplicatedResources.has(row.id));
   },[plans,balances,duplicatedResources]);
-  const patch=(id,updates)=>setPlans(ps=>ps.map(p=>p.id===id?{...p,...updates}:p));
+  const patch=(id,updates)=>setPlans(ps=>ps.map(p=>p.id===id?{...p,...updates,...(("target" in updates || "current" in updates) ? {costsReviewed:false}: {})}:p));
   const patchCost=(id,itemId,value)=>setPlans(ps=>ps.map(p=>p.id===id?{...p,costsReviewed:false,requirements:{...p.requirements,[itemId]:value}}:p));
   const add=()=>{
     const p=newPlan(category);setPlans(ps=>[...ps,p]);setActive(p.id);setEditCosts(true);setInfo("");
@@ -93,13 +94,14 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
       if(itemId&&n!==undefined){requirements[itemId]=String(n);rows++;}
     });
     if(rows){patch(chosen.id,{requirements,costsReviewed:false,source:chosen.source||"Manual import; verify against original calculator"});setInfo(rows+" "+u("importSuccess"));setEditCosts(false);}
-    else setInfo("No matching resources. Use lines like Fire Crystals,3000 or Coal,400M.");
+    else setInfo(u("importFail"));
   };
   const deletePlan=id=>{setPlans(ps=>ps.filter(p=>p.id!==id));setActive(null);setConfirmDelete(false);};
   const allIds=new Set([...items.map(i=>i.id),...TYPES.flatMap(t=>t.resources)]);
   const itemLabel=id=>tItem(id,items.find(i=>i.id===id)?.name||id.replace(/-/g," "));
   const options=(type?.resources||[]).filter(id=>allIds.has(id));
   const extraCosts=chosen?Object.keys(chosen.requirements||{}).filter(id=>!options.includes(id)):[];
+  const visiblePlans=plans.filter(p=>filterType==="all" || p.type===filterType);
   return <section style={{...card}}>
     <div style={{fontSize:11,fontWeight:700,letterSpacing:2,color:"var(--bp-muted2)",textTransform:"uppercase"}}>{u("eyebrow")}</div>
     <h2 style={{fontSize:24,margin:"6px 0",fontFamily:"Fraunces,serif",color:"var(--bp-text)"}}>{u("title")}</h2>
@@ -114,8 +116,13 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
         <p style={{fontSize:12,color:"var(--bp-muted2)",lineHeight:1.5}}>{u("sharedHelp")}</p>
         {totalCommitments.map(r=><div key={r.id} style={{fontSize:12,color:"var(--bp-text)",margin:"6px 0"}}>{itemLabel(r.id)}: {formatAmount(r.total)} {u("combined")} · {formatAmount(r.have)} {u("owned")} · {formatAmount(r.shortage)} {u("short")}</div>)}
       </div>}
+      {plans.length>=3&&<label style={{display:"block",fontSize:12,color:"var(--bp-muted2)",margin:"0 0 12px"}}>
+        Filter goals
+        <select style={{...input,marginTop:5}} value={filterType} onChange={e=>setFilterType(e.target.value)}><option value="all">All categories</option>{TYPES.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select>
+      </label>}
       {plans.length===0&&<p style={{fontSize:13,color:"var(--bp-muted2)"}}>{u("empty")}</p>}
-      {plans.map(p=>{const c=countsById(p.id);return <button key={p.id} onClick={()=>{setActive(p.id);setInfo("");setEditCosts(false);}} style={{...card,width:"100%",textAlign:"start",cursor:"pointer",marginBottom:9,display:"block",color:"var(--bp-text)"}}>
+      {plans.length>0&&visiblePlans.length===0&&<p style={{fontSize:13,color:"var(--bp-muted2)"}}>No goals in this category.</p>}
+      {visiblePlans.map(p=>{const c=countsById(p.id);return <button key={p.id} onClick={()=>{setActive(p.id);setInfo("");setEditCosts(false);}} style={{...card,width:"100%",textAlign:"start",cursor:"pointer",marginBottom:9,display:"block",color:"var(--bp-text)"}}>
         <div style={{display:"flex",justifyContent:"space-between",gap:8}}><strong style={{fontSize:14}}>{TYPES.find(t=>t.id===p.type)?.emoji} {p.name}</strong><span style={{fontSize:12,color:"var(--bp-muted2)"}}>{u("view")} ›</span></div>
         <div style={{fontSize:12,color:"var(--bp-muted2)",marginTop:5}}>{p.current||"Start"} → {p.target||"Target"} · {c?.tracked||0} {u("tracked")} {c?.done?" · "+u("enteredMet"):""}</div>
       </button>;})}
@@ -135,6 +142,8 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
         <span>{u("verify")}</span>
       </label>
       <div role="status" style={{fontSize:12,color:chosen.costsReviewed?"#5c7a6e":"#a06358",margin:"6px 0 12px",fontWeight:700}}>{u(chosen.costsReviewed?"verified":"unverified")}</div>
+      {chosen.current&&chosen.target&&type.levels.length>0&&type.levels.indexOf(chosen.target)<=type.levels.indexOf(chosen.current)&&
+        <p role="alert" style={{fontSize:12,color:"#a06358"}}>Select a target level higher than your current level.</p>}
       {chosen.type==="heroes"&&starIndex(chosen.current)>=0&&starIndex(chosen.target)>=0&&
         <div style={{...card,marginTop:10,background:"var(--bp-bg)",color:"var(--bp-text)"}}>
           <strong style={{fontSize:14}}>{u("shard")}: {Math.max(0,HERO_SHARD_CUMULATIVE[starIndex(chosen.target)]-HERO_SHARD_CUMULATIVE[starIndex(chosen.current)]).toLocaleString()}</strong>
@@ -153,7 +162,7 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
           <div style={{fontSize:12,color:"var(--bp-muted2)"}}>{formatAmount(r.owned)} owned / {formatAmount(r.required)} needed</div>
           <div style={{fontSize:12,fontWeight:700,color:r.remaining?"#a06358":"#5c7a6e",marginTop:3}}>{r.remaining?formatAmount(r.remaining)+" "+u("missing"):u("met")}</div>
         {duplicatedResources.has(r.id)&&<div style={{fontSize:11,color:"#a06358",marginTop:3}}>{u("usedElsewhere")}</div>}
-          {items.some(it=>it.id===r.id)&&<button style={{...btn,minHeight:34,marginTop:7}} onClick={()=>onUpdateResource(r.id)}>Update backpack</button>}
+          {items.some(it=>it.id===r.id)&&<button style={{...btn,minHeight:34,marginTop:7}} onClick={()=>onUpdateResource(r.id)}>{t("sheet.updateBackpack")}</button>}
         </div>;
       })}
       {!countsById(chosen.id)?.tracked&&<p style={{fontSize:13,color:"var(--bp-muted2)"}}>{u("noCosts")}</p>}
@@ -180,7 +189,7 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
       {confirmDelete?<div style={{...card,marginTop:12,borderColor:"#a06358"}}>
         <p style={{fontSize:13,color:"var(--bp-text)"}}>{u("deleteQuestion")}</p>
         <div style={{display:"flex",gap:8}}><button style={{...btn,flex:1}} onClick={()=>setConfirmDelete(false)}>{u("cancel")}</button><button style={{...btn,flex:1,background:"#a06358",color:"white"}} onClick={()=>deletePlan(chosen.id)}>{u("delete")}</button></div>
-      </div>:<button style={{...btn,borderColor:"#a06358",color:"#a06358",marginTop:8}} onClick={()=>setConfirmDelete(true)}>Delete goal</button>}
+      </div>:<button style={{...btn,borderColor:"#a06358",color:"#a06358",marginTop:8}} onClick={()=>setConfirmDelete(true)}>{u("delete")}</button>}
       {info&&<p role="status" style={{fontSize:12,color:"var(--bp-muted2)"}}>{info}</p>}
     </>}
   </section>;
