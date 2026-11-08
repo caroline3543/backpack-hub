@@ -186,7 +186,7 @@ export default function UpgradeCalculator({userId,items,balances,onUpdateResourc
     <div style={{...CARD,padding:16}}>
    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}>
      <div><div style={{fontSize:11,textTransform:"uppercase",letterSpacing:1.5,color:"var(--bp-muted2)",fontWeight:700}}>Calculated requirements</div>
-     <h3 style={{fontSize:18,margin:"5px 0",color:"var(--bp-text)"}}>{calculated.valid?"Total upgrade materials":"Select a higher target"}</h3></div>
+     <h3 style={{fontSize:18,margin:"5px 0",color:"var(--bp-text)"}}>{calculated.valid?"Total upgrade materials":"Select a higher target level"}</h3></div>
      {calculated.valid&&<span style={{fontSize:11,borderRadius:30,padding:"5px 9px",color:"#a06358",background:"rgba(160,99,88,.1)",fontWeight:750}}>Community data</span>}
    </div>
    {calculated.valid&&category==="heroes"&&<div style={{padding:12,borderRadius:12,background:"var(--bp-bg)"}}>
@@ -224,8 +224,8 @@ export default function UpgradeCalculator({userId,items,balances,onUpdateResourc
    </>}
    {calculated.valid&&(category==="troops"||category==="helios")&&<p style={{fontSize:12,color:"var(--bp-muted2)"}}>Base {category==="helios"?"research":"training"} time: {Math.ceil((calculated.seconds||0)/60).toLocaleString()} minutes before buffs.</p>}
    {calculated.valid&&calculated.prerequisites?.length>0&&<details style={{marginTop:14}}>
-      <summary style={{fontSize:13,color:"var(--bp-text)",fontWeight:700,cursor:"pointer"}}>Building prerequisites ({calculated.prerequisites.length})</summary>
-      <p style={{fontSize:12,color:"#a06358",lineHeight:1.5}}>These requirements are preloaded, but their extra construction costs are not included without knowing the current levels of the other buildings.</p>
+      <summary style={{fontSize:13,color:"var(--bp-text)",fontWeight:700,cursor:"pointer"}}>{category==="helios"?"Research prerequisites":"Building prerequisites"} ({calculated.prerequisites.length})</summary>
+      <p style={{fontSize:12,color:"#a06358",lineHeight:1.5}}>{category==="helios"?"Other research tracks required by these prerequisites are NOT included in the total.":"These requirements are preloaded, but their extra construction costs are not included without knowing the current levels of the other buildings."}</p>
       <ul style={{fontSize:12,color:"var(--bp-muted2)",paddingInlineStart:20,lineHeight:1.7}}>{calculated.prerequisites.map((x,i)=><li key={i}>{x}</li>)}</ul>
    </details>}
    <button style={{...BUTTON,marginTop:14,width:"100%"}} onClick={()=>setSourceExpanded(x=>!x)}>Data source and accuracy {sourceExpanded?"−":"+"}</button>
