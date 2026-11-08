@@ -88,21 +88,22 @@ export function calculatePreloadedCosts({category,selected,from,to,quantity=1}){
     :[];
   return {costs,prerequisites:[...new Set(prerequisites)],valid:true,steps:selectedRows.map(x=>category==="pets"?"Level "+x.level:x.label)};
 }
-function SelectField({title,value,onChange,options}){
+function SelectField({title,value,onChange,options,placeholder}){
   return <label style={{fontSize:12,color:"var(--bp-muted2)",fontWeight:650,display:"block"}}>
     {title}
     <select style={{...INPUT,marginTop:6}} value={value} onChange={e=>onChange(e.target.value)}>
+      {placeholder&&<option value="">{placeholder}</option>}
       {options.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}
     </select>
   </label>;
 }
 const asOptions=rows=>rows.map(x=>({value:String(x.value),label:x.label}));
-const FCName=value=>String(value).replace(/^FC\\s*/,"FC");
+const FCName=value=>String(value).replace(/^FC\s*/,"FC");
 // Generation 6 planning: Furnace selector starts at FC5; other building levels remain unchanged.
 export function getBuildingLevelOptions(building) {
   const levels=building?.levels||[];
   if(building?.id!=="furnace")return levels;
-  const at=levels.findIndex(level=>/^FC\\s*5$/i.test(level.label));
+  const at=levels.findIndex(level=>/^FC\s*5$/i.test(level.label));
   return at<0?[]:levels.slice(at);
 }
 const goalStorageKey=userId=>"backpack-hub-calculator-goals-v1:"+(userId||"local-user");
@@ -139,7 +140,7 @@ export default function UpgradeCalculator({userId,items,balances,onUpdateResourc
    return [];
  },[category,active]);
  const from=rowOptions.some(x=>x.value===start)?start:rowOptions[0]?.value||"";
- const to=rowOptions.some(x=>x.value===target)?target:rowOptions.at(-1)?.value||"";
+ const to=rowOptions.some(x=>x.value===target)?target:"";
  const calculated=useMemo(()=>calculatePreloadedCosts({
    category,selected:selector,from,to,quantity
  }),[category,selector,from,to,quantity]);
@@ -205,10 +206,10 @@ export default function UpgradeCalculator({userId,items,balances,onUpdateResourc
       <SelectField title={category==="gear"?"Equipment count":"Charm count"} value={gearSlot} onChange={setGearSlot} options={asOptions([1,2,3,4,5,6].map(n=>({value:String(n),label:n+" "+(category==="gear"?"gear pieces":"charms")})))}/>
       <p style={{fontSize:12,color:"var(--bp-muted2)"}}>Each piece uses the same published upgrade progression. Choose how many identical upgrades to plan.</p>
     </div>}
-    {<div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:10,marginTop:12}}>
-      {category==="troops"? <SelectField title="Training tier" value={to} onChange={setTarget} options={rowOptions}/> :
-      <><SelectField title="Current level" value={from} onChange={setStart} options={rowOptions}/><SelectField title="Target level" value={to} onChange={setTarget} options={rowOptions}/></>}
-    </div>}
+    <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:10,marginTop:12}}>
+      {category==="troops"? <SelectField title="Training tier" value={to} onChange={setTarget} options={rowOptions} placeholder="Choose troop tier"/> :
+      <><SelectField title="Current level" value={from} onChange={setStart} options={rowOptions}/><SelectField title="Target level" value={to} onChange={setTarget} options={rowOptions.filter(o=>rowOptions.findIndex(x=>x.value===o.value)>rowOptions.findIndex(x=>x.value===from))} placeholder="Choose target level"/></>}
+    </div>
     {category==="troops"&&<label style={{display:"block",fontSize:12,color:"var(--bp-muted2)",marginTop:12,fontWeight:650}}>Troops to train
       <input type="number" min="1" max="100000000" step="1" value={quantity} onChange={e=>setQuantity(e.target.value)} style={{...INPUT,marginTop:6}}/>
     </label>}
@@ -216,7 +217,7 @@ export default function UpgradeCalculator({userId,items,balances,onUpdateResourc
     <div style={{...CARD,padding:16}}>
    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}>
      <div><div style={{fontSize:11,textTransform:"uppercase",letterSpacing:1.5,color:"var(--bp-muted2)",fontWeight:700}}>Calculated requirements</div>
-     <h3 style={{fontSize:18,margin:"5px 0",color:"var(--bp-text)"}}>{calculated.valid?"Total upgrade materials":"Select a higher target level"}</h3></div>
+     <h3 style={{fontSize:18,margin:"5px 0",color:"var(--bp-text)"}}>{calculated.valid?"Total upgrade materials":to?"Choose a higher target":"Choose an upgrade target"}</h3></div>
      {calculated.valid&&<span style={{fontSize:11,borderRadius:30,padding:"5px 9px",color:"#a06358",background:"rgba(160,99,88,.1)",fontWeight:750}}>Community data</span>}
    </div>
    {calculated.valid&&category==="heroes"&&<div style={{padding:12,borderRadius:12,background:"var(--bp-bg)"}}>
