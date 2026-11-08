@@ -23,7 +23,6 @@ const aliases={
   "polishing-solution":"polishing-sol",
   "charm-guide":"charm-guides",
   "charm-design":"charm-designs",
-  "charm-secrets":"jewel-secrets",
   "energizing-potion":"energising-pot",
   "strengthening-serum":"strength-serum"
 };
