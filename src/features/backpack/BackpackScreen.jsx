@@ -11,6 +11,7 @@ import MithrilCalculator      from "./MithrilCalculator.jsx";
 import GearPriorityGuide      from "./GearPriorityGuide.jsx";
 import ExpertCalculator       from "./ExpertCalculator.jsx";
 import UpgradeCalculator      from "./UpgradeCalculator.jsx";
+import BackpackScanner        from "./BackpackScanner.jsx";
 import haptics from "../../utils/haptics.js";
 import { Toast as CelebToast, useCelebration } from "../../components/Celebration.jsx";
 import PinReplacePrompt from "../../components/PinReplacePrompt.jsx";
@@ -20,27 +21,33 @@ const MAX_PINNED = 3;
 // ─── Section chip nav ─────────────────────────────────────────────────────────
 function SectionNav({ active, onChange, accent }) {
   const { t } = useI18n();
-  const chips = [
-    { key: "Items",    label: t("nav.items") },
-    { key: "Calculator",  label: "Calculator" },
-    { key: "Mithril",  label: "Mithril" },
-    { key: "Experts",  label: "Experts" },
+  const tabs = [
+    {key:"Items",label:t("nav.items"),icon:"🎒"},
+    {key:"Calculator",label:"Calculator",icon:"🧮"},
+    {key:"Scan",label:"Scan",icon:"📷"},
+    {key:"Mithril",label:"Mithril",icon:"⚒️"},
+    {key:"Experts",label:"Experts",icon:"🎓"}
   ];
-  return (
-    <div role="tablist" aria-label="Backpack sections" style={{ display:"flex", gap:8, overflowX:"auto", padding:"12px 0 8px",
-      scrollbarWidth:"none" }}>
-      {chips.map(chip => (
-        <button key={chip.key} role="tab" aria-selected={active===chip.key} onClick={() => onChange(chip.key)} style={{
-          minHeight:44, padding:"10px 16px", borderRadius:99, fontSize:13, fontWeight:700,
-          whiteSpace:"nowrap", flexShrink:0,
-          background: active === chip.key ? accent : "rgba(255,255,255,0.72)",
-          color: active === chip.key ? "white" : "var(--bp-muted2, #6f7a73)",
-          border: active === chip.key ? `1px solid ${accent}` : "1px solid var(--bp-border2, rgba(72,94,80,0.14))",
-          cursor:"pointer", transition:"all 0.15s",
-        }}>{chip.label}</button>
-      ))}
+  return <nav aria-label="Backpack app navigation" style={{
+    position:"fixed",insetInline:0,bottom:0,zIndex:45,
+    background:"var(--bp-card, #fff)",borderTop:"1px solid var(--bp-border2, #ddd)",
+    boxShadow:"0 -10px 32px rgba(19,35,30,.10)",
+    padding:"7px max(10px, env(safe-area-inset-right, 10px)) calc(7px + env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 10px))",
+    WebkitBackdropFilter:"blur(20px)",backdropFilter:"blur(20px)"
+  }}>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(5,minmax(0,1fr))",gap:2,maxWidth:760,margin:"0 auto"}}>
+      {tabs.map(tab=><button key={tab.key} onClick={()=>onChange(tab.key)}
+        aria-current={active===tab.key?"page":undefined} aria-label={tab.label}
+        style={{border:"none",background:active===tab.key?"var(--bp-bg,#eff5ef)":"transparent",
+          color:active===tab.key?accent:"var(--bp-muted2,#66746b)",
+          minHeight:56,borderRadius:14,display:"flex",flexDirection:"column",
+          alignItems:"center",justifyContent:"center",gap:3,cursor:"pointer",padding:"5px 2px",
+          minWidth:0,fontWeight:active===tab.key?800:600}}>
+        <span aria-hidden="true" style={{fontSize:22,lineHeight:1.1}}>{tab.icon}</span>
+        <span style={{fontSize:10.5,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:"100%"}}>{tab.label}</span>
+      </button>)}
     </div>
-  );
+  </nav>;
 }
 
 function SectionHeading({ kicker, title }) {
@@ -102,13 +109,14 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
     Items:    useRef(null),
     Mithril:  useRef(null),
     Calculator: useRef(null),
+    Scan: useRef(null),
     Experts:  useRef(null),
   };
 
-  const scrollTo = useCallback((section) => {
+  const scrollTo = useCallback(section=>{
     setActiveSection(section);
-    refs[section]?.current?.scrollIntoView({ behavior:"smooth", block:"start" });
-  }, []);
+    try { window.scrollTo({top:0,behavior:"smooth"}); } catch {}
+  },[]);
 
   const openSheet = useCallback((mode, initial = {}) => setSheet({ mode, initial }), []);
   const closeSheet = useCallback(() => setSheet(null), []);
@@ -164,9 +172,9 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
   }
 
   return (
-    <div className="scroll-content">
+    <div className="scroll-content" style={{paddingBottom:"calc(98px + env(safe-area-inset-bottom, 0px))"}}>
       {/* ── Hero ── */}
-      <div style={{ position:"relative" }}>
+      {activeSection==="Items"&&<div style={{ position:"relative" }}>
         <div style={{ fontSize:11, fontWeight:700, textTransform:"uppercase",
           letterSpacing:"0.2em", color:"#819286", marginBottom:4 }}>
           {t("hero.kicker")}
@@ -191,7 +199,7 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
             <line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
         </button>
-      </div>
+      </div>}
 
       {/* ── Summary + Growth ── */}
       {activeSection === "Items" && <BackpackSummary
@@ -203,13 +211,11 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
         onChooseResources={() => scrollTo("Items")}
       />}
 
-      {/* ── Section nav ── */}
-      <SectionNav active={activeSection} onChange={setActiveSection} accent={accent} />
-
       {/* ── Items ── */}
       {activeSection==="Items"&&<div ref={refs.Items} style={{ scrollMarginTop:16, marginTop:8 }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <SectionHeading kicker={t("hero.kicker")} title={t("nav.items")} />
+          <button onClick={()=>scrollTo("Scan")} style={{minHeight:44,padding:"0 12px",borderRadius:12,border:"1px solid var(--bp-border2)",background:"var(--bp-card)",fontSize:12,color:"var(--bp-text)",fontWeight:700,cursor:"pointer",marginInlineEnd:6}}>📷 Scan</button>
           {!confirmResetAll && (
             <button onClick={() => setConfirmResetAll(true)} style={{
               height:34, padding:"0 14px", borderRadius:99, fontSize:12, fontWeight:700,
@@ -270,6 +276,12 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
         <UpgradeCalculator userId={userId} items={items} balances={balances} onUpdateResource={handleNavigateSheet} />
       </div>}
 
+      {/* ── Screenshot OCR importer ── */}
+      {activeSection==="Scan"&&<div ref={refs.Scan} style={{marginTop:12}}>
+        <BackpackScanner items={items} balances={balances}
+          onApply={(id,value)=>setTotal(id,value,{reason:"Reviewed screenshot OCR import"})}/>
+      </div>}
+
       {/* ── Mithril calculator ── */}
       {activeSection==="Mithril"&&<div ref={refs.Mithril} style={{ scrollMarginTop:16, marginTop:14 }}>
         <SectionHeading kicker="Hero Gear" title="Mithril" />
@@ -320,6 +332,7 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
         onReplace={handleReplacePin}
         onCancel={() => setPinPending(null)}
       />
+      {!sheet&&<SectionNav active={activeSection} onChange={scrollTo} accent={accent} />}
     </div>
   );
 }
