@@ -310,6 +310,45 @@ export default {
     backpack: "Loading your backpack…",
   },
   upgradePlanner: {
+    types: {
+      "furnace": {
+        "name": "Furnace (FC1–FC10)",
+        "hint": "Include every upgrade step and prerequisite building."
+      },
+      "buildings": {
+        "name": "Buildings",
+        "hint": "Create a separate goal per building and include prerequisites."
+      },
+      "heroes": {
+        "name": "Hero shards and skills",
+        "hint": "Hero-specific shards and General Shards are not interchangeable."
+      },
+      "helios": {
+        "name": "Helios troops (T11/T12)",
+        "hint": "Enter research unlock and training costs separately; identify troop type."
+      },
+      "chief-gear": {
+        "name": "Chief Gear",
+        "hint": "Plan each gear slot separately or the whole set."
+      },
+      "charms": {
+        "name": "Chief Charms",
+        "hint": "Specify charm slot and target level."
+      },
+      "pets": {
+        "name": "Pets",
+        "hint": "Specify the pet and its target level."
+      },
+      "hero-gear": {
+        "name": "Hero Gear and widgets",
+        "hint": "Track one hero or gear piece at a time."
+      },
+      "research": {
+        "name": "Research / War Academy",
+        "hint": "Include preceding research nodes."
+      }
+    },
+
     "title": "Upgrade Planner",
     "eyebrow": "Connected to your backpack",
     "intro": "Build upgrade goals using your existing inventory. Costs must be entered or verified before progress is reliable.",
