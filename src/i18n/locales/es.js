@@ -302,6 +302,45 @@ export default {
 
   loading: { backpack: "Cargando tu mochila…" },
   upgradePlanner: {
+    types: {
+      "furnace": {
+        "name": "Horno (FC1–FC10)",
+        "hint": "Incluye todos los niveles y edificios previos."
+      },
+      "buildings": {
+        "name": "Edificios",
+        "hint": "Crea un objetivo por edificio e incluye sus requisitos."
+      },
+      "heroes": {
+        "name": "Fragmentos y habilidades de héroes",
+        "hint": "Los fragmentos específicos y generales no son intercambiables."
+      },
+      "helios": {
+        "name": "Tropas Helios (T11/T12)",
+        "hint": "Indica la tropa y separa costes de investigación y entrenamiento."
+      },
+      "chief-gear": {
+        "name": "Equipo del jefe",
+        "hint": "Planifica por pieza o conjunto completo."
+      },
+      "charms": {
+        "name": "Amuletos del jefe",
+        "hint": "Indica la ranura y el nivel del amuleto."
+      },
+      "pets": {
+        "name": "Mascotas",
+        "hint": "Indica la mascota y su nivel objetivo."
+      },
+      "hero-gear": {
+        "name": "Equipo de héroes y widgets",
+        "hint": "Planifica cada héroe o pieza por separado."
+      },
+      "research": {
+        "name": "Investigación / Academia de guerra",
+        "hint": "Incluye las investigaciones previas."
+      }
+    },
+
     "title": "Planificador de mejoras",
     "eyebrow": "Conectado a tu mochila",
     "intro": "Planifica mejoras con tu inventario. Verifica los costes para obtener un progreso fiable.",
