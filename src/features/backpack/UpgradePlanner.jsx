@@ -31,6 +31,8 @@ const newPlan=type=>({id:"plan-"+Date.now()+"-"+Math.random().toString(36).slice
 export default function UpgradePlanner({userId,items,balances,onUpdateResource}){
   const {t,tItem}=useI18n();
   const u=key=>t("upgradePlanner."+key);
+  const typeName=type=>t("upgradePlanner.types."+type.id+".name");
+  const typeHint=type=>t("upgradePlanner.types."+type.id+".hint");
   const [plans,setPlans]=useState(()=>read(userId));
   const [category,setCategory]=useState("furnace");
   const [active,setActive]=useState(null);
@@ -87,7 +89,7 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
     <p style={{fontSize:13,lineHeight:1.55,color:"var(--bp-muted2)"}}>{u("intro")}</p>
     {!chosen&&<>
       <label style={{display:"block",fontSize:13,fontWeight:700,color:"var(--bp-text)",margin:"15px 0 8px"}}>{u("newType")}</label>
-      <select value={category} onChange={e=>setCategory(e.target.value)} style={input}>{TYPES.map(t=><option key={t.id} value={t.id}>{t.emoji} {t.name}</option>)}</select>
+      <select value={category} onChange={e=>setCategory(e.target.value)} style={input}>{TYPES.map(t=><option key={t.id} value={t.id}>{t.emoji} {typeName(t)}</option>)}</select>
       <button onClick={add} style={{...btn,width:"100%",marginTop:10,background:"var(--bp-accent,#78917f)",color:"white"}}>{u("create")}</button>
       <h3 style={{fontSize:15,color:"var(--bp-text)",margin:"20px 0 12px"}}>{u("saved")} ({plans.length})</h3>
       {totalCommitments.length>0&&<div role="note" style={{...card,marginBottom:12,borderColor:"#bf9156"}}>
@@ -97,7 +99,7 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
       </div>}
       {plans.length>=3&&<label style={{display:"block",fontSize:12,color:"var(--bp-muted2)",margin:"0 0 12px"}}>
         Filter goals
-        <select style={{...input,marginTop:5}} value={filterType} onChange={e=>setFilterType(e.target.value)}><option value="all">All categories</option>{TYPES.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select>
+        <select style={{...input,marginTop:5}} value={filterType} onChange={e=>setFilterType(e.target.value)}><option value="all">All categories</option>{TYPES.map(t=><option key={t.id} value={t.id}>{typeName(t)}</option>)}</select>
       </label>}
       {plans.length===0&&<p style={{fontSize:13,color:"var(--bp-muted2)"}}>{u("empty")}</p>}
       {plans.length>0&&visiblePlans.length===0&&<p style={{fontSize:13,color:"var(--bp-muted2)"}}>No goals in this category.</p>}
@@ -108,14 +110,14 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
     </>}
     {chosen&&<>
       <button onClick={()=>{setActive(null);setInfo("");}} style={{...btn,margin:"10px 0"}}>← {u("all")}</button>
-      <div style={{fontSize:13,fontWeight:700,color:"var(--bp-text)",margin:"8px 0"}}>{type.emoji} {type.name}</div>
+      <div style={{fontSize:13,fontWeight:700,color:"var(--bp-text)",margin:"8px 0"}}>{type.emoji} {typeName(type)}</div>
       <label style={{display:"block",fontSize:12,color:"var(--bp-muted2)"}}>{u("name")}<input style={{...input,marginTop:5}} value={chosen.name} onChange={e=>patch(chosen.id,{name:trim(e.target.value)})} placeholder="e.g. FC7 Furnace + Embassy"/></label>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:10}}>
         {["current","target"].map(field=><label key={field} style={{fontSize:12,color:"var(--bp-muted2)"}}>{field==="current"?u("current"):u("target")}
           {type.levels.length>0?<select value={chosen[field]} onChange={e=>patch(chosen.id,{[field]:e.target.value})} style={{...input,marginTop:5}}><option value="">{u("select")}</option>{type.levels.map(l=><option key={l} value={l}>{l}</option>)}</select>:<input style={{...input,marginTop:5}} value={chosen[field]} placeholder="Level / tier" onChange={e=>patch(chosen.id,{[field]:trim(e.target.value,50)})}/>}
         </label>)}
       </div>
-      <p style={{fontSize:12,lineHeight:1.5,color:"var(--bp-muted2)"}}>{type.hint}</p>
+      <p style={{fontSize:12,lineHeight:1.5,color:"var(--bp-muted2)"}}>{typeHint(type)}</p>
       <label style={{display:"flex",alignItems:"flex-start",gap:10,margin:"10px 0",fontSize:13,color:"var(--bp-text)",lineHeight:1.4}}>
         <input type="checkbox" checked={!!chosen.costsReviewed} disabled={!countsById(chosen.id)?.tracked||countsById(chosen.id)?.invalid} onChange={e=>patch(chosen.id,{costsReviewed:e.target.checked})} style={{width:20,height:20,flexShrink:0}}/>
         <span>{u("verify")}</span>
