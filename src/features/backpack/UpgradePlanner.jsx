@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { formatAmount } from "./backpackConstants.js";
 import { useI18n } from "../../i18n/I18nContext.jsx";
+import { parseUpgradeAmount, parseUpgradeImport, upgradeRequirements, combinedResourceNeeds } from "./upgradePlannerMath.js";
 
 // Resource keys are the existing Backpack item IDs. Never store separate balances.
 const TYPES = [
@@ -17,14 +18,6 @@ const TYPES = [
 const allowed = new Set(TYPES.map(x=>x.id));
 const HERO_SHARD_CUMULATIVE = [0,10,50,165,465,1065];
 const starIndex = value => {const m=String(value||"").match(/^([0-5])★$/);return m?Number(m[1]):-1;};
-const parseNumber = value => {
-  const text=String(value ?? "").replace(/,/g,"").replace(/\s/g,"").trim();
-  if(!text)return null;
-  const match=text.match(/^(\d+(?:\.\d+)?)([kmb])?$/i);
-  if(!match)return null;
-  const n=Number(match[1])*({k:1e3,m:1e6,b:1e9}[match[2]?.toLowerCase()]||1);
-  return Number.isFinite(n)&&n>=0?n:null;
-};
 const keyFor = userId=>"backpack-hub-upgrade-plans-v1:"+(userId||"local-user");
 const read = userId => {
   try {const v=JSON.parse(localStorage.getItem(keyFor(userId))||"[]");return Array.isArray(v)?v.filter(x=>allowed.has(x.type)):[];}catch{return [];}
@@ -50,28 +43,17 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
   const chosen=plans.find(p=>p.id===active);
   const type=TYPES.find(t=>t.id===(chosen?.type||category));
   const counts=useMemo(()=>plans.map(plan=>{
-    const rows=Object.entries(plan.requirements||{}).map(([id,raw])=>{
-      const required=parseNumber(raw);const owned=Math.max(0,Number(balances[id]||0));
-      return {id,required,owned,remaining:required===null?null:Math.max(0,required-owned)};
-    }).filter(r=>r.required!==null);
-    return {id:plan.id,rows,done:rows.length>0&&rows.every(r=>r.remaining===0),tracked:rows.length};
+    const allRows=upgradeRequirements(plan,balances);
+    const rows=allRows.filter(r=>r.required!==null);
+    const invalid=allRows.some(r=>r.required===null&&String(plan.requirements?.[r.id]??"").trim()!=="");
+    const done=!!plan.costsReviewed && rows.length>0 && !invalid && rows.every(r=>r.remaining===0);
+    return {id:plan.id,rows,done,invalid,tracked:rows.length};
   }),[plans,balances]);
   const countsById=id=>counts.find(x=>x.id===id);
-  const duplicatedResources = useMemo(()=>{
-    const uses={};
-    plans.forEach(p=>Object.entries(p.requirements||{}).forEach(([id,value])=>{
-      if(parseNumber(value)!==null)(uses[id]||=new Set()).add(p.id);
-    }));
-    return new Set(Object.entries(uses).filter(([,ids])=>ids.size>1).map(([id])=>id));
-  },[plans]);
-  const totalCommitments = useMemo(()=>{
-    const totals={};
-    plans.forEach(p=>Object.entries(p.requirements||{}).forEach(([id,value])=>{
-      const n=parseNumber(value);
-      if(n!==null)totals[id]=(totals[id]||0)+n;
-    }));
-    return Object.entries(totals).map(([id,total])=>({id,total,have:Math.max(0,Number(balances[id]||0)),shortage:Math.max(0,total-Math.max(0,Number(balances[id]||0)))})).filter(row=>duplicatedResources.has(row.id));
-  },[plans,balances,duplicatedResources]);
+  const totalCommitments=useMemo(()=>combinedResourceNeeds(plans,balances).filter(r=>r.projects>1).map(r=>({
+    id:r.id,total:r.needed,have:r.owned,shortage:r.missing
+  })),[plans,balances]);
+  const duplicatedResources=useMemo(()=>new Set(totalCommitments.map(r=>r.id)),[totalCommitments]);
   const patch=(id,updates)=>setPlans(ps=>ps.map(p=>p.id===id?{...p,...updates,...(("target" in updates || "current" in updates) ? {costsReviewed:false}: {})}:p));
   const patchCost=(id,itemId,value)=>setPlans(ps=>ps.map(p=>p.id===id?{...p,costsReviewed:false,requirements:{...p.requirements,[itemId]:value}}:p));
   const add=()=>{
@@ -86,15 +68,12 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
     ["fire crystal shards","fc shards"].forEach(s=>names.set(s,"fire-crystal-shards"));
     const extra={"coal":"coal","iron":"iron","meat":"meat","wood":"wood","charm guides":"charm-guides","charm designs":"charm-designs","design plans":"design-plans","pet food":"pet-food","general shards":"general-shards"};
     Object.entries(extra).forEach(([k,v])=>names.set(k,v));
-    let rows=0;const requirements={...chosen.requirements};
-    pasted.split(/\r?\n/).forEach(line=>{
-      const parts=line.split(/[\t,;:]/).map(x=>x.trim().replace(/^["']|["']$/g,""));
-      const itemId=names.get((parts[0]||"").toLowerCase());
-      const n=parts.slice(1).map(parseNumber).find(x=>x!==null);
-      if(itemId&&n!==undefined){requirements[itemId]=String(n);rows++;}
-    });
-    if(rows){patch(chosen.id,{requirements,costsReviewed:false,source:chosen.source||"Manual import; verify against original calculator"});setInfo(rows+" "+u("importSuccess"));setEditCosts(false);}
-    else setInfo(u("importFail"));
+    const {costs,imported,skipped}=parseUpgradeImport(pasted,names);
+    if(imported){
+      patch(chosen.id,{requirements:{...chosen.requirements,...costs},costsReviewed:false,source:chosen.source||"Manual import; verify against original calculator"});
+      setInfo(imported+" "+u("importSuccess")+(skipped?" ("+skipped+" skipped)":""));
+      setEditCosts(false);
+    } else setInfo(u("importFail"));
   };
   const deletePlan=id=>{setPlans(ps=>ps.filter(p=>p.id!==id));setActive(null);setConfirmDelete(false);};
   const allIds=new Set([...items.map(i=>i.id),...TYPES.flatMap(t=>t.resources)]);
@@ -138,7 +117,7 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
       </div>
       <p style={{fontSize:12,lineHeight:1.5,color:"var(--bp-muted2)"}}>{type.hint}</p>
       <label style={{display:"flex",alignItems:"flex-start",gap:10,margin:"10px 0",fontSize:13,color:"var(--bp-text)",lineHeight:1.4}}>
-        <input type="checkbox" checked={!!chosen.costsReviewed} onChange={e=>patch(chosen.id,{costsReviewed:e.target.checked})} style={{width:20,height:20,flexShrink:0}}/>
+        <input type="checkbox" checked={!!chosen.costsReviewed} disabled={!countsById(chosen.id)?.tracked||countsById(chosen.id)?.invalid} onChange={e=>patch(chosen.id,{costsReviewed:e.target.checked})} style={{width:20,height:20,flexShrink:0}}/>
         <span>{u("verify")}</span>
       </label>
       <div role="status" style={{fontSize:12,color:chosen.costsReviewed?"#5c7a6e":"#a06358",margin:"6px 0 12px",fontWeight:700}}>{u(chosen.costsReviewed?"verified":"unverified")}</div>
@@ -166,7 +145,7 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
         </div>;
       })}
       {!countsById(chosen.id)?.tracked&&<p style={{fontSize:13,color:"var(--bp-muted2)"}}>{u("noCosts")}</p>}
-      {Object.entries(chosen.requirements||{}).some(([,v])=>String(v).trim()!==""&&parseNumber(v)===null)&&<p role="alert" style={{fontSize:12,color:"#a06358"}}>{u("invalid")}</p>}
+      {countsById(chosen.id)?.invalid&&<p role="alert" style={{fontSize:12,color:"#a06358"}}>{u("invalid")}</p>}
       <p style={{fontSize:12,color:"var(--bp-muted2)",lineHeight:1.5}}>{u("warning")}</p>
       {editCosts&&<div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:9,marginTop:14}}>
         {[...options,...extraCosts].map(id=><label key={id} style={{fontSize:12,color:"var(--bp-muted2)"}}>{itemLabel(id)}
