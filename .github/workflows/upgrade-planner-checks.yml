@@ -16,6 +16,10 @@ jobs:
           node-version: '20'
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+      - name: Planner unit tests
+        env:
+          CI: 'true'
+        run: npm test -- --watch=false --runInBand
       - name: Build app
         env:
           CI: 'true'
