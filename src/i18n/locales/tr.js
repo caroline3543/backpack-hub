@@ -310,6 +310,45 @@ export default {
     backpack: "Çantan yükleniyor…",
   },
   upgradePlanner: {
+    types: {
+      "furnace": {
+        "name": "Fırın (FC1–FC10)",
+        "hint": "Her aşamayı ve ön koşul binalarını ekleyin."
+      },
+      "buildings": {
+        "name": "Binalar",
+        "hint": "Her bina için ayrı hedef ve ön koşulları girin."
+      },
+      "heroes": {
+        "name": "Kahraman parçaları ve becerileri",
+        "hint": "Kahramana özel ve genel parçalar birbirinin yerine geçmez."
+      },
+      "helios": {
+        "name": "Helios birlikleri (T11/T12)",
+        "hint": "Birlik türünü belirtin; araştırma ve eğitim maliyetlerini ayırın."
+      },
+      "chief-gear": {
+        "name": "Şef Ekipmanı",
+        "hint": "Her parça veya tüm set için plan oluşturun."
+      },
+      "charms": {
+        "name": "Şef Tılsımları",
+        "hint": "Tılsım yuvasını ve hedef seviyeyi belirtin."
+      },
+      "pets": {
+        "name": "Evcil Hayvanlar",
+        "hint": "Evcil hayvanı ve hedef seviyesini belirtin."
+      },
+      "hero-gear": {
+        "name": "Kahraman Ekipmanı ve widget'lar",
+        "hint": "Her kahramanı veya ekipmanı ayrı planlayın."
+      },
+      "research": {
+        "name": "Araştırma / Savaş Akademisi",
+        "hint": "Ön araştırmaları da dahil edin."
+      }
+    },
+
     "title": "Yükseltme Planlayıcı",
     "eyebrow": "Çantanızla bağlantılı",
     "intro": "Mevcut envanterinizle yükseltme hedefleri oluşturun. İlerlemenin doğru olması için maliyetleri doğrulayın.",
