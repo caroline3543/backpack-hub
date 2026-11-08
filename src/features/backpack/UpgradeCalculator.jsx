@@ -97,7 +97,14 @@ function SelectField({title,value,onChange,options}){
   </label>;
 }
 const asOptions=rows=>rows.map(x=>({value:String(x.value),label:x.label}));
-const FCName=value=>String(value).replace(/^FC\s*/,"FC");
+const FCName=value=>String(value).replace(/^FC\\s*/,"FC");
+// Generation 6 planning: Furnace selector starts at FC5; other building levels remain unchanged.
+export function getBuildingLevelOptions(building) {
+  const levels=building?.levels||[];
+  if(building?.id!=="furnace")return levels;
+  const at=levels.findIndex(level=>/^FC\\s*5$/i.test(level.label));
+  return at<0?[]:levels.slice(at);
+}
 const goalStorageKey=userId=>"backpack-hub-calculator-goals-v1:"+(userId||"local-user");
 function loadGoals(userId){try{const v=JSON.parse(localStorage.getItem(goalStorageKey(userId))||"[]");return Array.isArray(v)?v:[];}catch{return [];}}
 export default function UpgradeCalculator({userId,items,balances,onUpdateResource}){
@@ -113,6 +120,7 @@ export default function UpgradeCalculator({userId,items,balances,onUpdateResourc
  const [start,setStart]=useState("");
  const [target,setTarget]=useState("");
  const [quantity,setQuantity]=useState(10000);
+ const [hero,setHero]=useState("renee");
  const [gearSlot,setGearSlot]=useState("1");
  const [sourceExpanded,setSourceExpanded]=useState(false);
 
@@ -121,7 +129,7 @@ export default function UpgradeCalculator({userId,items,balances,onUpdateResourc
  const selector=category==="buildings"?building:category==="pets"?pet:category==="helios"?heliosTrack:troop;
  const active=selectorData.find(x=>x.id===selector);
  const rowOptions=useMemo(()=>{
-   if(category==="buildings")return (active?.levels||[]).map(x=>({value:x.label,label:FCName(x.label)}));
+   if(category==="buildings")return getBuildingLevelOptions(active).map(x=>({value:x.label,label:FCName(x.label)}));
    if(category==="pets")return (active?.levels||[]).map(x=>({value:String(x.level),label:"Level "+x.level}));
    if(category==="gear")return GAME_COSTS.gear.map(x=>({value:x.id,label:x.name}));
    if(category==="charms")return GAME_COSTS.charms.map(x=>({value:x.id,label:x.name}));
@@ -143,14 +151,14 @@ export default function UpgradeCalculator({userId,items,balances,onUpdateResourc
  const saveGoal=()=>{
    if(!calculated.valid){setGoalFeedback("Choose a valid upgrade before saving.");return;}
    const id="calc-"+Date.now()+"-"+Math.random().toString(36).slice(2,7);
-   const selectorName=active?.name||(category==="gear"?"Chief Gear":category==="charms"?"Chief Charms":category==="heroes"?"Hero Shards":category);
+   const selectorName=active?.name||(category==="gear"?"Chief Gear":category==="charms"?"Chief Charms":category==="heroes"?({"wu-ming":"Wu Ming",renee:"Renee",wayne:"Wayne"}[hero]+" Hero Shards"):category);
    const title=selectorName+" · "+(category==="troops"?"T"+to+" × "+quantity:category==="gear"||category==="charms"?from+" → "+to+" ("+gearSlot+" pieces)":from+" → "+to);
-   setGoals(previous=>[{id,title,category,building,pet,troop,heliosTrack,start:from,target:to,quantity,gearSlot},...previous]);
+   setGoals(previous=>[{id,title,category,building,pet,troop,heliosTrack,hero,start:from,target:to,quantity,gearSlot},...previous]);
    setGoalFeedback("Upgrade goal saved in this backpack profile.");
  };
  const restoreGoal=g=>{
    setCategory(g.category);setBuilding(g.building||"furnace");setPet(g.pet||GAME_COSTS.pets[0].id);setTroop(g.troop||"infantry");setHeliosTrack(g.heliosTrack||"flame-squad");
-   setStart(g.start||"");setTarget(g.target||"");setQuantity(g.quantity||10000);setGearSlot(g.gearSlot||"1");
+   setStart(g.start||"");setTarget(g.target||"");setQuantity(g.quantity||10000);setGearSlot(g.gearSlot||"1");setHero(g.hero||"renee");
    setGoalFeedback("");setShowSaved(false);
  };
 
@@ -158,7 +166,7 @@ export default function UpgradeCalculator({userId,items,balances,onUpdateResourc
   <div style={{...CARD,padding:16}}>
     <div style={{fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1.5,color:"var(--bp-muted2)"}}>Preloaded reference data · No API key needed</div>
     <h2 style={{fontFamily:"Fraunces,serif",fontSize:25,margin:"7px 0",color:"var(--bp-text)"}}>Upgrade Calculator</h2>
-    <p style={{fontSize:13,color:"var(--bp-muted2)",lineHeight:1.5,margin:"0 0 13px"}}>Choose an upgrade. Materials are filled in automatically and compared with your backpack. Costs come from a community-maintained dataset and may differ from your game.</p>
+    <p style={{fontSize:13,color:"var(--bp-muted2)",lineHeight:1.5,margin:"0 0 13px"}}>Generation 6 planning · Furnace begins at FC5. Choose upgrades to calculate materials and compare with your backpack. Community data may differ from the game.</p>
     <SelectField title="Calculator" value={category} onChange={switchCat} options={CATEGORY.map(([value,label,emoji])=>({value,label:emoji+" "+label}))}/>
     <details open={showSaved} onToggle={e=>setShowSaved(e.currentTarget.open)} style={{marginTop:12}}>
       <summary style={{fontSize:13,fontWeight:750,color:"var(--bp-text)",cursor:"pointer",padding:"10px 0"}}>Saved upgrade goals ({goals.length})</summary>
@@ -168,6 +176,12 @@ export default function UpgradeCalculator({userId,items,balances,onUpdateResourc
       </div>)}
       <p style={{fontSize:11,color:"var(--bp-muted2)"}}>Goals are saved on this device and are separate for each backpack.</p>
     </details>
+    {category==="buildings"&&building==="furnace"&&<p role="note" style={{fontSize:12,color:"var(--bp-muted2)",lineHeight:1.5,margin:"10px 0 0"}}>Furnace FC5 is the lowest option. FC10 remains a future planning target; game unlocks depend on state age, not just hero generation.</p>}
+    {category==="heroes"&&<div style={{marginTop:12}}><SelectField title="Generation 6 hero" value={hero} onChange={setHero} options={[
+      {value:"wu-ming",label:"Wu Ming · Infantry"},
+      {value:"renee",label:"Renee · Lancer"},
+      {value:"wayne",label:"Wayne · Marksman"}
+    ]}/></div>}
     {(category==="buildings"||category==="pets"||category==="troops"||category==="helios")&&
       <div style={{marginTop:12}}><SelectField title={category==="buildings"?"Building":category==="pets"?"Pet":category==="helios"?"Research track":"Troop type"} value={selector} onChange={v=>{if(category==="buildings")setBuilding(v);else if(category==="pets")setPet(v);else if(category==="helios")setHeliosTrack(v);else setTroop(v);setStart("");setTarget("");}}
       options={selectorData.map(x=>({value:x.id,label:x.name}))}/></div>}
@@ -191,7 +205,7 @@ export default function UpgradeCalculator({userId,items,balances,onUpdateResourc
    </div>
    {calculated.valid&&category==="heroes"&&<div style={{padding:12,borderRadius:12,background:"var(--bp-bg)"}}>
      <strong style={{color:"var(--bp-text)"}}>{fmt(calculated.referenceShards||0)} hero shards</strong>
-     <p style={{fontSize:12,color:"var(--bp-muted2)",lineHeight:1.45,margin:"6px 0 0"}}>Full-star milestone estimate only. Check the hero's generation, unlock costs and partial stars. Hero-specific shards cannot always be substituted with general shards.</p>
+     <p style={{fontSize:12,color:"var(--bp-muted2)",lineHeight:1.45,margin:"6px 0 0"}}>Full-star milestone reference for Generation 6 heroes. Unlock and partial-star costs are excluded. Hero-specific shards are not interchangeable with general shards.</p>
    </div>}
    {calculated.valid&&<div style={{display:"flex",gap:8,alignItems:"center",margin:"12px 0"}}>
      <button style={{...BUTTON,flex:1,background:"var(--bp-accent,#78917f)",color:"white"}} onClick={saveGoal}>Save upgrade goal</button>
