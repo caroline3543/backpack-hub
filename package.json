@@ -11,8 +11,9 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test"
+    "build": "CI=true react-scripts test --watchAll=false --runInBand && react-scripts build",
+    "test": "react-scripts test",
+    "build:compile": "react-scripts build"
   },
   "browserslist": {
     "production": [
