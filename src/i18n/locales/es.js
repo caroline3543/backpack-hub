@@ -302,6 +302,18 @@ export default {
 
   loading: { backpack: "Cargando tu mochila…" },
   upgradePlanner: {
+    "filter": "Filtrar objetivos",
+    "allCategories": "Todas las categorías",
+    "noCategoryGoals": "No hay objetivos en esta categoría.",
+    "levelError": "Elige un nivel objetivo superior al actual.",
+    "updateInventory": "Actualizar mochila",
+    "balance": "disponible",
+    "need": "necesario",
+    "inputHint": "Coste, p. ej. 1.2M",
+    "sourceHint": "Fuente del juego o calculadora",
+    "notesHint": "Nivel de edificio, héroe o tropa…",
+    "start": "Inicio",
+    "targetShort": "Objetivo",
     types: {
       "furnace": {
         "name": "Horno (FC1–FC10)",
