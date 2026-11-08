@@ -44,3 +44,17 @@ test("Troop training multiplies units by a positive integer quantity",()=>{
  Object.keys(one.costs).forEach(id=>expect(many.costs[id]).toBe(one.costs[id]*1000));
  expect(calculatePreloadedCosts({category:"troops",selected:"infantry",to:"10",quantity:0}).valid).toBe(false);
 });
+
+
+test("Public WoS Tools T11 Flame Squad table sums shards and steel correctly",()=>{
+ const result=calculatePreloadedCosts({category:"helios",selected:"flame-squad",from:"0",to:"5"});
+ expect(result.valid).toBe(true);
+ expect(result.costs["fire-crystal-shards"]).toBe(258);
+ expect(result.costs.steel).toBe(80000);
+ expect(result.prerequisites.length).toBeGreaterThan(0);
+});
+
+test("Research cannot skip backwards or exceed the published levels",()=>{
+ expect(calculatePreloadedCosts({category:"helios",selected:"flame-squad",from:"4",to:"2"}).valid).toBe(false);
+ expect(calculatePreloadedCosts({category:"helios",selected:"flame-squad",from:"0",to:"6"}).valid).toBe(false);
+});
