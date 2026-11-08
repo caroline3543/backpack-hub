@@ -310,6 +310,18 @@ export default {
     backpack: "Loading your backpack…",
   },
   upgradePlanner: {
+    "filter": "Filter goals",
+    "allCategories": "All categories",
+    "noCategoryGoals": "No goals in this category.",
+    "levelError": "Choose a target above the current level.",
+    "updateInventory": "Update backpack",
+    "balance": "owned",
+    "need": "needed",
+    "inputHint": "Cost, e.g. 1.2M",
+    "sourceHint": "Calculator or in-game source",
+    "notesHint": "Required building level, hero, troop type…",
+    "start": "Start",
+    "targetShort": "Target",
     types: {
       "furnace": {
         "name": "Furnace (FC1–FC10)",
