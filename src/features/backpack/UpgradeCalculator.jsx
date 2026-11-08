@@ -151,7 +151,7 @@ export default function UpgradeCalculator({userId,items,balances,onUpdateResourc
  const saveGoal=()=>{
    if(!calculated.valid){setGoalFeedback("Choose a valid upgrade before saving.");return;}
    const id="calc-"+Date.now()+"-"+Math.random().toString(36).slice(2,7);
-   const selectorName=active?.name||(category==="gear"?"Chief Gear":category==="charms"?"Chief Charms":category==="heroes"?({"wu-ming":"Wu Ming",renee:"Renee",wayne:"Wayne"}[hero]+" Hero Shards"):category);
+   const selectorName=active?.name||(category==="gear"?"Chief Gear":category==="charms"?"Chief Charms":category==="heroes"?(hero.replace(/-/g," ").replace(/\b\w/g,c=>c.toUpperCase())+" Hero Shards"):category);
    const title=selectorName+" · "+(category==="troops"?"T"+to+" × "+quantity:category==="gear"||category==="charms"?from+" → "+to+" ("+gearSlot+" pieces)":from+" → "+to);
    setGoals(previous=>[{id,title,category,building,pet,troop,heliosTrack,hero,start:from,target:to,quantity,gearSlot},...previous]);
    setGoalFeedback("Upgrade goal saved in this backpack profile.");
@@ -177,10 +177,26 @@ export default function UpgradeCalculator({userId,items,balances,onUpdateResourc
       <p style={{fontSize:11,color:"var(--bp-muted2)"}}>Goals are saved on this device and are separate for each backpack.</p>
     </details>
     {category==="buildings"&&building==="furnace"&&<p role="note" style={{fontSize:12,color:"var(--bp-muted2)",lineHeight:1.5,margin:"10px 0 0"}}>Furnace FC5 is the lowest option. FC10 remains a future planning target; game unlocks depend on state age, not just hero generation.</p>}
-    {category==="heroes"&&<div style={{marginTop:12}}><SelectField title="Generation 6 hero" value={hero} onChange={setHero} options={[
-      {value:"wu-ming",label:"Wu Ming · Infantry"},
-      {value:"renee",label:"Renee · Lancer"},
-      {value:"wayne",label:"Wayne · Marksman"}
+    {category==="heroes"&&<div style={{marginTop:12}}><SelectField title="Hero (up to Generation 6)" value={hero} onChange={setHero} options={[
+      {value:"wu-ming",label:"Gen 6 · Wu Ming · Infantry"},
+      {value:"renee",label:"Gen 6 · Renee · Lancer"},
+      {value:"wayne",label:"Gen 6 · Wayne · Marksman"},
+      {value:"hector",label:"Gen 5 · Hector"},
+      {value:"norah",label:"Gen 5 · Norah"},
+      {value:"gwen",label:"Gen 5 · Gwen"},
+      {value:"ahmose",label:"Gen 4 · Ahmose"},
+      {value:"reina",label:"Gen 4 · Reina"},
+      {value:"lynn",label:"Gen 4 · Lynn"},
+      {value:"logan",label:"Gen 3 · Logan"},
+      {value:"mia",label:"Gen 3 · Mia"},
+      {value:"greg",label:"Gen 3 · Greg"},
+      {value:"flint",label:"Gen 2 · Flint"},
+      {value:"philly",label:"Gen 2 · Philly"},
+      {value:"alonso",label:"Gen 2 · Alonso"},
+      {value:"jeronimo",label:"Gen 1 · Jeronimo"},
+      {value:"natalia",label:"Gen 1 · Natalia"},
+      {value:"molly",label:"Gen 1 · Molly"},
+      {value:"zinman",label:"Gen 1 · Zinman"}
     ]}/></div>}
     {(category==="buildings"||category==="pets"||category==="troops"||category==="helios")&&
       <div style={{marginTop:12}}><SelectField title={category==="buildings"?"Building":category==="pets"?"Pet":category==="helios"?"Research track":"Troop type"} value={selector} onChange={v=>{if(category==="buildings")setBuilding(v);else if(category==="pets")setPet(v);else if(category==="helios")setHeliosTrack(v);else setTroop(v);setStart("");setTarget("");}}
@@ -205,7 +221,7 @@ export default function UpgradeCalculator({userId,items,balances,onUpdateResourc
    </div>
    {calculated.valid&&category==="heroes"&&<div style={{padding:12,borderRadius:12,background:"var(--bp-bg)"}}>
      <strong style={{color:"var(--bp-text)"}}>{fmt(calculated.referenceShards||0)} hero shards</strong>
-     <p style={{fontSize:12,color:"var(--bp-muted2)",lineHeight:1.45,margin:"6px 0 0"}}>Full-star milestone reference for Generation 6 heroes. Unlock and partial-star costs are excluded. Hero-specific shards are not interchangeable with general shards.</p>
+     <p style={{fontSize:12,color:"var(--bp-muted2)",lineHeight:1.45,margin:"6px 0 0"}}>Star milestone reference for available heroes through Generation 6. Unlock and partial-star costs are excluded. Hero-specific shards are not interchangeable with general shards.</p>
    </div>}
    {calculated.valid&&<div style={{display:"flex",gap:8,alignItems:"center",margin:"12px 0"}}>
      <button style={{...BUTTON,flex:1,background:"var(--bp-accent,#78917f)",color:"white"}} onClick={saveGoal}>Save upgrade goal</button>
