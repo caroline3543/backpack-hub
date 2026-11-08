@@ -10,7 +10,7 @@ import BackpackSheet          from "./BackpackSheet.jsx";
 import MithrilCalculator      from "./MithrilCalculator.jsx";
 import GearPriorityGuide      from "./GearPriorityGuide.jsx";
 import ExpertCalculator       from "./ExpertCalculator.jsx";
-import FurnaceGoal            from "./FurnaceGoal.jsx";
+import UpgradePlanner         from "./UpgradePlanner.jsx";
 import haptics from "../../utils/haptics.js";
 import { Toast as CelebToast, useCelebration } from "../../components/Celebration.jsx";
 import PinReplacePrompt from "../../components/PinReplacePrompt.jsx";
@@ -23,7 +23,7 @@ function SectionNav({ active, onChange, accent }) {
   const chips = [
     { key: "Items",    label: t("nav.items") },
     { key: "Mithril",  label: "Mithril" },
-    { key: "Furnace",  label: "Furnace" },
+    { key: "Furnace",  label: "Upgrades" },
     { key: "Experts",  label: "Experts" },
   ];
   return (
@@ -267,7 +267,7 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
 
       {/* ── Furnace upgrade resource goal ── */}
       <div ref={refs.Furnace} style={{ scrollMarginTop:16, marginTop:32 }}>
-        <FurnaceGoal userId={userId} items={items} balances={balances} onUpdateResource={handleNavigateSheet} />
+        <UpgradePlanner userId={userId} items={items} balances={balances} onUpdateResource={handleNavigateSheet} />
       </div>
 
       {/* ── Mithril calculator ── */}
