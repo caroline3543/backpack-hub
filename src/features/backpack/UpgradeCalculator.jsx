@@ -58,7 +58,7 @@ export function calculatePreloadedCosts({category,selected,from,to,quantity=1}){
   }
   const options=category==="buildings"?GAME_COSTS.buildings:category==="gear"?GAME_COSTS.gear:category==="charms"?GAME_COSTS.charms:GAME_COSTS.pets;
   const entry=options.find(x=>x.id===selected);
-  if(!entry)return {costs:{},prerequisites:[],valid:false};
+  if(category!=="gear"&&category!=="charms"&&!entry)return {costs:{},prerequisites:[],valid:false};
   const rows=category==="buildings"?levelOrder(entry.levels):category==="pets"?entry.levels:options===GAME_COSTS.gear||options===GAME_COSTS.charms?options:[];
   if(category==="gear"||category==="charms"){
     const all=options;
@@ -96,10 +96,10 @@ export default function UpgradeCalculator({items,balances,onUpdateResource}){
  const [start,setStart]=useState("");
  const [target,setTarget]=useState("");
  const [quantity,setQuantity]=useState(10000);
- const [gearSlot,setGearSlot]=useState("One piece");
+ const [gearSlot,setGearSlot]=useState("1");
  const [sourceExpanded,setSourceExpanded]=useState(false);
- const [showAllSteps,setShowAllSteps]=useState(false);
- const [saved,setSaved]=useState(false);
+
+
  const selectorData=category==="buildings"?GAME_COSTS.buildings:category==="pets"?GAME_COSTS.pets:category==="troops"?GAME_COSTS.troops:[];
  const selector=category==="buildings"?building:category==="pets"?pet:troop;
  const active=selectorData.find(x=>x.id===selector);
@@ -120,9 +120,9 @@ export default function UpgradeCalculator({items,balances,onUpdateResource}){
  const requirements=Object.entries(calculated.costs||{}).sort((a,b)=>a[0].localeCompare(b[0]));
  const isIncomplete=calculated.prerequisites?.length>0;
  const [showBudget,setShowBudget]=useState(true);
- const totalMissing=requirements.filter(([id,required])=>(balances[id]||0)<required).length;
- const switchCat=c=>{setCategory(c);setStart("");setTarget("");setSaved(false);setShowAllSteps(false);};
- const compare=()=>requirements.length&&calculated.valid;
+ const totalMissing=requirements.filter(([id,required])=>(balances[id]||0)<required*((category==="gear"||category==="charms")?(Number(gearSlot)||1):1)).length;
+ const switchCat=c=>{setCategory(c);setStart("");setTarget("");};
+
  return <div style={{display:"grid",gap:15}}>
   <div style={{...CARD,padding:16}}>
     <div style={{fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1.5,color:"var(--bp-muted2)"}}>Game data included • No API key needed</div>
