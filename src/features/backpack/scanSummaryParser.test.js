@@ -50,3 +50,11 @@ test("overlapping screenshots do not double totals, but conflicting OCR is flagg
  expect(changed).toHaveLength(1);
  expect(changed[0].conflict).toBe(true);
 });
+
+
+test("Chief Stamina and Hero XP use totals rather than item counts",()=>{
+ const text="Chief Stamina 5.57K 5.61K\nHero XP 60K 2.06M";
+ const rows=parseSummaryText(text);
+ expect(rows.find(r=>r.id==="chief-stamina")?.value).toBe(5610);
+ expect(rows.find(r=>r.id==="hero-xp")?.value).toBe(2060000);
+});
