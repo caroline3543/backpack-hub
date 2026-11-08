@@ -98,14 +98,14 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
         {totalCommitments.map(r=><div key={r.id} style={{fontSize:12,color:"var(--bp-text)",margin:"6px 0"}}>{itemLabel(r.id)}: {formatAmount(r.total)} {u("combined")} · {formatAmount(r.have)} {u("owned")} · {formatAmount(r.shortage)} {u("short")}</div>)}
       </div>}
       {plans.length>=3&&<label style={{display:"block",fontSize:12,color:"var(--bp-muted2)",margin:"0 0 12px"}}>
-        Filter goals
-        <select style={{...input,marginTop:5}} value={filterType} onChange={e=>setFilterType(e.target.value)}><option value="all">All categories</option>{TYPES.map(t=><option key={t.id} value={t.id}>{typeName(t)}</option>)}</select>
+        {u("filter")}
+        <select style={{...input,marginTop:5}} value={filterType} onChange={e=>setFilterType(e.target.value)}><option value="all">{u("allCategories")}</option>{TYPES.map(t=><option key={t.id} value={t.id}>{typeName(t)}</option>)}</select>
       </label>}
       {plans.length===0&&<p style={{fontSize:13,color:"var(--bp-muted2)"}}>{u("empty")}</p>}
-      {plans.length>0&&visiblePlans.length===0&&<p style={{fontSize:13,color:"var(--bp-muted2)"}}>No goals in this category.</p>}
+      {plans.length>0&&visiblePlans.length===0&&<p style={{fontSize:13,color:"var(--bp-muted2)"}}>{u("noCategoryGoals")}</p>}
       {visiblePlans.map(p=>{const c=countsById(p.id);return <button key={p.id} onClick={()=>{setActive(p.id);setInfo("");setEditCosts(false);}} style={{...card,width:"100%",textAlign:"start",cursor:"pointer",marginBottom:9,display:"block",color:"var(--bp-text)"}}>
         <div style={{display:"flex",justifyContent:"space-between",gap:8}}><strong style={{fontSize:14}}>{TYPES.find(t=>t.id===p.type)?.emoji} {p.name}</strong><span style={{fontSize:12,color:"var(--bp-muted2)"}}>{u("view")} ›</span></div>
-        <div style={{fontSize:12,color:"var(--bp-muted2)",marginTop:5}}>{p.current||"Start"} → {p.target||"Target"} · {c?.tracked||0} {u("tracked")} {c?.done?" · "+u("enteredMet"):""}</div>
+        <div style={{fontSize:12,color:"var(--bp-muted2)",marginTop:5}}>{p.current||u("start")} → {p.target||u("targetShort")} · {c?.tracked||0} {u("tracked")} {c?.done?" · "+u("enteredMet"):""}</div>
       </button>;})}
     </>}
     {chosen&&<>
@@ -124,7 +124,7 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
       </label>
       <div role="status" style={{fontSize:12,color:chosen.costsReviewed?"#5c7a6e":"#a06358",margin:"6px 0 12px",fontWeight:700}}>{u(chosen.costsReviewed?"verified":"unverified")}</div>
       {chosen.current&&chosen.target&&type.levels.length>0&&type.levels.indexOf(chosen.target)<=type.levels.indexOf(chosen.current)&&
-        <p role="alert" style={{fontSize:12,color:"#a06358"}}>Select a target level higher than your current level.</p>}
+        <p role="alert" style={{fontSize:12,color:"#a06358"}}>{u("levelError")}</p>}
       {chosen.type==="heroes"&&starIndex(chosen.current)>=0&&starIndex(chosen.target)>=0&&
         <div style={{...card,marginTop:10,background:"var(--bp-bg)",color:"var(--bp-text)"}}>
           <strong style={{fontSize:14}}>{u("shard")}: {Math.max(0,HERO_SHARD_CUMULATIVE[starIndex(chosen.target)]-HERO_SHARD_CUMULATIVE[starIndex(chosen.current)]).toLocaleString()}</strong>
@@ -140,10 +140,10 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
         return <div key={r.id} style={{borderBottom:"1px solid var(--bp-border)",padding:"12px 0",color:"var(--bp-text)"}}>
           <div style={{display:"flex",justifyContent:"space-between",fontSize:13,gap:8}}><strong>{itemLabel(r.id)}</strong><span>{Math.round(pct)}%</span></div>
           <div style={{background:"var(--bp-border3)",height:7,borderRadius:10,overflow:"hidden",margin:"8px 0"}}><div style={{background:"var(--bp-accent,#78917f)",width:pct+"%",height:"100%"}}/></div>
-          <div style={{fontSize:12,color:"var(--bp-muted2)"}}>{formatAmount(r.owned)} owned / {formatAmount(r.required)} needed</div>
+          <div style={{fontSize:12,color:"var(--bp-muted2)"}}>{formatAmount(r.owned)} {u("balance")} / {formatAmount(r.required)} {u("need")}</div>
           <div style={{fontSize:12,fontWeight:700,color:r.remaining?"#a06358":"#5c7a6e",marginTop:3}}>{r.remaining?formatAmount(r.remaining)+" "+u("missing"):u("met")}</div>
         {duplicatedResources.has(r.id)&&<div style={{fontSize:11,color:"#a06358",marginTop:3}}>{u("usedElsewhere")}</div>}
-          {items.some(it=>it.id===r.id)&&<button style={{...btn,minHeight:34,marginTop:7}} onClick={()=>onUpdateResource(r.id)}>{t("sheet.updateBackpack")}</button>}
+          {items.some(it=>it.id===r.id)&&<button style={{...btn,minHeight:34,marginTop:7}} onClick={()=>onUpdateResource(r.id)}>{u("updateInventory")}</button>}
         </div>;
       })}
       {!countsById(chosen.id)?.tracked&&<p style={{fontSize:13,color:"var(--bp-muted2)"}}>{u("noCosts")}</p>}
@@ -151,7 +151,7 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
       <p style={{fontSize:12,color:"var(--bp-muted2)",lineHeight:1.5}}>{u("warning")}</p>
       {editCosts&&<div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:9,marginTop:14}}>
         {[...options,...extraCosts].map(id=><label key={id} style={{fontSize:12,color:"var(--bp-muted2)"}}>{itemLabel(id)}
-          <input style={{...input,marginTop:5}} value={chosen.requirements?.[id]||""} placeholder="Cost, e.g. 1.2M" onChange={e=>patchCost(chosen.id,id,e.target.value)} inputMode="decimal"/>
+          <input style={{...input,marginTop:5}} value={chosen.requirements?.[id]||""} placeholder={u("inputHint")} onChange={e=>patchCost(chosen.id,id,e.target.value)} inputMode="decimal"/>
         </label>)}
         <label style={{fontSize:12,color:"var(--bp-muted2)"}}>{u("extra")}
           <select style={{...input,marginTop:5}} value="" onChange={e=>{if(e.target.value)patchCost(chosen.id,e.target.value,"");}}>
@@ -164,8 +164,8 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
         <textarea value={pasted} onChange={e=>setPasted(e.target.value)} rows={4} style={{...input,height:"auto"}} placeholder={"Fire Crystals,3000\nCoal,400M"}/>
         <button style={{...btn,marginTop:8}} onClick={importRows}>{u("importButton")}</button>
       </details>
-      <label style={{display:"block",fontSize:12,color:"var(--bp-muted2)",marginTop:15}}>{u("source")}<input style={{...input,marginTop:5}} value={chosen.source||""} onChange={e=>patch(chosen.id,{source:trim(e.target.value,500)})} placeholder="Calculator or in-game source"/></label>
-      <label style={{display:"block",fontSize:12,color:"var(--bp-muted2)",marginTop:12}}>{u("notes")}<textarea style={{...input,marginTop:5,height:72,resize:"vertical"}} value={chosen.notes||""} onChange={e=>patch(chosen.id,{notes:trim(e.target.value,2000)})} placeholder="Required Embassy level, hero name, troop type…"/></label>
+      <label style={{display:"block",fontSize:12,color:"var(--bp-muted2)",marginTop:15}}>{u("source")}<input style={{...input,marginTop:5}} value={chosen.source||""} onChange={e=>patch(chosen.id,{source:trim(e.target.value,500)})} placeholder={u("sourceHint")}/></label>
+      <label style={{display:"block",fontSize:12,color:"var(--bp-muted2)",marginTop:12}}>{u("notes")}<textarea style={{...input,marginTop:5,height:72,resize:"vertical"}} value={chosen.notes||""} onChange={e=>patch(chosen.id,{notes:trim(e.target.value,2000)})} placeholder={u("notesHint")}/></label>
       <p style={{fontSize:11,color:"var(--bp-muted2)",lineHeight:1.5}}>{u("limits")}</p>
       {confirmDelete?<div style={{...card,marginTop:12,borderColor:"#a06358"}}>
         <p style={{fontSize:13,color:"var(--bp-text)"}}>{u("deleteQuestion")}</p>
