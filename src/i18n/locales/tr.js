@@ -310,6 +310,18 @@ export default {
     backpack: "Çantan yükleniyor…",
   },
   upgradePlanner: {
+    "filter": "Hedefleri filtrele",
+    "allCategories": "Tüm kategoriler",
+    "noCategoryGoals": "Bu kategoride hedef yok.",
+    "levelError": "Mevcut seviyeden yüksek bir hedef seçin.",
+    "updateInventory": "Çantayı güncelle",
+    "balance": "mevcut",
+    "need": "gerekli",
+    "inputHint": "Örn. 1.2M",
+    "sourceHint": "Oyun içi veya hesaplayıcı kaynağı",
+    "notesHint": "Bina seviyesi, kahraman, birlik türü…",
+    "start": "Başlangıç",
+    "targetShort": "Hedef",
     types: {
       "furnace": {
         "name": "Fırın (FC1–FC10)",
