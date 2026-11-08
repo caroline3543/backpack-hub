@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { GAME_COSTS } from "./preloadedGameCosts.js";
+import { HELIOS_REFERENCE } from "./wosToolsResearchReference.js";
 import { formatAmount } from "./backpackConstants.js";
 
 const CARD={border:"1px solid var(--bp-border2)",borderRadius:16,background:"var(--bp-card)",padding:14};
@@ -47,7 +48,17 @@ export function calculatePreloadedCosts({category,selected,from,to,quantity=1}){
     const a=Number(from),b=Number(to);
     return {costs:{},referenceShards:Number.isInteger(a)&&Number.isInteger(b)&&a>=0&&b<=5&&b>a?heroStarTotals[b]-heroStarTotals[a]:null,prerequisites:[],valid:b>a};
   }
-  if(category==="helios")return {costs:{},prerequisites:[],valid:false,reason:"T11/T12 research costs are not part of this preloaded calculator yet."};
+  if(category==="helios"){
+    const track=HELIOS_REFERENCE.find(x=>x.id===selected);
+    const start=Number(from),end=Number(to);
+    if(!track||!Number.isInteger(start)||!Number.isInteger(end)||start<0||end>track.levels.length||end<=start)
+      return {costs:{},prerequisites:[],valid:false,reason:"Choose valid research levels."};
+    const steps=track.levels.filter(x=>x.level>start&&x.level<=end);
+    return {costs:combine(steps.map(x=>x.cost)),
+      prerequisites:[...new Set(steps.map(x=>x.requirements))],
+      seconds:steps.reduce((sum,x)=>sum+x.seconds,0),
+      valid:true,source:"WoS Tools public War Academy wiki; manually checked subset"};
+  }
   if(category==="troops"){
     const troop=GAME_COSTS.troops.find(x=>x.id===selected);
     const tier=troop?.tiers.find(x=>String(x.tier)===String(to));
@@ -98,6 +109,7 @@ export default function UpgradeCalculator({userId,items,balances,onUpdateResourc
  const [building,setBuilding]=useState("furnace");
  const [pet,setPet]=useState(GAME_COSTS.pets[0]?.id||"");
  const [troop,setTroop]=useState("infantry");
+ const [heliosTrack,setHeliosTrack]=useState("flame-squad");
  const [start,setStart]=useState("");
  const [target,setTarget]=useState("");
  const [quantity,setQuantity]=useState(10000);
@@ -105,8 +117,8 @@ export default function UpgradeCalculator({userId,items,balances,onUpdateResourc
  const [sourceExpanded,setSourceExpanded]=useState(false);
 
 
- const selectorData=category==="buildings"?GAME_COSTS.buildings:category==="pets"?GAME_COSTS.pets:category==="troops"?GAME_COSTS.troops:[];
- const selector=category==="buildings"?building:category==="pets"?pet:troop;
+ const selectorData=category==="buildings"?GAME_COSTS.buildings:category==="pets"?GAME_COSTS.pets:category==="troops"?GAME_COSTS.troops:category==="helios"?HELIOS_REFERENCE:[];
+ const selector=category==="buildings"?building:category==="pets"?pet:category==="helios"?heliosTrack:troop;
  const active=selectorData.find(x=>x.id===selector);
  const rowOptions=useMemo(()=>{
    if(category==="buildings")return (active?.levels||[]).map(x=>({value:x.label,label:FCName(x.label)}));
@@ -115,6 +127,7 @@ export default function UpgradeCalculator({userId,items,balances,onUpdateResourc
    if(category==="charms")return GAME_COSTS.charms.map(x=>({value:x.id,label:x.name}));
    if(category==="heroes")return Array.from({length:6},(_,i)=>({value:String(i),label:i+" stars"}));
    if(category==="troops")return active?.tiers.map(x=>({value:String(x.tier),label:"Tier "+x.tier}))||[];
+   if(category==="helios")return Array.from({length:(active?.levels.length||0)+1},(_,i)=>({value:String(i),label:"Level "+i}));
    return [];
  },[category,active]);
  const from=rowOptions.some(x=>x.value===start)?start:rowOptions[0]?.value||"";
@@ -132,18 +145,18 @@ export default function UpgradeCalculator({userId,items,balances,onUpdateResourc
    const id="calc-"+Date.now()+"-"+Math.random().toString(36).slice(2,7);
    const selectorName=active?.name||(category==="gear"?"Chief Gear":category==="charms"?"Chief Charms":category==="heroes"?"Hero Shards":category);
    const title=selectorName+" · "+(category==="troops"?"T"+to+" × "+quantity:category==="gear"||category==="charms"?from+" → "+to+" ("+gearSlot+" pieces)":from+" → "+to);
-   setGoals(previous=>[{id,title,category,building,pet,troop,start:from,target:to,quantity,gearSlot},...previous]);
+   setGoals(previous=>[{id,title,category,building,pet,troop,heliosTrack,start:from,target:to,quantity,gearSlot},...previous]);
    setGoalFeedback("Upgrade goal saved in this backpack profile.");
  };
  const restoreGoal=g=>{
-   setCategory(g.category);setBuilding(g.building||"furnace");setPet(g.pet||GAME_COSTS.pets[0].id);setTroop(g.troop||"infantry");
+   setCategory(g.category);setBuilding(g.building||"furnace");setPet(g.pet||GAME_COSTS.pets[0].id);setTroop(g.troop||"infantry");setHeliosTrack(g.heliosTrack||"flame-squad");
    setStart(g.start||"");setTarget(g.target||"");setQuantity(g.quantity||10000);setGearSlot(g.gearSlot||"1");
    setGoalFeedback("");setShowSaved(false);
  };
 
  return <div style={{display:"grid",gap:15}}>
   <div style={{...CARD,padding:16}}>
-    <div style={{fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1.5,color:"var(--bp-muted2)"}}>Game data included • No API key needed</div>
+    <div style={{fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1.5,color:"var(--bp-muted2)"}}>Preloaded reference data · No API key needed</div>
     <h2 style={{fontFamily:"Fraunces,serif",fontSize:25,margin:"7px 0",color:"var(--bp-text)"}}>Upgrade Calculator</h2>
     <p style={{fontSize:13,color:"var(--bp-muted2)",lineHeight:1.5,margin:"0 0 13px"}}>Choose an upgrade. Materials are filled in automatically and compared with your backpack. Costs come from a community-maintained dataset and may differ from your game.</p>
     <SelectField title="Calculator" value={category} onChange={switchCat} options={CATEGORY.map(([value,label,emoji])=>({value,label:emoji+" "+label}))}/>
@@ -155,14 +168,14 @@ export default function UpgradeCalculator({userId,items,balances,onUpdateResourc
       </div>)}
       <p style={{fontSize:11,color:"var(--bp-muted2)"}}>Goals are saved on this device and are separate for each backpack.</p>
     </details>
-    {(category==="buildings"||category==="pets"||category==="troops")&&
-      <div style={{marginTop:12}}><SelectField title={category==="buildings"?"Building":category==="pets"?"Pet":"Troop type"} value={selector} onChange={v=>{if(category==="buildings")setBuilding(v);else if(category==="pets")setPet(v);else setTroop(v);setStart("");setTarget("");}}
+    {(category==="buildings"||category==="pets"||category==="troops"||category==="helios")&&
+      <div style={{marginTop:12}}><SelectField title={category==="buildings"?"Building":category==="pets"?"Pet":category==="helios"?"Research track":"Troop type"} value={selector} onChange={v=>{if(category==="buildings")setBuilding(v);else if(category==="pets")setPet(v);else if(category==="helios")setHeliosTrack(v);else setTroop(v);setStart("");setTarget("");}}
       options={selectorData.map(x=>({value:x.id,label:x.name}))}/></div>}
     {(category==="gear"||category==="charms")&&<div style={{marginTop:12}}>
       <SelectField title={category==="gear"?"Equipment count":"Charm count"} value={gearSlot} onChange={setGearSlot} options={asOptions([1,2,3,4,5,6].map(n=>({value:String(n),label:n+" "+(category==="gear"?"gear pieces":"charms")})))}/>
       <p style={{fontSize:12,color:"var(--bp-muted2)"}}>Each piece uses the same published upgrade progression. Choose how many identical upgrades to plan.</p>
     </div>}
-    {category!=="helios"&&<div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:10,marginTop:12}}>
+    {<div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:10,marginTop:12}}>
       {category==="troops"? <SelectField title="Training tier" value={to} onChange={setTarget} options={rowOptions}/> :
       <><SelectField title="Current level" value={from} onChange={setStart} options={rowOptions}/><SelectField title="Target level" value={to} onChange={setTarget} options={rowOptions}/></>}
     </div>}
@@ -170,11 +183,7 @@ export default function UpgradeCalculator({userId,items,balances,onUpdateResourc
       <input type="number" min="1" max="100000000" step="1" value={quantity} onChange={e=>setQuantity(e.target.value)} style={{...INPUT,marginTop:6}}/>
     </label>}
   </div>
-  {category==="helios"?<div style={CARD}>
-    <strong style={{color:"var(--bp-text)"}}>Helios research: data validation required</strong>
-    <p style={{fontSize:13,color:"var(--bp-muted2)",lineHeight:1.5}}>Fire Crystal Shard research is different from training T11/T12 troops. The dataset contains a research table, but this calculator has not yet mapped its prerequisite nodes safely. No figures are fabricated.</p>
-  </div>:
-  <div style={{...CARD,padding:16}}>
+    <div style={{...CARD,padding:16}}>
    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}>
      <div><div style={{fontSize:11,textTransform:"uppercase",letterSpacing:1.5,color:"var(--bp-muted2)",fontWeight:700}}>Calculated requirements</div>
      <h3 style={{fontSize:18,margin:"5px 0",color:"var(--bp-text)"}}>{calculated.valid?"Total upgrade materials":"Select a higher target"}</h3></div>
@@ -188,6 +197,7 @@ export default function UpgradeCalculator({userId,items,balances,onUpdateResourc
      <button style={{...BUTTON,flex:1,background:"var(--bp-accent,#78917f)",color:"white"}} onClick={saveGoal}>Save upgrade goal</button>
    </div>}
    {goalFeedback&&<p role="status" style={{fontSize:12,color:"var(--bp-muted2)"}}>{goalFeedback}</p>}
+   {category==="helios"&&<p style={{fontSize:12,color:"var(--bp-muted2)",lineHeight:1.5}}>Public wiki reference: T11 Infantry Flame Squad levels 1–5 only. Other Helios and T12 tracks remain unavailable until their costs and permission to reuse them are verified.</p>}
    {calculated.valid&&(category==="gear"||category==="charms")&&<p style={{fontSize:12,color:"var(--bp-muted2)"}}>Totals below are for {Number(gearSlot)||1} matching pieces.</p>}
    {calculated.valid&&requirements.length===0&&category!=="heroes"&&<p style={{fontSize:13,color:"var(--bp-muted2)"}}>This step has no resource costs recorded in the dataset.</p>}
    {calculated.valid&&requirements.length>0&&<>
@@ -212,14 +222,14 @@ export default function UpgradeCalculator({userId,items,balances,onUpdateResourc
         </div>;
       })}
    </>}
-   {calculated.valid&&category==="troops"&&<p style={{fontSize:12,color:"var(--bp-muted2)"}}>Base training time: {Math.ceil((calculated.seconds||0)/60).toLocaleString()} minutes before buffs.</p>}
+   {calculated.valid&&(category==="troops"||category==="helios")&&<p style={{fontSize:12,color:"var(--bp-muted2)"}}>Base {category==="helios"?"research":"training"} time: {Math.ceil((calculated.seconds||0)/60).toLocaleString()} minutes before buffs.</p>}
    {calculated.valid&&calculated.prerequisites?.length>0&&<details style={{marginTop:14}}>
       <summary style={{fontSize:13,color:"var(--bp-text)",fontWeight:700,cursor:"pointer"}}>Building prerequisites ({calculated.prerequisites.length})</summary>
       <p style={{fontSize:12,color:"#a06358",lineHeight:1.5}}>These requirements are preloaded, but their extra construction costs are not included without knowing the current levels of the other buildings.</p>
       <ul style={{fontSize:12,color:"var(--bp-muted2)",paddingInlineStart:20,lineHeight:1.7}}>{calculated.prerequisites.map((x,i)=><li key={i}>{x}</li>)}</ul>
    </details>}
    <button style={{...BUTTON,marginTop:14,width:"100%"}} onClick={()=>setSourceExpanded(x=>!x)}>Data source and accuracy {sourceExpanded?"−":"+"}</button>
-   {sourceExpanded&&<p style={{fontSize:12,lineHeight:1.6,color:"var(--bp-muted2)"}}>Preloaded community dataset v{GAME_COSTS.version} from <a href="https://github.com/chiefpansancolt/whiteout-survival-data" target="_blank" rel="noreferrer">Whiteout Survival Data</a> (MIT licence). Published values are a work in progress. Validate important upgrades in-game. Resource totals do not reserve or spend backpack items.</p>}
-  </div>}
+   {sourceExpanded&&<p style={{fontSize:12,lineHeight:1.6,color:"var(--bp-muted2)"}}>{category==="helios"&&<>T11 Infantry Flame Squad values were transcribed from the <a href="https://wostools.net/wiki/buildings/war-academy" target="_blank" rel="noreferrer">public WoS Tools War Academy wiki</a>. Only this track is included, and it is not a live API connection. </>}Preloaded community dataset v{GAME_COSTS.version} from <a href="https://github.com/chiefpansancolt/whiteout-survival-data" target="_blank" rel="noreferrer">Whiteout Survival Data</a> (MIT licence). Published values are a work in progress. Validate important upgrades in-game. Resource totals do not reserve or spend backpack items.</p>}
+  </div>
  </div>;
 }
