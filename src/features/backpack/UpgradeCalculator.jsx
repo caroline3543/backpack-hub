@@ -206,9 +206,9 @@ export default function UpgradeCalculator({userId,items,balances,onUpdateResourc
       <SelectField title={category==="gear"?"Equipment count":"Charm count"} value={gearSlot} onChange={setGearSlot} options={asOptions([1,2,3,4,5,6].map(n=>({value:String(n),label:n+" "+(category==="gear"?"gear pieces":"charms")})))}/>
       <p style={{fontSize:12,color:"var(--bp-muted2)"}}>Each piece uses the same published upgrade progression. Choose how many identical upgrades to plan.</p>
     </div>}
-    <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:10,marginTop:12}}>
+    <div style={{display:"grid",gridTemplateColumns:category==="gear"||category==="charms"?"minmax(0,1fr)":"repeat(2,minmax(0,1fr))",gap:10,marginTop:12}}>
       {category==="troops"? <SelectField title="Training tier" value={to} onChange={setTarget} options={rowOptions} placeholder="Choose troop tier"/> :
-      <><SelectField title="Current level" value={from} onChange={setStart} options={rowOptions}/><SelectField title="Target level" value={to} onChange={setTarget} options={rowOptions.filter(o=>rowOptions.findIndex(x=>x.value===o.value)>rowOptions.findIndex(x=>x.value===from))} placeholder="Choose target level"/></>}
+      <><SelectField title="Current level" value={from} onChange={v=>{setStart(v);setTarget("");}} options={rowOptions}/><SelectField title="Target level" value={to} onChange={setTarget} options={rowOptions.filter(o=>rowOptions.findIndex(x=>x.value===o.value)>rowOptions.findIndex(x=>x.value===from))} placeholder="Choose target level"/></>}
     </div>
     {category==="troops"&&<label style={{display:"block",fontSize:12,color:"var(--bp-muted2)",marginTop:12,fontWeight:650}}>Troops to train
       <input type="number" min="1" max="100000000" step="1" value={quantity} onChange={e=>setQuantity(e.target.value)} style={{...INPUT,marginTop:6}}/>
