@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { formatAmount } from "./backpackConstants.js";
+import { useI18n } from "../../i18n/I18nContext.jsx";
 
 // Resource keys are the existing Backpack item IDs. Never store separate balances.
 const TYPES = [
@@ -35,6 +36,8 @@ const trim=(s,max=140)=>String(s??"").slice(0,max);
 const newPlan=type=>({id:"plan-"+Date.now()+"-"+Math.random().toString(36).slice(2,7),type,name:TYPES.find(t=>t.id===type)?.name||"Upgrade",current:"",target:"",requirements:{},notes:"",source:"",createdAt:new Date().toISOString()});
 
 export default function UpgradePlanner({userId,items,balances,onUpdateResource}){
+  const {t,tItem}=useI18n();
+  const u=key=>t("upgradePlanner."+key);
   const [plans,setPlans]=useState(()=>read(userId));
   const [category,setCategory]=useState("furnace");
   const [active,setActive]=useState(null);
@@ -69,7 +72,7 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
     return Object.entries(totals).map(([id,total])=>({id,total,have:Math.max(0,Number(balances[id]||0)),shortage:Math.max(0,total-Math.max(0,Number(balances[id]||0)))})).filter(row=>duplicatedResources.has(row.id));
   },[plans,balances,duplicatedResources]);
   const patch=(id,updates)=>setPlans(ps=>ps.map(p=>p.id===id?{...p,...updates}:p));
-  const patchCost=(id,itemId,value)=>setPlans(ps=>ps.map(p=>p.id===id?{...p,requirements:{...p.requirements,[itemId]:value}}:p));
+  const patchCost=(id,itemId,value)=>setPlans(ps=>ps.map(p=>p.id===id?{...p,costsReviewed:false,requirements:{...p.requirements,[itemId]:value}}:p));
   const add=()=>{
     const p=newPlan(category);setPlans(ps=>[...ps,p]);setActive(p.id);setEditCosts(true);setInfo("");
   };
@@ -89,53 +92,58 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
       const n=parts.slice(1).map(parseNumber).find(x=>x!==null);
       if(itemId&&n!==undefined){requirements[itemId]=String(n);rows++;}
     });
-    if(rows){patch(chosen.id,{requirements,source:chosen.source||"Manual import; verify against original calculator"});setInfo(rows+" rows imported. Verify totals and prerequisite buildings.");setEditCosts(false);}
+    if(rows){patch(chosen.id,{requirements,costsReviewed:false,source:chosen.source||"Manual import; verify against original calculator"});setInfo(rows+" "+u("importSuccess"));setEditCosts(false);}
     else setInfo("No matching resources. Use lines like Fire Crystals,3000 or Coal,400M.");
   };
   const deletePlan=id=>{setPlans(ps=>ps.filter(p=>p.id!==id));setActive(null);setConfirmDelete(false);};
   const allIds=new Set([...items.map(i=>i.id),...TYPES.flatMap(t=>t.resources)]);
-  const itemLabel=id=>items.find(i=>i.id===id)?.name||id.replace(/-/g," ");
+  const itemLabel=id=>tItem(id,items.find(i=>i.id===id)?.name||id.replace(/-/g," "));
   const options=(type?.resources||[]).filter(id=>allIds.has(id));
   const extraCosts=chosen?Object.keys(chosen.requirements||{}).filter(id=>!options.includes(id)):[];
   return <section style={{...card}}>
-    <div style={{fontSize:11,fontWeight:700,letterSpacing:2,color:"var(--bp-muted2)",textTransform:"uppercase"}}>Connected to your backpack</div>
-    <h2 style={{fontSize:24,margin:"6px 0",fontFamily:"Fraunces,serif",color:"var(--bp-text)"}}>Upgrade Planner</h2>
-    <p style={{fontSize:13,lineHeight:1.55,color:"var(--bp-muted2)"}}>Plan upgrades across the game. All goals read your existing inventory. No materials are automatically spent or reserved.</p>
+    <div style={{fontSize:11,fontWeight:700,letterSpacing:2,color:"var(--bp-muted2)",textTransform:"uppercase"}}>{u("eyebrow")}</div>
+    <h2 style={{fontSize:24,margin:"6px 0",fontFamily:"Fraunces,serif",color:"var(--bp-text)"}}>{u("title")}</h2>
+    <p style={{fontSize:13,lineHeight:1.55,color:"var(--bp-muted2)"}}>{u("intro")}</p>
     {!chosen&&<>
-      <label style={{display:"block",fontSize:13,fontWeight:700,color:"var(--bp-text)",margin:"15px 0 8px"}}>New goal type</label>
+      <label style={{display:"block",fontSize:13,fontWeight:700,color:"var(--bp-text)",margin:"15px 0 8px"}}>{u("newType")}</label>
       <select value={category} onChange={e=>setCategory(e.target.value)} style={input}>{TYPES.map(t=><option key={t.id} value={t.id}>{t.emoji} {t.name}</option>)}</select>
-      <button onClick={add} style={{...btn,width:"100%",marginTop:10,background:"var(--bp-accent,#78917f)",color:"white"}}>+ Create upgrade goal</button>
-      <h3 style={{fontSize:15,color:"var(--bp-text)",margin:"20px 0 12px"}}>Saved goals ({plans.length})</h3>
+      <button onClick={add} style={{...btn,width:"100%",marginTop:10,background:"var(--bp-accent,#78917f)",color:"white"}}>{u("create")}</button>
+      <h3 style={{fontSize:15,color:"var(--bp-text)",margin:"20px 0 12px"}}>{u("saved")} ({plans.length})</h3>
       {totalCommitments.length>0&&<div role="note" style={{...card,marginBottom:12,borderColor:"#bf9156"}}>
-        <strong style={{fontSize:13,color:"var(--bp-text)"}}>Shared resources across goals</strong>
-        <p style={{fontSize:12,color:"var(--bp-muted2)",lineHeight:1.5}}>These totals assume every goal is pursued. Resources are NOT reserved or spent, so a single balance may appear in more than one goal.</p>
-        {totalCommitments.map(r=><div key={r.id} style={{fontSize:12,color:"var(--bp-text)",margin:"6px 0"}}>{itemLabel(r.id)}: {formatAmount(r.total)} combined · {formatAmount(r.have)} owned · {formatAmount(r.shortage)} short</div>)}
+        <strong style={{fontSize:13,color:"var(--bp-text)"}}>{u("shared")}</strong>
+        <p style={{fontSize:12,color:"var(--bp-muted2)",lineHeight:1.5}}>{u("sharedHelp")}</p>
+        {totalCommitments.map(r=><div key={r.id} style={{fontSize:12,color:"var(--bp-text)",margin:"6px 0"}}>{itemLabel(r.id)}: {formatAmount(r.total)} {u("combined")} · {formatAmount(r.have)} {u("owned")} · {formatAmount(r.shortage)} {u("short")}</div>)}
       </div>}
-      {plans.length===0&&<p style={{fontSize:13,color:"var(--bp-muted2)"}}>No upgrade goals yet. Your existing resource balances are ready to use.</p>}
+      {plans.length===0&&<p style={{fontSize:13,color:"var(--bp-muted2)"}}>{u("empty")}</p>}
       {plans.map(p=>{const c=countsById(p.id);return <button key={p.id} onClick={()=>{setActive(p.id);setInfo("");setEditCosts(false);}} style={{...card,width:"100%",textAlign:"start",cursor:"pointer",marginBottom:9,display:"block",color:"var(--bp-text)"}}>
-        <div style={{display:"flex",justifyContent:"space-between",gap:8}}><strong style={{fontSize:14}}>{TYPES.find(t=>t.id===p.type)?.emoji} {p.name}</strong><span style={{fontSize:12,color:"var(--bp-muted2)"}}>View ›</span></div>
-        <div style={{fontSize:12,color:"var(--bp-muted2)",marginTop:5}}>{p.current||"Start"} → {p.target||"Target"} · {c?.tracked||0} resource targets {c?.done?"· Entered material targets met":""}</div>
+        <div style={{display:"flex",justifyContent:"space-between",gap:8}}><strong style={{fontSize:14}}>{TYPES.find(t=>t.id===p.type)?.emoji} {p.name}</strong><span style={{fontSize:12,color:"var(--bp-muted2)"}}>{u("view")} ›</span></div>
+        <div style={{fontSize:12,color:"var(--bp-muted2)",marginTop:5}}>{p.current||"Start"} → {p.target||"Target"} · {c?.tracked||0} {u("tracked")} {c?.done?" · "+u("enteredMet"):""}</div>
       </button>;})}
     </>}
     {chosen&&<>
-      <button onClick={()=>{setActive(null);setInfo("");}} style={{...btn,margin:"10px 0"}}>← All goals</button>
+      <button onClick={()=>{setActive(null);setInfo("");}} style={{...btn,margin:"10px 0"}}>← {u("all")}</button>
       <div style={{fontSize:13,fontWeight:700,color:"var(--bp-text)",margin:"8px 0"}}>{type.emoji} {type.name}</div>
-      <label style={{display:"block",fontSize:12,color:"var(--bp-muted2)"}}>Goal name<input style={{...input,marginTop:5}} value={chosen.name} onChange={e=>patch(chosen.id,{name:trim(e.target.value)})} placeholder="e.g. FC7 Furnace + Embassy"/></label>
+      <label style={{display:"block",fontSize:12,color:"var(--bp-muted2)"}}>{u("name")}<input style={{...input,marginTop:5}} value={chosen.name} onChange={e=>patch(chosen.id,{name:trim(e.target.value)})} placeholder="e.g. FC7 Furnace + Embassy"/></label>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:10}}>
-        {["current","target"].map(field=><label key={field} style={{fontSize:12,color:"var(--bp-muted2)"}}>{field==="current"?"Current":"Target"}
-          {type.levels.length>0?<select value={chosen[field]} onChange={e=>patch(chosen.id,{[field]:e.target.value})} style={{...input,marginTop:5}}><option value="">Select</option>{type.levels.map(l=><option key={l} value={l}>{l}</option>)}</select>:<input style={{...input,marginTop:5}} value={chosen[field]} placeholder="Level / tier" onChange={e=>patch(chosen.id,{[field]:trim(e.target.value,50)})}/>}
+        {["current","target"].map(field=><label key={field} style={{fontSize:12,color:"var(--bp-muted2)"}}>{field==="current"?u("current"):u("target")}
+          {type.levels.length>0?<select value={chosen[field]} onChange={e=>patch(chosen.id,{[field]:e.target.value})} style={{...input,marginTop:5}}><option value="">{u("select")}</option>{type.levels.map(l=><option key={l} value={l}>{l}</option>)}</select>:<input style={{...input,marginTop:5}} value={chosen[field]} placeholder="Level / tier" onChange={e=>patch(chosen.id,{[field]:trim(e.target.value,50)})}/>}
         </label>)}
       </div>
       <p style={{fontSize:12,lineHeight:1.5,color:"var(--bp-muted2)"}}>{type.hint}</p>
+      <label style={{display:"flex",alignItems:"flex-start",gap:10,margin:"10px 0",fontSize:13,color:"var(--bp-text)",lineHeight:1.4}}>
+        <input type="checkbox" checked={!!chosen.costsReviewed} onChange={e=>patch(chosen.id,{costsReviewed:e.target.checked})} style={{width:20,height:20,flexShrink:0}}/>
+        <span>{u("verify")}</span>
+      </label>
+      <div role="status" style={{fontSize:12,color:chosen.costsReviewed?"#5c7a6e":"#a06358",margin:"6px 0 12px",fontWeight:700}}>{u(chosen.costsReviewed?"verified":"unverified")}</div>
       {chosen.type==="heroes"&&starIndex(chosen.current)>=0&&starIndex(chosen.target)>=0&&
         <div style={{...card,marginTop:10,background:"var(--bp-bg)",color:"var(--bp-text)"}}>
-          <strong style={{fontSize:14}}>Reference full-star ascension shards: {Math.max(0,HERO_SHARD_CUMULATIVE[starIndex(chosen.target)]-HERO_SHARD_CUMULATIVE[starIndex(chosen.current)]).toLocaleString()}</strong>
-          <p style={{fontSize:12,lineHeight:1.5,color:"var(--bp-muted2)",margin:"6px 0 0"}}>Reference milestone values must be checked against the hero and game version. Unlock and partial stars are excluded; hero-specific shards are not interchangeable with General Hero Shards.</p>
+          <strong style={{fontSize:14}}>{u("shard")}: {Math.max(0,HERO_SHARD_CUMULATIVE[starIndex(chosen.target)]-HERO_SHARD_CUMULATIVE[starIndex(chosen.current)]).toLocaleString()}</strong>
+          <p style={{fontSize:12,lineHeight:1.5,color:"var(--bp-muted2)",margin:"6px 0 0"}}>{u("shardHelp")}</p>
         </div>
       }
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginTop:12}}>
-        <strong style={{fontSize:14,color:"var(--bp-text)"}}>Required resources</strong>
-        <button style={btn} onClick={()=>setEditCosts(v=>!v)}>{editCosts?"Done":"Edit amounts"}</button>
+        <strong style={{fontSize:14,color:"var(--bp-text)"}}>{u("required")}</strong>
+        <button style={btn} onClick={()=>setEditCosts(v=>!v)}>{editCosts?u("done"):u("edit")}</button>
       </div>
       {countsById(chosen.id)?.rows.map(r=>{
         const pct=r.required===0?100:Math.min(100,100*r.owned/r.required);
@@ -143,35 +151,35 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
           <div style={{display:"flex",justifyContent:"space-between",fontSize:13,gap:8}}><strong>{itemLabel(r.id)}</strong><span>{Math.round(pct)}%</span></div>
           <div style={{background:"var(--bp-border3)",height:7,borderRadius:10,overflow:"hidden",margin:"8px 0"}}><div style={{background:"var(--bp-accent,#78917f)",width:pct+"%",height:"100%"}}/></div>
           <div style={{fontSize:12,color:"var(--bp-muted2)"}}>{formatAmount(r.owned)} owned / {formatAmount(r.required)} needed</div>
-          <div style={{fontSize:12,fontWeight:700,color:r.remaining?"#a06358":"#5c7a6e",marginTop:3}}>{r.remaining?formatAmount(r.remaining)+" missing":"Entered target met"}</div>
-        {duplicatedResources.has(r.id)&&<div style={{fontSize:11,color:"#a06358",marginTop:3}}>Also used by another goal. Check combined requirements.</div>}
+          <div style={{fontSize:12,fontWeight:700,color:r.remaining?"#a06358":"#5c7a6e",marginTop:3}}>{r.remaining?formatAmount(r.remaining)+" "+u("missing"):u("met")}</div>
+        {duplicatedResources.has(r.id)&&<div style={{fontSize:11,color:"#a06358",marginTop:3}}>{u("usedElsewhere")}</div>}
           {items.some(it=>it.id===r.id)&&<button style={{...btn,minHeight:34,marginTop:7}} onClick={()=>onUpdateResource(r.id)}>Update backpack</button>}
         </div>;
       })}
-      {!countsById(chosen.id)?.tracked&&<p style={{fontSize:13,color:"var(--bp-muted2)"}}>No resource costs entered. This goal cannot be assessed yet.</p>}
-      {Object.entries(chosen.requirements||{}).some(([,v])=>String(v).trim()!==""&&parseNumber(v)===null)&&<p role="alert" style={{fontSize:12,color:"#a06358"}}>Some cost amounts are invalid. Use a positive number or K/M/B suffix. Invalid amounts are excluded from progress.</p>}
-      <p style={{fontSize:12,color:"var(--bp-muted2)",lineHeight:1.5}}>Progress only reflects the amounts entered. It does not prove the upgrade is affordable until all prerequisite buildings and costs are verified.</p>
+      {!countsById(chosen.id)?.tracked&&<p style={{fontSize:13,color:"var(--bp-muted2)"}}>{u("noCosts")}</p>}
+      {Object.entries(chosen.requirements||{}).some(([,v])=>String(v).trim()!==""&&parseNumber(v)===null)&&<p role="alert" style={{fontSize:12,color:"#a06358"}}>{u("invalid")}</p>}
+      <p style={{fontSize:12,color:"var(--bp-muted2)",lineHeight:1.5}}>{u("warning")}</p>
       {editCosts&&<div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:9,marginTop:14}}>
         {[...options,...extraCosts].map(id=><label key={id} style={{fontSize:12,color:"var(--bp-muted2)"}}>{itemLabel(id)}
           <input style={{...input,marginTop:5}} value={chosen.requirements?.[id]||""} placeholder="Cost, e.g. 1.2M" onChange={e=>patchCost(chosen.id,id,e.target.value)} inputMode="decimal"/>
         </label>)}
-        <label style={{fontSize:12,color:"var(--bp-muted2)"}}>Additional backpack item
+        <label style={{fontSize:12,color:"var(--bp-muted2)"}}>{u("extra")}
           <select style={{...input,marginTop:5}} value="" onChange={e=>{if(e.target.value)patchCost(chosen.id,e.target.value,"");}}>
-            <option value="">Choose item…</option>{items.filter(it=>!options.includes(it.id)&&!extraCosts.includes(it.id)).map(it=><option key={it.id} value={it.id}>{it.name}</option>)}
+            <option value="">{u("choose")}…</option>{items.filter(it=>!options.includes(it.id)&&!extraCosts.includes(it.id)).map(it=><option key={it.id} value={it.id}>{it.name}</option>)}
           </select>
         </label>
       </div>}
-      <details style={{marginTop:15}}><summary style={{fontSize:13,fontWeight:700,color:"var(--bp-text)",cursor:"pointer"}}>Import cost totals from a calculator</summary>
-        <p style={{fontSize:12,color:"var(--bp-muted2)",lineHeight:1.5}}>Paste resource names and totals, one per line: Fire Crystals,3000. This is a manual import; calculator formats may differ.</p>
+      <details style={{marginTop:15}}><summary style={{fontSize:13,fontWeight:700,color:"var(--bp-text)",cursor:"pointer"}}>{u("importTitle")}</summary>
+        <p style={{fontSize:12,color:"var(--bp-muted2)",lineHeight:1.5}}>{u("importHelp")}</p>
         <textarea value={pasted} onChange={e=>setPasted(e.target.value)} rows={4} style={{...input,height:"auto"}} placeholder={"Fire Crystals,3000\nCoal,400M"}/>
-        <button style={{...btn,marginTop:8}} onClick={importRows}>Import matching rows</button>
+        <button style={{...btn,marginTop:8}} onClick={importRows}>{u("importButton")}</button>
       </details>
-      <label style={{display:"block",fontSize:12,color:"var(--bp-muted2)",marginTop:15}}>Cost source / reference URL<input style={{...input,marginTop:5}} value={chosen.source||""} onChange={e=>patch(chosen.id,{source:trim(e.target.value,500)})} placeholder="Calculator or in-game source"/></label>
-      <label style={{display:"block",fontSize:12,color:"var(--bp-muted2)",marginTop:12}}>Notes & prerequisites<textarea style={{...input,marginTop:5,height:72,resize:"vertical"}} value={chosen.notes||""} onChange={e=>patch(chosen.id,{notes:trim(e.target.value,2000)})} placeholder="Required Embassy level, hero name, troop type…"/></label>
-      <p style={{fontSize:11,color:"var(--bp-muted2)",lineHeight:1.5}}>Requirements are user-entered, not automatically verified. Material totals aren't deducted when a goal is completed. Multiple goals can count the same resources.</p>
+      <label style={{display:"block",fontSize:12,color:"var(--bp-muted2)",marginTop:15}}>{u("source")}<input style={{...input,marginTop:5}} value={chosen.source||""} onChange={e=>patch(chosen.id,{source:trim(e.target.value,500)})} placeholder="Calculator or in-game source"/></label>
+      <label style={{display:"block",fontSize:12,color:"var(--bp-muted2)",marginTop:12}}>{u("notes")}<textarea style={{...input,marginTop:5,height:72,resize:"vertical"}} value={chosen.notes||""} onChange={e=>patch(chosen.id,{notes:trim(e.target.value,2000)})} placeholder="Required Embassy level, hero name, troop type…"/></label>
+      <p style={{fontSize:11,color:"var(--bp-muted2)",lineHeight:1.5}}>{u("limits")}</p>
       {confirmDelete?<div style={{...card,marginTop:12,borderColor:"#a06358"}}>
-        <p style={{fontSize:13,color:"var(--bp-text)"}}>Delete this goal? Your backpack balances and transactions will not change.</p>
-        <div style={{display:"flex",gap:8}}><button style={{...btn,flex:1}} onClick={()=>setConfirmDelete(false)}>Cancel</button><button style={{...btn,flex:1,background:"#a06358",color:"white"}} onClick={()=>deletePlan(chosen.id)}>Delete goal</button></div>
+        <p style={{fontSize:13,color:"var(--bp-text)"}}>{u("deleteQuestion")}</p>
+        <div style={{display:"flex",gap:8}}><button style={{...btn,flex:1}} onClick={()=>setConfirmDelete(false)}>{u("cancel")}</button><button style={{...btn,flex:1,background:"#a06358",color:"white"}} onClick={()=>deletePlan(chosen.id)}>{u("delete")}</button></div>
       </div>:<button style={{...btn,borderColor:"#a06358",color:"#a06358",marginTop:8}} onClick={()=>setConfirmDelete(true)}>Delete goal</button>}
       {info&&<p role="status" style={{fontSize:12,color:"var(--bp-muted2)"}}>{info}</p>}
     </>}
