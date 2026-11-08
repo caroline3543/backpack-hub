@@ -302,6 +302,18 @@ export default {
 
   loading: { backpack: "جارٍ تحميل حقيبتك…" },
   upgradePlanner: {
+    "filter": "تصفية الأهداف",
+    "allCategories": "كل الفئات",
+    "noCategoryGoals": "لا توجد أهداف في هذه الفئة.",
+    "levelError": "اختر مستوى مستهدفاً أعلى من الحالي.",
+    "updateInventory": "تحديث الحقيبة",
+    "balance": "المتوفر",
+    "need": "المطلوب",
+    "inputHint": "مثل 1.2M",
+    "sourceHint": "مصدر اللعبة أو الحاسبة",
+    "notesHint": "مستوى المبنى أو البطل أو القوات…",
+    "start": "البداية",
+    "targetShort": "الهدف",
     types: {
       "furnace": {
         "name": "الفرن (FC1–FC10)",
