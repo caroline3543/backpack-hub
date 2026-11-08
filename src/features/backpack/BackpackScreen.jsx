@@ -273,12 +273,12 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
 
       {/* ── Standalone calculator with built-in game costs ── */}
       {activeSection==="Calculator"&&<div ref={refs.Calculator} style={{ scrollMarginTop:16, marginTop:14 }}>
-        <UpgradeCalculator userId={userId} items={items} balances={balances} onUpdateResource={handleNavigateSheet} />
+        <UpgradeCalculator key={userId||"local-user"} userId={userId} items={items} balances={balances} onUpdateResource={handleNavigateSheet} />
       </div>}
 
       {/* ── Screenshot OCR importer ── */}
       {activeSection==="Scan"&&<div ref={refs.Scan} style={{marginTop:12}}>
-        <BackpackScanner items={items} balances={balances}
+        <BackpackScanner key={userId||"local-user"} items={items} balances={balances}
           onApply={(id,value)=>setTotal(id,value,{reason:"Reviewed screenshot OCR import"})}/>
       </div>}
 
