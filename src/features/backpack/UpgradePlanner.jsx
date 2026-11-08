@@ -41,6 +41,7 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
   const [pasted,setPasted]=useState("");
   const [info,setInfo]=useState("");
   const [editCosts,setEditCosts]=useState(false);
+  const [confirmDelete,setConfirmDelete]=useState(false);
   useEffect(()=>{try{localStorage.setItem(keyFor(userId),JSON.stringify(plans));}catch{}},[userId,plans]);
   const chosen=plans.find(p=>p.id===active);
   const type=TYPES.find(t=>t.id===(chosen?.type||category));
@@ -52,6 +53,21 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
     return {id:plan.id,rows,done:rows.length>0&&rows.every(r=>r.remaining===0),tracked:rows.length};
   }),[plans,balances]);
   const countsById=id=>counts.find(x=>x.id===id);
+  const duplicatedResources = useMemo(()=>{
+    const uses={};
+    plans.forEach(p=>Object.entries(p.requirements||{}).forEach(([id,value])=>{
+      if(parseNumber(value)!==null)(uses[id]||=new Set()).add(p.id);
+    }));
+    return new Set(Object.entries(uses).filter(([,ids])=>ids.size>1).map(([id])=>id));
+  },[plans]);
+  const totalCommitments = useMemo(()=>{
+    const totals={};
+    plans.forEach(p=>Object.entries(p.requirements||{}).forEach(([id,value])=>{
+      const n=parseNumber(value);
+      if(n!==null)totals[id]=(totals[id]||0)+n;
+    }));
+    return Object.entries(totals).map(([id,total])=>({id,total,have:Math.max(0,Number(balances[id]||0)),shortage:Math.max(0,total-Math.max(0,Number(balances[id]||0)))})).filter(row=>duplicatedResources.has(row.id));
+  },[plans,balances,duplicatedResources]);
   const patch=(id,updates)=>setPlans(ps=>ps.map(p=>p.id===id?{...p,...updates}:p));
   const patchCost=(id,itemId,value)=>setPlans(ps=>ps.map(p=>p.id===id?{...p,requirements:{...p.requirements,[itemId]:value}}:p));
   const add=()=>{
@@ -64,7 +80,7 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
     ["fire crystal","fire crystals"].forEach(s=>names.set(s,"fire-crystals"));
     ["refined fc","refined fire crystals"].forEach(s=>names.set(s,"refined-fire"));
     ["fire crystal shards","fc shards"].forEach(s=>names.set(s,"fire-crystal-shards"));
-    const extra={"coal":"coal","iron":"iron","meat":"meat","wood":"wood","charm guides":"charm-guides","charm designs":"charm-designs","design plans":"design-plans","pet food":"pet-food","general shards":"general-shards","hero shards":"general-shards"};
+    const extra={"coal":"coal","iron":"iron","meat":"meat","wood":"wood","charm guides":"charm-guides","charm designs":"charm-designs","design plans":"design-plans","pet food":"pet-food","general shards":"general-shards"};
     Object.entries(extra).forEach(([k,v])=>names.set(k,v));
     let rows=0;const requirements={...chosen.requirements};
     pasted.split(/\r?\n/).forEach(line=>{
@@ -73,10 +89,10 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
       const n=parts.slice(1).map(parseNumber).find(x=>x!==null);
       if(itemId&&n!==undefined){requirements[itemId]=String(n);rows++;}
     });
-    if(rows){patch(chosen.id,{requirements,source:chosen.source||"Manual import (unverified)"});setInfo(rows+" rows imported. Verify totals and prerequisite buildings.");setEditCosts(false);}
+    if(rows){patch(chosen.id,{requirements,source:chosen.source||"Manual import; verify against original calculator"});setInfo(rows+" rows imported. Verify totals and prerequisite buildings.");setEditCosts(false);}
     else setInfo("No matching resources. Use lines like Fire Crystals,3000 or Coal,400M.");
   };
-  const deletePlan=id=>{setPlans(ps=>ps.filter(p=>p.id!==id));setActive(null);};
+  const deletePlan=id=>{setPlans(ps=>ps.filter(p=>p.id!==id));setActive(null);setConfirmDelete(false);};
   const allIds=new Set([...items.map(i=>i.id),...TYPES.flatMap(t=>t.resources)]);
   const itemLabel=id=>items.find(i=>i.id===id)?.name||id.replace(/-/g," ");
   const options=(type?.resources||[]).filter(id=>allIds.has(id));
@@ -90,10 +106,15 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
       <select value={category} onChange={e=>setCategory(e.target.value)} style={input}>{TYPES.map(t=><option key={t.id} value={t.id}>{t.emoji} {t.name}</option>)}</select>
       <button onClick={add} style={{...btn,width:"100%",marginTop:10,background:"var(--bp-accent,#78917f)",color:"white"}}>+ Create upgrade goal</button>
       <h3 style={{fontSize:15,color:"var(--bp-text)",margin:"20px 0 12px"}}>Saved goals ({plans.length})</h3>
+      {totalCommitments.length>0&&<div role="note" style={{...card,marginBottom:12,borderColor:"#bf9156"}}>
+        <strong style={{fontSize:13,color:"var(--bp-text)"}}>Shared resources across goals</strong>
+        <p style={{fontSize:12,color:"var(--bp-muted2)",lineHeight:1.5}}>These totals assume every goal is pursued. Resources are NOT reserved or spent, so a single balance may appear in more than one goal.</p>
+        {totalCommitments.map(r=><div key={r.id} style={{fontSize:12,color:"var(--bp-text)",margin:"6px 0"}}>{itemLabel(r.id)}: {formatAmount(r.total)} combined · {formatAmount(r.have)} owned · {formatAmount(r.shortage)} short</div>)}
+      </div>}
       {plans.length===0&&<p style={{fontSize:13,color:"var(--bp-muted2)"}}>No upgrade goals yet. Your existing resource balances are ready to use.</p>}
       {plans.map(p=>{const c=countsById(p.id);return <button key={p.id} onClick={()=>{setActive(p.id);setInfo("");setEditCosts(false);}} style={{...card,width:"100%",textAlign:"start",cursor:"pointer",marginBottom:9,display:"block",color:"var(--bp-text)"}}>
         <div style={{display:"flex",justifyContent:"space-between",gap:8}}><strong style={{fontSize:14}}>{TYPES.find(t=>t.id===p.type)?.emoji} {p.name}</strong><span style={{fontSize:12,color:"var(--bp-muted2)"}}>View ›</span></div>
-        <div style={{fontSize:12,color:"var(--bp-muted2)",marginTop:5}}>{p.current||"Start"} → {p.target||"Target"} · {c?.tracked||0} resource targets {c?.done?"· Ready":""}</div>
+        <div style={{fontSize:12,color:"var(--bp-muted2)",marginTop:5}}>{p.current||"Start"} → {p.target||"Target"} · {c?.tracked||0} resource targets {c?.done?"· Entered material targets met":""}</div>
       </button>;})}
     </>}
     {chosen&&<>
@@ -108,8 +129,8 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
       <p style={{fontSize:12,lineHeight:1.5,color:"var(--bp-muted2)"}}>{type.hint}</p>
       {chosen.type==="heroes"&&starIndex(chosen.current)>=0&&starIndex(chosen.target)>=0&&
         <div style={{...card,marginTop:10,background:"var(--bp-bg)",color:"var(--bp-text)"}}>
-          <strong style={{fontSize:14}}>Calculated ascension shards: {Math.max(0,HERO_SHARD_CUMULATIVE[starIndex(chosen.target)]-HERO_SHARD_CUMULATIVE[starIndex(chosen.current)]).toLocaleString()}</strong>
-          <p style={{fontSize:12,lineHeight:1.5,color:"var(--bp-muted2)",margin:"6px 0 0"}}>This covers completed star milestones only. Hero-unlock costs and partial star tiers aren't included. Assign the number to the correct hero-specific shard item, or to General Hero Shards only if they are eligible.</p>
+          <strong style={{fontSize:14}}>Reference full-star ascension shards: {Math.max(0,HERO_SHARD_CUMULATIVE[starIndex(chosen.target)]-HERO_SHARD_CUMULATIVE[starIndex(chosen.current)]).toLocaleString()}</strong>
+          <p style={{fontSize:12,lineHeight:1.5,color:"var(--bp-muted2)",margin:"6px 0 0"}}>Reference milestone values must be checked against the hero and game version. Unlock and partial stars are excluded; hero-specific shards are not interchangeable with General Hero Shards.</p>
         </div>
       }
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginTop:12}}>
@@ -122,11 +143,14 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
           <div style={{display:"flex",justifyContent:"space-between",fontSize:13,gap:8}}><strong>{itemLabel(r.id)}</strong><span>{Math.round(pct)}%</span></div>
           <div style={{background:"var(--bp-border3)",height:7,borderRadius:10,overflow:"hidden",margin:"8px 0"}}><div style={{background:"var(--bp-accent,#78917f)",width:pct+"%",height:"100%"}}/></div>
           <div style={{fontSize:12,color:"var(--bp-muted2)"}}>{formatAmount(r.owned)} owned / {formatAmount(r.required)} needed</div>
-          <div style={{fontSize:12,fontWeight:700,color:r.remaining?"#a06358":"#5c7a6e",marginTop:3}}>{r.remaining?formatAmount(r.remaining)+" missing":"Target reached"}</div>
+          <div style={{fontSize:12,fontWeight:700,color:r.remaining?"#a06358":"#5c7a6e",marginTop:3}}>{r.remaining?formatAmount(r.remaining)+" missing":"Entered target met"}</div>
+        {duplicatedResources.has(r.id)&&<div style={{fontSize:11,color:"#a06358",marginTop:3}}>Also used by another goal. Check combined requirements.</div>}
           {items.some(it=>it.id===r.id)&&<button style={{...btn,minHeight:34,marginTop:7}} onClick={()=>onUpdateResource(r.id)}>Update backpack</button>}
         </div>;
       })}
-      {!countsById(chosen.id)?.tracked&&<p style={{fontSize:13,color:"var(--bp-muted2)"}}>No verified costs entered yet. Add them below to begin tracking.</p>}
+      {!countsById(chosen.id)?.tracked&&<p style={{fontSize:13,color:"var(--bp-muted2)"}}>No resource costs entered. This goal cannot be assessed yet.</p>}
+      {Object.entries(chosen.requirements||{}).some(([,v])=>String(v).trim()!==""&&parseNumber(v)===null)&&<p role="alert" style={{fontSize:12,color:"#a06358"}}>Some cost amounts are invalid. Use a positive number or K/M/B suffix. Invalid amounts are excluded from progress.</p>}
+      <p style={{fontSize:12,color:"var(--bp-muted2)",lineHeight:1.5}}>Progress only reflects the amounts entered. It does not prove the upgrade is affordable until all prerequisite buildings and costs are verified.</p>
       {editCosts&&<div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:9,marginTop:14}}>
         {[...options,...extraCosts].map(id=><label key={id} style={{fontSize:12,color:"var(--bp-muted2)"}}>{itemLabel(id)}
           <input style={{...input,marginTop:5}} value={chosen.requirements?.[id]||""} placeholder="Cost, e.g. 1.2M" onChange={e=>patchCost(chosen.id,id,e.target.value)} inputMode="decimal"/>
@@ -145,7 +169,10 @@ export default function UpgradePlanner({userId,items,balances,onUpdateResource})
       <label style={{display:"block",fontSize:12,color:"var(--bp-muted2)",marginTop:15}}>Cost source / reference URL<input style={{...input,marginTop:5}} value={chosen.source||""} onChange={e=>patch(chosen.id,{source:trim(e.target.value,500)})} placeholder="Calculator or in-game source"/></label>
       <label style={{display:"block",fontSize:12,color:"var(--bp-muted2)",marginTop:12}}>Notes & prerequisites<textarea style={{...input,marginTop:5,height:72,resize:"vertical"}} value={chosen.notes||""} onChange={e=>patch(chosen.id,{notes:trim(e.target.value,2000)})} placeholder="Required Embassy level, hero name, troop type…"/></label>
       <p style={{fontSize:11,color:"var(--bp-muted2)",lineHeight:1.5}}>Requirements are user-entered, not automatically verified. Material totals aren't deducted when a goal is completed. Multiple goals can count the same resources.</p>
-      <button style={{...btn,borderColor:"#a06358",color:"#a06358",marginTop:8}} onClick={()=>{if(window.confirm("Delete this upgrade goal? Your backpack items will be kept."))deletePlan(chosen.id);}}>Delete goal</button>
+      {confirmDelete?<div style={{...card,marginTop:12,borderColor:"#a06358"}}>
+        <p style={{fontSize:13,color:"var(--bp-text)"}}>Delete this goal? Your backpack balances and transactions will not change.</p>
+        <div style={{display:"flex",gap:8}}><button style={{...btn,flex:1}} onClick={()=>setConfirmDelete(false)}>Cancel</button><button style={{...btn,flex:1,background:"#a06358",color:"white"}} onClick={()=>deletePlan(chosen.id)}>Delete goal</button></div>
+      </div>:<button style={{...btn,borderColor:"#a06358",color:"#a06358",marginTop:8}} onClick={()=>setConfirmDelete(true)}>Delete goal</button>}
       {info&&<p role="status" style={{fontSize:12,color:"var(--bp-muted2)"}}>{info}</p>}
     </>}
   </section>;
