@@ -10,7 +10,7 @@ import BackpackSheet          from "./BackpackSheet.jsx";
 import MithrilCalculator      from "./MithrilCalculator.jsx";
 import GearPriorityGuide      from "./GearPriorityGuide.jsx";
 import ExpertCalculator       from "./ExpertCalculator.jsx";
-import UpgradePlanner         from "./UpgradePlanner.jsx";
+import UpgradeCalculator      from "./UpgradeCalculator.jsx";
 import haptics from "../../utils/haptics.js";
 import { Toast as CelebToast, useCelebration } from "../../components/Celebration.jsx";
 import PinReplacePrompt from "../../components/PinReplacePrompt.jsx";
@@ -23,7 +23,7 @@ function SectionNav({ active, onChange, accent }) {
   const chips = [
     { key: "Items",    label: t("nav.items") },
     { key: "Mithril",  label: "Mithril" },
-    { key: "Furnace",  label: "Upgrades" },
+    { key: "Calculator",  label: "Calculator" },
     { key: "Experts",  label: "Experts" },
   ];
   return (
@@ -101,7 +101,7 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
   const refs = {
     Items:    useRef(null),
     Mithril:  useRef(null),
-    Furnace:  useRef(null),
+    Calculator: useRef(null),
     Experts:  useRef(null),
   };
 
@@ -194,20 +194,20 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
       </div>
 
       {/* ── Summary + Growth ── */}
-      <BackpackSummary
+      {activeSection === "Items" && <BackpackSummary
         summary={summary}
         items={items}
         transactions={transactions}
         balances={balances}
         pinnedItems={pinnedItems}
         onChooseResources={() => scrollTo("Items")}
-      />
+      />}
 
       {/* ── Section nav ── */}
       <SectionNav active={activeSection} onChange={scrollTo} accent={accent} />
 
       {/* ── Items ── */}
-      <div ref={refs.Items} style={{ scrollMarginTop:16, marginTop:8 }}>
+      {activeSection==="Items"&&<div ref={refs.Items} style={{ scrollMarginTop:16, marginTop:8 }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <SectionHeading kicker={t("hero.kicker")} title={t("nav.items")} />
           {!confirmResetAll && (
@@ -263,15 +263,15 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
           onDelete={id => { deleteItem(id); showToast(t("toast.itemDeleted")); haptics.warning(); }}
           onDeleteTransaction={id => { deleteTransaction(id); showToast(t("toast.entryRemoved")); }}
         />
-      </div>
+      </div>}
 
-      {/* ── Furnace upgrade resource goal ── */}
-      <div ref={refs.Furnace} style={{ scrollMarginTop:16, marginTop:32 }}>
-        <UpgradePlanner userId={userId} items={items} balances={balances} onUpdateResource={handleNavigateSheet} />
-      </div>
+      {/* ── Standalone calculator with built-in game costs ── */}
+      {activeSection==="Calculator"&&<div ref={refs.Calculator} style={{ scrollMarginTop:16, marginTop:14 }}>
+        <UpgradeCalculator items={items} balances={balances} onUpdateResource={handleNavigateSheet} />
+      </div>}
 
       {/* ── Mithril calculator ── */}
-      <div ref={refs.Mithril} style={{ scrollMarginTop:16, marginTop:32 }}>
+      {activeSection==="Mithril"&&<div ref={refs.Mithril} style={{ scrollMarginTop:16, marginTop:14 }}>
         <SectionHeading kicker="Hero Gear" title="Mithril" />
         <MithrilCalculator mithrilBalance={balances["mithril"] ?? 0} onSetGoal={handleSetGoal} />
         <div style={{ marginTop:20 }}>
@@ -281,13 +281,13 @@ export default function BackpackScreen({ userId, accent = "#78917f" }) {
           </div>
           <GearPriorityGuide userId={userId} />
         </div>
-      </div>
+      </div>}
 
       {/* ── Dawn Academy Experts calculator ── */}
-      <div ref={refs.Experts} style={{ scrollMarginTop:16, marginTop:32 }}>
+      {activeSection==="Experts"&&<div ref={refs.Experts} style={{ scrollMarginTop:16, marginTop:14 }}>
         <SectionHeading kicker="Dawn Academy" title="Experts" />
         <ExpertCalculator items={items} updateItem={updateItem} onSetGoal={handleSetGoal} />
-      </div>
+      </div>}
 
       {/* ── Sheet ── */}
       <BackpackSheet
